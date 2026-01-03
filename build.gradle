@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.asteroidmining'
+version = '1.0-SNAPSHOT'
+sourceCompatibility = '17'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Lombok for reducing boilerplate
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+    testCompileOnly 'org.projectlombok:lombok:1.18.30'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+}
+
+application {
+    mainClass = 'com.asteroidmining.SimulationDemo'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// Task to run the simulation demo
+task runDemo(type: JavaExec) {
+    group = 'application'
+    description = 'Run the asteroid mining simulation demo'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.kaymlyn.planeteater.SimulationDemo'
+}
