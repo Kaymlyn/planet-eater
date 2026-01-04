@@ -3,7 +3,7 @@ plugins {
     id 'application'
 }
 
-group = 'com.asteroidmining'
+group = 'com.kaymlyn.planeteater'
 version = '1.0-SNAPSHOT'
 sourceCompatibility = '17'
 
@@ -12,6 +12,9 @@ repositories {
 }
 
 dependencies {
+
+    implementation 'org.jcodec:jcodec:0.2.5'
+    implementation 'org.jcodec:jcodec-javase:0.2.5'
     // Lombok for reducing boilerplate
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'

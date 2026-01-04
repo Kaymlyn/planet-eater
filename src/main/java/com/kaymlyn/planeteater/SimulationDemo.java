@@ -28,7 +28,7 @@ public class SimulationDemo {
 
         // 1. Create the orbital system with a Sun-like star
         System.out.println("1. Initializing orbital system...");
-        Star sun = CelestialBodyFactory.createSunLike("Sun");
+        Star sun = CelestialBodyFactory.createMainSequenceStar("Sun", 1);
         double timeStep = 3600.0; // 1 hour time steps
         OrbitalSystem system = new OrbitalSystem(sun, timeStep);
         System.out.println("   " + sun);

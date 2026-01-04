@@ -20,14 +20,12 @@ public class Star extends CelestialBody {
     private final Composition atmosphereComposition;  // Extractable materials from corona/photosphere
     private final Composition totalComposition;
     private final double surfaceTemperature;          // Kelvin
-    private final double massLossRate;                // Natural mass loss rate (kg/s)
-    private final double stellarRadius;               // Actual radius accounting for gravity/pressure (meters)
+    private final double massLossRate;                // Natural mass loss rate (kg/s)               // Actual radius accounting for gravity/pressure (meters)
 
     public Star(String id, Vector3D position, Vector3D velocity) {
         super(id, position, velocity);
         this.totalComposition = new Composition();
         this.atmosphereComposition = new Composition();
-        this.stellarRadius = calculateMainSequenceRadius();
         this.surfaceTemperature = calculateMainSequenceTemperature();
         this.massLossRate = calculateMassLossRate();
     }
@@ -68,7 +66,7 @@ public class Star extends CelestialBody {
         double luminosityRatio = Math.pow(massRatio, 3.5);
 
         // Radius ratio
-        double radiusRatio = stellarRadius / solarRadius;
+        double radiusRatio = calculateMainSequenceRadius() / solarRadius;
 
         // Temperature from Stefan-Boltzmann: T^4 scales as L/R²
         double tempRatio = Math.pow(luminosityRatio / (radiusRatio * radiusRatio), 0.25);
@@ -95,7 +93,8 @@ public class Star extends CelestialBody {
      */
     @Override
     public double getDensity() {
-        double volume = (4.0 / 3.0) * Math.PI * Math.pow(stellarRadius, 3);
+        double volume = (4.0 / 3.0) * Math.PI * Math.pow(calculateMainSequenceRadius(), 3);
+        System.out.println(volume);
         return getMass() / volume;
     }
 
@@ -105,7 +104,7 @@ public class Star extends CelestialBody {
      */
     @Override
     public double getRadius() {
-        return stellarRadius;
+        return calculateMainSequenceRadius();
     }
 
     @Override
@@ -158,7 +157,7 @@ public class Star extends CelestialBody {
      * Corona extends to about 2-3 stellar radii
      */
     public double getMinimumMiningDistance() {
-        return 3.0 * stellarRadius;
+        return 3.0 * calculateMainSequenceRadius();
     }
 
     /**
@@ -198,7 +197,7 @@ public class Star extends CelestialBody {
         return String.format("Star[id=%s, mass=%.3e kg (%.2f M☉), radius=%.3e m (%.2f R☉), " +
                         "temp=%.0f K, class=%s, density=%.1f kg/m³]",
                 id, getMass(), getMass() / PhysicsConstants.SOLAR_MASS,
-                stellarRadius, stellarRadius / 6.96e8,
+                calculateMainSequenceRadius(), calculateMainSequenceRadius() / 6.96e8,
                 surfaceTemperature, getSpectralClass(), getDensity());
     }
 

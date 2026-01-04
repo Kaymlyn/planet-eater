@@ -162,41 +162,18 @@ public class CelestialBodyFactory {
     }
 
     /**
-     * Create a star with default Sun-like properties
-     */
-    public static Star createSunLike(String id) {
-        Composition comp = new Composition();
-        // Stars are mostly hydrogen and helium
-        comp.addMaterialAsVolume(Material.HYDROGEN, PhysicsConstants.SOLAR_MASS * 0.73);
-        comp.addMaterialAsVolume(Material.HELIUM, PhysicsConstants.SOLAR_MASS * 0.25);
-        comp.addMaterialAsVolume(Material.OXYGEN_GAS, PhysicsConstants.SOLAR_MASS * 0.01);
-        comp.addMaterialAsVolume(Material.CARBON, PhysicsConstants.SOLAR_MASS * 0.003);
-        comp.addMaterialAsVolume(Material.IRON, PhysicsConstants.SOLAR_MASS * 0.001);
-
-        Star star = new Star(id, Vector3D.ZERO, Vector3D.ZERO);
-
-        // Set up extractable atmosphere (corona/photosphere)
-        star.getAtmosphereComposition().addMaterialAsVolume(Material.HYDROGEN, 1e20);  // 100 billion billion kg
-        star.getAtmosphereComposition().addMaterialAsVolume(Material.HELIUM, 3e19);
-        star.getAtmosphereComposition().addMaterialAsVolume(Material.OXYGEN_GAS, 1e18);
-
-        return star;
-    }
-
-    /**
      * Create a star with specific mass (in solar masses)
      */
     public static Star createMainSequenceStar(String id, double solarMasses) {
         Star star = new Star(id, Vector3D.ZERO, Vector3D.ZERO);
 
-        Composition comp = star.getTotalComposition();
         double totalMass = solarMasses * PhysicsConstants.SOLAR_MASS;
 
-        comp.addMaterialAsVolume(Material.HYDROGEN, totalMass * 0.73);
-        comp.addMaterialAsVolume(Material.HELIUM, totalMass * 0.25);
-        comp.addMaterialAsVolume(Material.OXYGEN_GAS, totalMass * 0.01);
-        comp.addMaterialAsVolume(Material.CARBON, totalMass * 0.003);
-        comp.addMaterialAsVolume(Material.IRON, totalMass * 0.001);
+        star.getTotalComposition().addMaterialAsRawMass(Material.HYDROGEN, totalMass * 0.73);
+        star.getTotalComposition().addMaterialAsRawMass(Material.HELIUM, totalMass * 0.25);
+        star.getTotalComposition().addMaterialAsRawMass(Material.OXYGEN_GAS, totalMass * 0.01);
+        star.getTotalComposition().addMaterialAsRawMass(Material.CARBON, totalMass * 0.003);
+        star.getTotalComposition().addMaterialAsRawMass(Material.IRON, totalMass * 0.001);
 
 
         // Set up extractable atmosphere proportional to mass loss rate
