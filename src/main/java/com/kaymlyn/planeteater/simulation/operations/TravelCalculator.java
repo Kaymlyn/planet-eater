@@ -1,10 +1,10 @@
-package com.kaymlyn.planeteater.operations;
+package com.kaymlyn.planeteater.simulation.operations;
 
-import com.kaymlyn.planeteater.vehicles.Spacecraft;
-import com.kaymlyn.planeteater.celestial.CelestialBody;
-import com.kaymlyn.planeteater.physics.OrbitalSystem;
-import com.kaymlyn.planeteater.physics.PhysicsConstants;
-import com.kaymlyn.planeteater.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
+import com.kaymlyn.planeteater.simulation.physics.OrbitalSystem;
+import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

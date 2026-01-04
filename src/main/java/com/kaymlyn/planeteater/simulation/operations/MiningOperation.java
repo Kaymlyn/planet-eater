@@ -1,12 +1,12 @@
-package com.kaymlyn.planeteater.operations;
+package com.kaymlyn.planeteater.simulation.operations;
 
-import com.kaymlyn.planeteater.entities.MiningEntity;
-import com.kaymlyn.planeteater.vehicles.Spacecraft;
-import com.kaymlyn.planeteater.infrastructure.OrbitalPlatform;
-import com.kaymlyn.planeteater.celestial.Asteroid;
-import com.kaymlyn.planeteater.physics.OrbitalSystem;
-import com.kaymlyn.planeteater.resources.Material;
-import com.kaymlyn.planeteater.operations.TravelCalculator.Trajectory;
+import com.kaymlyn.planeteater.simulation.entities.MiningEntity;
+import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
+import com.kaymlyn.planeteater.simulation.infrastructure.OrbitalPlatform;
+import com.kaymlyn.planeteater.simulation.celestial.Asteroid;
+import com.kaymlyn.planeteater.simulation.physics.OrbitalSystem;
+import com.kaymlyn.planeteater.simulation.resources.Material;
+import com.kaymlyn.planeteater.simulation.operations.TravelCalculator.Trajectory;
 import lombok.Getter;
 import java.util.ArrayList;
 import java.util.List;

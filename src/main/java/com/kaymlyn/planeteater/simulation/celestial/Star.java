@@ -1,9 +1,9 @@
-package com.kaymlyn.planeteater.celestial;
+package com.kaymlyn.planeteater.simulation.celestial;
 
-import com.kaymlyn.planeteater.resources.Composition;
-import com.kaymlyn.planeteater.resources.Material;
-import com.kaymlyn.planeteater.physics.PhysicsConstants;
-import com.kaymlyn.planeteater.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.resources.Composition;
+import com.kaymlyn.planeteater.simulation.resources.Material;
+import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 
 import lombok.Getter;
 
@@ -17,42 +17,15 @@ import lombok.Getter;
 @Getter
 public class Star extends CelestialBody {
 
-    private Composition atmosphereComposition;  // Extractable materials from corona/photosphere
-    private double surfaceTemperature;          // Kelvin
-    private double massLossRate;                // Natural mass loss rate (kg/s)
-    private double stellarRadius;               // Actual radius accounting for gravity/pressure (meters)
+    private final Composition atmosphereComposition;  // Extractable materials from corona/photosphere
+    private final Composition totalComposition;
+    private final double surfaceTemperature;          // Kelvin
+    private final double massLossRate;                // Natural mass loss rate (kg/s)
+    private final double stellarRadius;               // Actual radius accounting for gravity/pressure (meters)
 
-    /**
-     * Create a star with default Sun-like properties
-     */
-    public static Star createSunLike(String id) {
-        Composition comp = new Composition();
-        // Stars are mostly hydrogen and helium
-        comp.addMaterial(Material.HYDROGEN, PhysicsConstants.SOLAR_MASS * 0.73);
-        comp.addMaterial(Material.HELIUM, PhysicsConstants.SOLAR_MASS * 0.25);
-        comp.addMaterial(Material.OXYGEN_GAS, PhysicsConstants.SOLAR_MASS * 0.01);
-        comp.addMaterial(Material.CARBON, PhysicsConstants.SOLAR_MASS * 0.003);
-        comp.addMaterial(Material.IRON, PhysicsConstants.SOLAR_MASS * 0.001);
-
-        Star star = new Star(id, Vector3D.ZERO, Vector3D.ZERO, comp);
-
-        // Calculate actual stellar radius using mass-radius relationship
-        star.stellarRadius = star.calculateMainSequenceRadius();
-
-        // Set up extractable atmosphere (corona/photosphere)
-        star.atmosphereComposition = new Composition();
-        star.atmosphereComposition.addMaterial(Material.HYDROGEN, 1e20);  // 100 billion billion kg
-        star.atmosphereComposition.addMaterial(Material.HELIUM, 3e19);
-        star.atmosphereComposition.addMaterial(Material.OXYGEN_GAS, 1e18);
-
-        star.surfaceTemperature = star.calculateMainSequenceTemperature();
-        star.massLossRate = star.calculateMassLossRate();
-
-        return star;
-    }
-
-    public Star(String id, Vector3D position, Vector3D velocity, Composition composition) {
-        super(id, position, velocity, composition);
+    public Star(String id, Vector3D position, Vector3D velocity) {
+        super(id, position, velocity);
+        this.totalComposition = new Composition();
         this.atmosphereComposition = new Composition();
         this.stellarRadius = calculateMainSequenceRadius();
         this.surfaceTemperature = calculateMainSequenceTemperature();
@@ -135,6 +108,11 @@ public class Star extends CelestialBody {
         return stellarRadius;
     }
 
+    @Override
+    public double getMass() {
+        return totalComposition.getTotalMass();
+    }
+
     /**
      * Extract material from the star's corona/photosphere
      * This represents stellar lifting or mass stream capture
@@ -156,9 +134,9 @@ public class Star extends CelestialBody {
     private void replenishAtmosphere(double duration) {
         double massAdded = massLossRate * duration;
 
-        atmosphereComposition.addMaterial(Material.HYDROGEN, massAdded * 0.73);
-        atmosphereComposition.addMaterial(Material.HELIUM, massAdded * 0.25);
-        atmosphereComposition.addMaterial(Material.OXYGEN_GAS, massAdded * 0.01);
+        atmosphereComposition.addMaterialAsVolume(Material.HYDROGEN, massAdded * 0.73);
+        atmosphereComposition.addMaterialAsVolume(Material.HELIUM, massAdded * 0.25);
+        atmosphereComposition.addMaterialAsVolume(Material.OXYGEN_GAS, massAdded * 0.01);
     }
 
     /**
@@ -224,28 +202,4 @@ public class Star extends CelestialBody {
                 surfaceTemperature, getSpectralClass(), getDensity());
     }
 
-    /**
-     * Create a star with specific mass (in solar masses)
-     */
-    public static Star createMainSequenceStar(String id, double solarMasses) {
-        Composition comp = new Composition();
-        double totalMass = solarMasses * PhysicsConstants.SOLAR_MASS;
-
-        comp.addMaterial(Material.HYDROGEN, totalMass * 0.73);
-        comp.addMaterial(Material.HELIUM, totalMass * 0.25);
-        comp.addMaterial(Material.OXYGEN_GAS, totalMass * 0.01);
-        comp.addMaterial(Material.CARBON, totalMass * 0.003);
-        comp.addMaterial(Material.IRON, totalMass * 0.001);
-
-        Star star = new Star(id, Vector3D.ZERO, Vector3D.ZERO, comp);
-
-        // Set up extractable atmosphere proportional to mass loss rate
-        star.atmosphereComposition = new Composition();
-        double atmosphereMass = star.massLossRate * 1e10; // ~100,000 seconds worth
-        star.atmosphereComposition.addMaterial(Material.HYDROGEN, atmosphereMass * 0.73);
-        star.atmosphereComposition.addMaterial(Material.HELIUM, atmosphereMass * 0.25);
-        star.atmosphereComposition.addMaterial(Material.OXYGEN_GAS, atmosphereMass * 0.01);
-
-        return star;
-    }
 }

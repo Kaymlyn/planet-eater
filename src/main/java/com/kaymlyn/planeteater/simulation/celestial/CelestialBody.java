@@ -1,8 +1,7 @@
-package com.kaymlyn.planeteater.celestial;
+package com.kaymlyn.planeteater.simulation.celestial;
 
-import com.kaymlyn.planeteater.resources.Composition;
-import com.kaymlyn.planeteater.physics.PhysicsConstants;
-import com.kaymlyn.planeteater.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,37 +16,28 @@ public abstract class CelestialBody {
     protected String id;
     protected Vector3D position; // meters
     protected Vector3D velocity; // m/s
-    protected Composition composition;
     
-    public CelestialBody(String id, Vector3D position, Vector3D velocity, Composition composition) {
+    public CelestialBody(String id, Vector3D position, Vector3D velocity) {
         this.id = id;
         this.position = position;
         this.velocity = velocity;
-        this.composition = composition;
     }
-    
+
     /**
      * Get the total mass of this body in kg
      */
-    public double getMass() {
-        return composition.getTotalMass();
-    }
-    
+    public abstract double getMass();
+
     /**
      * Calculate radius assuming spherical body
      * r = (3V / 4π)^(1/3)
      */
-    public double getRadius() {
-        double volume = composition.getTotalVolume();
-        return Math.cbrt((3.0 * volume) / (4.0 * Math.PI));
-    }
+    public abstract double getRadius();
     
     /**
      * Get the bulk density of this body
      */
-    public double getDensity() {
-        return composition.getBulkDensity();
-    }
+    public abstract double getDensity();
     
     /**
      * Calculate gravitational force this body exerts on another body

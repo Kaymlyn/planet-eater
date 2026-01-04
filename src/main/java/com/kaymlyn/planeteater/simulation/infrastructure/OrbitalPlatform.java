@@ -1,10 +1,10 @@
-package com.kaymlyn.planeteater.infrastructure;
+package com.kaymlyn.planeteater.simulation.infrastructure;
 
-import com.kaymlyn.planeteater.celestial.CelestialBody;
-import com.kaymlyn.planeteater.resources.Composition;
-import com.kaymlyn.planeteater.physics.OrbitalSystem;
-import com.kaymlyn.planeteater.resources.Material;
-import com.kaymlyn.planeteater.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
+import com.kaymlyn.planeteater.simulation.resources.Composition;
+import com.kaymlyn.planeteater.simulation.physics.OrbitalSystem;
+import com.kaymlyn.planeteater.simulation.resources.Material;
+import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import lombok.Getter;
 
 import java.util.Map;
@@ -68,7 +68,7 @@ public class OrbitalPlatform {
      * Add resources to the platform's inventory
      */
     public void addResource(Material material, double mass) {
-        inventory.addMaterial(material, mass);
+        inventory.addMaterialAsVolume(material, mass);
     }
     
     /**

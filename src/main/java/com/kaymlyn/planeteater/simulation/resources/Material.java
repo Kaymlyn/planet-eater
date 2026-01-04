@@ -1,4 +1,4 @@
-package com.kaymlyn.planeteater.resources;
+package com.kaymlyn.planeteater.simulation.resources;
 
 import lombok.Getter;
 

@@ -1,11 +1,10 @@
-package com.kaymlyn.planeteater.vehicles;
+package com.kaymlyn.planeteater.simulation.vehicles;
 
-import com.kaymlyn.planeteater.celestial.Star;
-import com.kaymlyn.planeteater.resources.Material;
+import com.kaymlyn.planeteater.simulation.celestial.Star;
+import com.kaymlyn.planeteater.simulation.resources.Material;
+import com.kaymlyn.planeteater.simulation.resources.Composition;
 import lombok.Getter;
 import lombok.Setter;
-
-import com.kaymlyn.planeteater.resources.Composition;
 
 /**
  * Specialized equipment for extracting materials from stars
@@ -68,10 +67,10 @@ public class StellarHarvester {
         );
 
         // Construction materials - needs heat-resistant and magnetic materials
-        harvester.construction.addMaterial(Material.TITANIUM, 1e8);        // 100,000 tons
-        harvester.construction.addMaterial(Material.IRON, 5e8);            // 500,000 tons (magnetic)
-        harvester.construction.addMaterial(Material.ALUMINUM_OXIDE, 1e8);  // Heat shielding
-        harvester.construction.addMaterial(Material.SILICA, 5e7);          // Radiation shielding
+        harvester.construction.addMaterialAsVolume(Material.TITANIUM, 1e8);        // 100,000 tons
+        harvester.construction.addMaterialAsVolume(Material.IRON, 5e8);            // 500,000 tons (magnetic)
+        harvester.construction.addMaterialAsVolume(Material.ALUMINUM_OXIDE, 1e8);  // Heat shielding
+        harvester.construction.addMaterialAsVolume(Material.SILICA, 5e7);          // Radiation shielding
 
         return harvester;
     }
@@ -91,9 +90,9 @@ public class StellarHarvester {
         );
 
         // Lighter construction - mostly collection surface
-        harvester.construction.addMaterial(Material.ALUMINUM, 5e7);        // 50,000 tons
-        harvester.construction.addMaterial(Material.TITANIUM, 2e7);        // 20,000 tons
-        harvester.construction.addMaterial(Material.SILICA, 1e7);          // Shielding
+        harvester.construction.addMaterialAsVolume(Material.ALUMINUM, 5e7);        // 50,000 tons
+        harvester.construction.addMaterialAsVolume(Material.TITANIUM, 2e7);        // 20,000 tons
+        harvester.construction.addMaterialAsVolume(Material.SILICA, 1e7);          // Shielding
 
         return harvester;
     }
@@ -113,11 +112,11 @@ public class StellarHarvester {
         );
 
         // Heavy construction with advanced materials
-        harvester.construction.addMaterial(Material.TITANIUM, 5e8);        // 500,000 tons
-        harvester.construction.addMaterial(Material.IRON, 1e9);            // 1 million tons
-        harvester.construction.addMaterial(Material.ALUMINUM_OXIDE, 3e8);  // Advanced shielding
-        harvester.construction.addMaterial(Material.CHROMIUM, 1e8);        // Heat resistance
-        harvester.construction.addMaterial(Material.NICKEL, 2e8);          // Structural
+        harvester.construction.addMaterialAsVolume(Material.TITANIUM, 5e8);        // 500,000 tons
+        harvester.construction.addMaterialAsVolume(Material.IRON, 1e9);            // 1 million tons
+        harvester.construction.addMaterialAsVolume(Material.ALUMINUM_OXIDE, 3e8);  // Advanced shielding
+        harvester.construction.addMaterialAsVolume(Material.CHROMIUM, 1e8);        // Heat resistance
+        harvester.construction.addMaterialAsVolume(Material.NICKEL, 2e8);          // Structural
 
         return harvester;
     }
@@ -190,7 +189,7 @@ public class StellarHarvester {
     public Composition recycle() {
         Composition materials = new Composition();
         for (var entry : construction.getMaterials().entrySet()) {
-            materials.addMaterial(entry.getKey(), entry.getValue());
+            materials.addMaterialAsVolume(entry.getKey(), entry.getValue());
         }
         return materials;
     }

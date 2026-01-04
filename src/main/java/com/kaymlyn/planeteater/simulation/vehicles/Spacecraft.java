@@ -1,9 +1,9 @@
-package com.kaymlyn.planeteater.vehicles;
+package com.kaymlyn.planeteater.simulation.vehicles;
 
-import com.kaymlyn.planeteater.entities.MiningEntity;
-import com.kaymlyn.planeteater.resources.Composition;
-import com.kaymlyn.planeteater.resources.Material;
-import com.kaymlyn.planeteater.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.entities.MiningEntity;
+import com.kaymlyn.planeteater.simulation.resources.Composition;
+import com.kaymlyn.planeteater.simulation.resources.Material;
+import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;
@@ -75,9 +75,9 @@ public class Spacecraft {
         Spacecraft ship = new Spacecraft(id, 2000.0, 5000.0, 10000.0, 3000.0, false, 0);
         
         // Construction materials
-        ship.construction.addMaterial(Material.ALUMINUM, 1200.0);
-        ship.construction.addMaterial(Material.TITANIUM, 500.0);
-        ship.construction.addMaterial(Material.IRON, 300.0);
+        ship.construction.addMaterialAsVolume(Material.ALUMINUM, 1200.0);
+        ship.construction.addMaterialAsVolume(Material.TITANIUM, 500.0);
+        ship.construction.addMaterialAsVolume(Material.IRON, 300.0);
         
         return ship;
     }
@@ -89,11 +89,11 @@ public class Spacecraft {
         Spacecraft ship = new Spacecraft(id, 5000.0, 8000.0, 15000.0, 3500.0, true, 4);
         
         // Construction materials
-        ship.construction.addMaterial(Material.ALUMINUM, 2500.0);
-        ship.construction.addMaterial(Material.TITANIUM, 1500.0);
-        ship.construction.addMaterial(Material.IRON, 500.0);
-        ship.construction.addMaterial(Material.SILICA, 300.0); // Radiation shielding
-        ship.construction.addMaterial(Material.WATER_ICE, 200.0); // Life support reserves
+        ship.construction.addMaterialAsVolume(Material.ALUMINUM, 2500.0);
+        ship.construction.addMaterialAsVolume(Material.TITANIUM, 1500.0);
+        ship.construction.addMaterialAsVolume(Material.IRON, 500.0);
+        ship.construction.addMaterialAsVolume(Material.SILICA, 300.0); // Radiation shielding
+        ship.construction.addMaterialAsVolume(Material.WATER_ICE, 200.0); // Life support reserves
         
         return ship;
     }
@@ -105,9 +105,9 @@ public class Spacecraft {
         Spacecraft ship = new Spacecraft(id, 10000.0, 20000.0, 50000.0, 4000.0, false, 0);
         
         // Construction materials
-        ship.construction.addMaterial(Material.IRON, 5000.0);
-        ship.construction.addMaterial(Material.ALUMINUM, 3000.0);
-        ship.construction.addMaterial(Material.TITANIUM, 2000.0);
+        ship.construction.addMaterialAsVolume(Material.IRON, 5000.0);
+        ship.construction.addMaterialAsVolume(Material.ALUMINUM, 3000.0);
+        ship.construction.addMaterialAsVolume(Material.TITANIUM, 2000.0);
         
         return ship;
     }
@@ -163,7 +163,7 @@ public class Spacecraft {
         double available = getAvailableCargoSpace();
         double toLoad = Math.min(mass, available);
         if (toLoad > 0) {
-            cargo.addMaterial(material, toLoad);
+            cargo.addMaterialAsVolume(material, toLoad);
         }
         return toLoad;
     }
@@ -235,7 +235,7 @@ public class Spacecraft {
         
         // Return all construction materials
         for (Map.Entry<Material, Double> entry : construction.getMaterials().entrySet()) {
-            materials.addMaterial(entry.getKey(), entry.getValue());
+            materials.addMaterialAsVolume(entry.getKey(), entry.getValue());
         }
         
         // Return any remaining fuel (assuming it's a recyclable material)

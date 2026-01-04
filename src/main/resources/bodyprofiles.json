@@ -1,0 +1,290 @@
+[
+  {
+    "bodyType": "C_TYPE",
+    "zone": "CRUST",
+    "materials": [
+      {
+        "type": "ORGANIC_COMPOUNDS",
+        "ratio": 20
+      },
+      {
+        "type": "WATER_ICE",
+        "ratio": 20
+      },
+      {
+        "type": "CARBON",
+        "ratio": 10
+      },
+      {
+        "type": "SILICA",
+        "ratio": 25
+      },
+      {
+        "type": "IRON_OXIDE",
+        "ratio": 10
+      },
+      {
+        "type": "MAGNESIUM_OXIDE",
+        "ratio": 10
+      },
+      {
+        "type": "IRON_SULFIDE",
+        "ratio": 5
+      }
+    ]
+  },
+  {
+    "bodyType": "M_TYPE",
+    "zone": "CRUST",
+    "materials": [
+      {
+        "type": "IRON",
+        "ratio": 70
+      },
+      {
+        "type": "NICKEL",
+        "ratio": 18
+      },
+      {
+        "type": "IRON_SULFIDE",
+        "ratio": 5
+      },
+      {
+        "type": "CHROMIUM",
+        "ratio": 3
+      },
+      {
+        "type": "PHOSPHORUS",
+        "ratio": 2
+      },
+      {
+        "type": "SILICA",
+        "ratio": 2
+      }
+    ]
+  },
+  {
+    "bodyType": "S_TYPE",
+    "zone": "CRUST",
+    "materials": [
+      {
+        "type": "OLIVINE",
+        "ratio": 35
+      },
+      {
+        "type": "PYROXENE",
+        "ratio": 25
+      },
+      {
+        "type": "IRON",
+        "ratio": 15
+      },
+      {
+        "type": "FELDSPAR",
+        "ratio": 10
+      },
+      {
+        "type": "NICKEL",
+        "ratio": 8
+      },
+      {
+        "type": "IRON_SULFIDE",
+        "ratio": 5
+      },
+      {
+        "type": "CHROMIUM",
+        "ratio": 2
+      }
+    ]
+  },
+  {
+    "bodyType": "HABITABLE",
+    "zone": "CORE",
+    "materials": [
+      {
+        "type": "IRON",
+        "ratio": 85
+      },
+      {
+        "type": "NICKEL",
+        "ratio": 10
+      },
+      {
+        "type": "IRON_SULFIDE",
+        "ratio": 5
+      }
+    ]
+  },
+  {
+    "bodyType": "HABITABLE",
+    "zone": "MANTLE",
+    "materials": [
+      {
+        "type": "OLIVINE",
+        "ratio": 50
+      },
+      {
+        "type": "PYROXENE",
+        "ratio": 25
+      },
+      {
+        "type": "MAGNESIUM_OXIDE",
+        "ratio": 15
+      },
+      {
+        "type": "IRON_OXIDE",
+        "ratio": 25
+      }
+    ]
+  },
+  {
+    "bodyType": "HABITABLE",
+    "zone": "CRUST",
+    "materials": [
+      {
+        "type": "FELDSPAR",
+        "ratio": 40
+      },
+      {
+        "type": "SILICA",
+        "ratio": 30
+      },
+      {
+        "type": "PYROXENE",
+        "ratio": 10
+      },
+      {
+        "type": "ALUMINUM_OXIDE",
+        "ratio": 10
+      },
+      {
+        "type": "CALCIUM_OXIDE",
+        "ratio": 5
+      },
+      {
+        "type": "IRON_OXIDE",
+        "ratio": 5
+      }
+    ]
+  },
+  {
+    "bodyType": "HABITABLE",
+    "zone": "ATMOSPHERE",
+    "materials": [
+      {
+        "type": "WATER_ICE",
+        "ratio": 1.4e21
+      },
+      {
+        "type": "NITROGEN_GAS",
+        "ratio": 4.0e18
+      },
+      {
+        "type": "OXYGEN_GAS",
+        "ratio": 1.2e18
+      },
+      {
+        "type": "CO2_ICE",
+        "ratio": 3.0e15
+      }
+    ]
+  },
+  {
+    "bodyType": "GAS_GIANT",
+    "zone": "CORE",
+    "materials": [
+      {
+        "type": "SILICA",
+        "ratio": 40
+      },
+      {
+        "type": "IRON",
+        "ratio": 30
+      },
+      {
+        "type": "WATER_ICE",
+        "ratio": 20
+      },
+      {
+        "type": "MAGNESIUM_OXIDE",
+        "ratio": 10
+      }
+    ]
+  },
+  {
+    "bodyType": "GAS_GIANT",
+    "zone": "ATMOSPHERE",
+    "materials": [
+      {
+        "type": "HYDROGEN",
+        "ratio": 71
+      },
+      {
+        "type": "HELIUM",
+        "ratio": 24
+      },
+      {
+        "type": "METHANE_ICE",
+        "ratio": 3
+      },
+      {
+        "type": "AMMONIA_ICE",
+        "ratio": 2
+      }
+    ]
+  },
+  {
+    "bodyType": "ICE_GIANT",
+    "zone": "CORE",
+    "materials": [
+      {
+        "type": "SILICA",
+        "ratio": 50
+      },
+      {
+        "type": "IRON",
+        "ratio": 30
+      },
+      {
+        "type": "MAGNESIUM_OXIDE",
+        "ratio": 20
+      }
+    ]
+  },
+  {
+    "bodyType": "ICE_GIANT",
+    "zone": "MANTLE",
+    "materials": [
+      {
+        "type": "WATER_ICE",
+        "ratio": 55
+      },
+      {
+        "type": "AMMONIA_ICE",
+        "ratio": 25
+      },
+      {
+        "type": "METHANE_ICE",
+        "ratio": 20
+      }
+    ]
+  },
+  {
+    "bodyType": "ICE_GIANT",
+    "zone": "ATMOSPHERE",
+    "materials": [
+      {
+        "type": "HYDROGEN",
+        "ratio": 80
+      },
+      {
+        "type": "HELIUM",
+        "ratio": 15
+      },
+      {
+        "type": "METHANE_ICE",
+        "ratio": 5
+      }
+    ]
+  }
+]

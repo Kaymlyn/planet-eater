@@ -1,4 +1,4 @@
-package com.kaymlyn.planeteater.physics;
+package com.kaymlyn.planeteater.simulation.physics;
 
 /**
  * Physical constants in SI units

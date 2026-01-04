@@ -1,4 +1,4 @@
-package com.kaymlyn.planeteater.entities;
+package com.kaymlyn.planeteater.simulation.entities;
 
 import lombok.Getter;
 import lombok.Setter;

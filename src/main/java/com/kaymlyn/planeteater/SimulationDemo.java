@@ -1,18 +1,19 @@
 package com.kaymlyn.planeteater;
 
-import com.kaymlyn.planeteater.vehicles.Spacecraft;
-import com.kaymlyn.planeteater.celestial.Asteroid;
-import com.kaymlyn.planeteater.resources.Composition;
-import com.kaymlyn.planeteater.entities.MiningEntity;
-import com.kaymlyn.planeteater.operations.MiningOperation;
-import com.kaymlyn.planeteater.infrastructure.OrbitalPlatform;
-import com.kaymlyn.planeteater.physics.OrbitalSystem;
-import com.kaymlyn.planeteater.celestial.Star;
-import com.kaymlyn.planeteater.resources.Material;
-import com.kaymlyn.planeteater.physics.PhysicsConstants;
-import com.kaymlyn.planeteater.operations.TravelCalculator;
-import com.kaymlyn.planeteater.physics.Vector3D;
-import com.kaymlyn.planeteater.vehicles.StellarHarvester;
+import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
+import com.kaymlyn.planeteater.simulation.celestial.Asteroid;
+import com.kaymlyn.planeteater.simulation.celestial.Star;
+import com.kaymlyn.planeteater.simulation.entities.MiningEntity;
+import com.kaymlyn.planeteater.simulation.operations.MiningOperation;
+import com.kaymlyn.planeteater.simulation.operations.TravelCalculator;
+import com.kaymlyn.planeteater.simulation.physics.OrbitalSystem;
+import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.resources.Composition;
+import com.kaymlyn.planeteater.simulation.resources.Material;
+import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
+import com.kaymlyn.planeteater.simulation.vehicles.StellarHarvester;
+import com.kaymlyn.planeteater.simulation.infrastructure.OrbitalPlatform;
 
 /**
  * Demonstrates the asteroid mining simulation
@@ -27,7 +28,7 @@ public class SimulationDemo {
 
         // 1. Create the orbital system with a Sun-like star
         System.out.println("1. Initializing orbital system...");
-        Star sun = Star.createSunLike("Sun");
+        Star sun = CelestialBodyFactory.createSunLike("Sun");
         double timeStep = 3600.0; // 1 hour time steps
         OrbitalSystem system = new OrbitalSystem(sun, timeStep);
         System.out.println("   " + sun);
@@ -47,7 +48,7 @@ public class SimulationDemo {
         System.out.println("3. Placing asteroids in the system...");
 
         // Small M-type asteroid at 1.5 AU (metal-rich)
-        Asteroid asteroid1 = Asteroid.createMType("Asteroid-M1",
+        Asteroid asteroid1 = CelestialBodyFactory.createMType("Asteroid-M1",
                 Vector3D.ZERO, Vector3D.ZERO, 100.0); // 100m radius
         system.placeInCircularOrbit(asteroid1, 1.5 * PhysicsConstants.AU, Math.PI / 4);
         System.out.println("   " + asteroid1);
@@ -55,7 +56,7 @@ public class SimulationDemo {
                 String.format("%.3e kg", asteroid1.getAvailableMaterial(Material.IRON)));
 
         // Small C-type asteroid at 2.0 AU (water-rich)
-        Asteroid asteroid2 = Asteroid.createCType("Asteroid-C1",
+        Asteroid asteroid2 = CelestialBodyFactory.createCType("Asteroid-C1",
                 Vector3D.ZERO, Vector3D.ZERO, 80.0); // 80m radius
         system.placeInCircularOrbit(asteroid2, 2.0 * PhysicsConstants.AU, Math.PI);
         System.out.println("   " + asteroid2);

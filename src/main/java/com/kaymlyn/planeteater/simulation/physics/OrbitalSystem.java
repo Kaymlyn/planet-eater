@@ -1,9 +1,9 @@
-package com.kaymlyn.planeteater.physics;
+package com.kaymlyn.planeteater.simulation.physics;
 
-import com.kaymlyn.planeteater.celestial.Asteroid;
-import com.kaymlyn.planeteater.celestial.CelestialBody;
-import com.kaymlyn.planeteater.celestial.Planet;
-import com.kaymlyn.planeteater.celestial.Star;
+import com.kaymlyn.planeteater.simulation.celestial.Asteroid;
+import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
+import com.kaymlyn.planeteater.simulation.celestial.Planet;
+import com.kaymlyn.planeteater.simulation.celestial.Star;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;
@@ -113,7 +113,7 @@ public class OrbitalSystem {
      * x(t+dt) = x(t) + v(t)*dt + 0.5*a(t)*dt²
      * v(t+dt) = v(t) + 0.5*(a(t) + a(t+dt))*dt
      */
-    public void stepVerlet() {
+    public double stepVerlet() {
         // Calculate current accelerations
         Map<CelestialBody, Vector3D> accelerations = new HashMap<>();
         for (CelestialBody body : bodies) {
@@ -145,6 +145,7 @@ public class OrbitalSystem {
         }
         
         currentTime += timeStep;
+        return currentTime;
     }
     
     /**
@@ -223,7 +224,7 @@ public class OrbitalSystem {
     
     @Override
     public String toString() {
-        return String.format("com.kaymlyn.planeteater.entites.system.OrbitalSystem[bodies=%d, time=%.2f days]",
+        return String.format("OrbitalSystem[bodies=%d, time=%.2f days]",
             bodies.size(), currentTime / PhysicsConstants.SECONDS_PER_DAY);
     }
 }
