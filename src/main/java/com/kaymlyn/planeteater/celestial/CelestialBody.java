@@ -1,7 +1,8 @@
-package com.kaymlyn.planeteater.entities.primordials;
+package com.kaymlyn.planeteater.celestial;
 
-import com.kaymlyn.planeteater.universals.PhysicsConstants;
-import com.kaymlyn.planeteater.universals.Vector3D;
+import com.kaymlyn.planeteater.resources.Composition;
+import com.kaymlyn.planeteater.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.physics.Vector3D;
 import lombok.Getter;
 import lombok.Setter;
 

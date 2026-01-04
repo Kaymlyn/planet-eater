@@ -1,4 +1,4 @@
-package com.kaymlyn.planeteater.entities.artifice.actors;
+package com.kaymlyn.planeteater.entities;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -38,6 +38,7 @@ public class MiningEntity {
     private boolean requiresLifeSupport;
     private boolean providesLifeSupport;
     private boolean crewable;
+    private double productivity;
     private EntityState state;
     private String currentLocation; // ID of current location (platform or asteroid)
     
@@ -48,7 +49,7 @@ public class MiningEntity {
         RETURNING       // Returning to platform
     }
     
-    public MiningEntity(String id, EntityType type, EntityLocomotion motion, double mass, double miningRate) {
+    public MiningEntity(String id, EntityType type, EntityLocomotion motion, double productivity, double mass, double miningRate) {
         this.id = id;
         this.type = type;
         this.motion = motion;
@@ -66,7 +67,7 @@ public class MiningEntity {
      */
     public static MiningEntity createHuman(String id) {
         // Average human: 80kg, basic mining rate
-        return new MiningEntity(id, EntityType.ORGANIC, EntityLocomotion.BIPEDAL,80.0, 0.5);
+        return new MiningEntity(id, EntityType.ORGANIC, EntityLocomotion.BIPEDAL, .30,80.0, 0.5);
     }
     
     /**
@@ -74,7 +75,7 @@ public class MiningEntity {
      */
     public static MiningEntity createBasicRobot(String id) {
         // Basic robot: heavier but more efficient
-        return new MiningEntity(id, EntityType.INORGANIC, EntityLocomotion.QUADRAPEDAL, 150.0, 1.0);
+        return new MiningEntity(id, EntityType.INORGANIC, EntityLocomotion.QUADRAPEDAL, .80, 150.0, 1.0);
     }
     
     /**
@@ -82,14 +83,14 @@ public class MiningEntity {
      */
     public static MiningEntity createAdvancedRobot(String id) {
         // Advanced robot: lighter and much more efficient
-        return new MiningEntity(id, EntityType.INORGANIC, EntityLocomotion.BIPEDAL, 120.0, 5.0);
+        return new MiningEntity(id, EntityType.INORGANIC, EntityLocomotion.BIPEDAL, .65, 120.0, 5.0);
     }
     
     /**
      * Calculate amount of material this entity can mine in given time
      */
     public double calculateMiningYield(double timeSeconds) {
-        return miningRate * timeSeconds;
+        return miningRate * productivity * timeSeconds;
     }
 
     public boolean requiresLifeSupport() {

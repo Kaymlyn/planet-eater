@@ -1,6 +1,4 @@
-package com.kaymlyn.planeteater.entities.primordials;
-
-import com.kaymlyn.planeteater.universals.Material;
+package com.kaymlyn.planeteater.resources;
 
 import java.util.HashMap;
 import java.util.Map;

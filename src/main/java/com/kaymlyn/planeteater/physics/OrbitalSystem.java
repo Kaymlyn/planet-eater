@@ -1,13 +1,15 @@
-package com.kaymlyn.planeteater.entities.primordials;
+package com.kaymlyn.planeteater.physics;
 
-import com.kaymlyn.planeteater.universals.PhysicsConstants;
+import com.kaymlyn.planeteater.celestial.Asteroid;
+import com.kaymlyn.planeteater.celestial.CelestialBody;
+import com.kaymlyn.planeteater.celestial.Planet;
+import com.kaymlyn.planeteater.celestial.Star;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
-import com.kaymlyn.planeteater.universals.Vector3D;
 
 /**
  * Manages all celestial bodies and handles orbital mechanics simulation

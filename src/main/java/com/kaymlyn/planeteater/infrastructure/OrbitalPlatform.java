@@ -1,10 +1,10 @@
-package com.kaymlyn.planeteater.entities.artifice;
+package com.kaymlyn.planeteater.infrastructure;
 
-import com.kaymlyn.planeteater.entities.primordials.CelestialBody;
-import com.kaymlyn.planeteater.entities.primordials.Composition;
-import com.kaymlyn.planeteater.entities.primordials.OrbitalSystem;
-import com.kaymlyn.planeteater.universals.Material;
-import com.kaymlyn.planeteater.universals.Vector3D;
+import com.kaymlyn.planeteater.celestial.CelestialBody;
+import com.kaymlyn.planeteater.resources.Composition;
+import com.kaymlyn.planeteater.physics.OrbitalSystem;
+import com.kaymlyn.planeteater.resources.Material;
+import com.kaymlyn.planeteater.physics.Vector3D;
 import lombok.Getter;
 
 import java.util.Map;

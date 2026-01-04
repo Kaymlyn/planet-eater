@@ -1,4 +1,4 @@
-package com.kaymlyn.planeteater.universals;
+package com.kaymlyn.planeteater.physics;
 
 import lombok.Getter;
 

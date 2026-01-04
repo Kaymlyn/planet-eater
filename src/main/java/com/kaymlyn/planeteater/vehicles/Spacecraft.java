@@ -1,8 +1,9 @@
-package com.kaymlyn.planeteater.entities.artifice.actors;
+package com.kaymlyn.planeteater.vehicles;
 
-import com.kaymlyn.planeteater.entities.primordials.Composition;
-import com.kaymlyn.planeteater.universals.Material;
-import com.kaymlyn.planeteater.universals.Vector3D;
+import com.kaymlyn.planeteater.entities.MiningEntity;
+import com.kaymlyn.planeteater.resources.Composition;
+import com.kaymlyn.planeteater.resources.Material;
+import com.kaymlyn.planeteater.physics.Vector3D;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;

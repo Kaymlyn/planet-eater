@@ -1,7 +1,8 @@
-package com.kaymlyn.planeteater.entities.primordials;
+package com.kaymlyn.planeteater.celestial;
 
-import com.kaymlyn.planeteater.universals.Material;
-import com.kaymlyn.planeteater.universals.Vector3D;
+import com.kaymlyn.planeteater.resources.Composition;
+import com.kaymlyn.planeteater.resources.Material;
+import com.kaymlyn.planeteater.physics.Vector3D;
 import lombok.Getter;
 
 /**
@@ -20,8 +21,8 @@ public class Asteroid extends CelestialBody {
     
     private AsteroidType type;
     
-    public Asteroid(String id, Vector3D position, Vector3D velocity, 
-                   Composition composition, AsteroidType type) {
+    public Asteroid(String id, Vector3D position, Vector3D velocity,
+                    Composition composition, AsteroidType type) {
         super(id, position, velocity, composition);
         this.type = type;
     }
