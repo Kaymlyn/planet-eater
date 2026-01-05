@@ -5,26 +5,23 @@ import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.physics.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.resources.Material;
 
+import java.util.List;
 import java.util.Random;
 
 public class Driver {
 
     public static void main(String... args) {
 
-        //locking seed for repeatability
-        Random rand = new Random();
+        Random rand = new Random(0L);
 
         OrbitalSystem spark = new OrbitalSystem(CelestialBodyFactory.createMainSequenceStar("Sol2", 1),3600);
-        //Create 100 asteroids with sizes between 80 and 130 meters and place them in orbits between .8 and 1.6 AUs at random angles.
-        for(int i = 0; i< 100; i++) {
-            Asteroid asteroid = CelestialBodyFactory.createCType("cType" + i, Vector3D.ZERO,Vector3D.ZERO, 80 + rand.nextDouble()*50);
-            double location = (.8+(rand.nextDouble())*.8) ;
-            System.out.println("Distance in AUs " + location);
-            System.out.println("Orbital Period in Days " + spark.orbitalPeriod(location*PhysicsConstants.AU)/PhysicsConstants.SECONDS_PER_DAY);
-            spark.placeInCircularOrbit(asteroid,location * PhysicsConstants.AU, rand.nextDouble()*2*Math.PI);
-        }
-        new GameLoopThread(spark).run();
+
+        List<Asteroid> coreBelt = CelestialBodyFactory.createRandomAsteroidBelt("CORE", 1000,10000, 100000, 0);
+        spark.placeAllInCircularOrbits(coreBelt,2,5);
+
+        new RenderingThread(spark).run();
         System.out.println("done");
     }
 

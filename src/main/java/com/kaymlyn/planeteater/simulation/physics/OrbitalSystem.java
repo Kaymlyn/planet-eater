@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Manages all celestial bodies and handles orbital mechanics simulation
@@ -194,6 +195,16 @@ public class OrbitalSystem {
         body.setVelocity(new Vector3D(vx, vy, 0));
         
         addBody(body);
+    }
+
+    public void placeAllInCircularOrbits(List<? extends CelestialBody> bodies, double minimumAURadius, double maximumAURadius) {
+        Random random = new Random(0L);
+        bodies.forEach(body -> {
+            placeInCircularOrbit(body,
+                    random.nextDouble(minimumAURadius,maximumAURadius)*PhysicsConstants.AU,
+                    random.nextDouble()*2*Math.PI);
+
+        });
     }
     
     /**

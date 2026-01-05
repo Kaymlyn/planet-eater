@@ -5,7 +5,32 @@ import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 public class CelestialBodyFactory {
+
+    public static Asteroid createAsteroidByType(BodyType type,
+                                                String id,
+                                                Vector3D position,
+                                                Vector3D velocity,
+                                                double targetRadius) {
+        switch(type) {
+            case C_TYPE -> {
+                return createCType(id,position,velocity,targetRadius);
+            }
+            case M_TYPE -> {
+                return createMType(id,position,velocity,targetRadius);
+            }
+            case S_TYPE -> {
+                return createSType(id,position,velocity,targetRadius);
+            }
+            default -> {
+                return null;
+            }
+        }
+    }
     /**
      * Create a C-type (carbonaceous) asteroid
      * Rich in volatiles, organic compounds, and hydrated minerals
@@ -184,4 +209,48 @@ public class CelestialBodyFactory {
 
         return star;
     }
+
+
+    /**
+     * Convenience Method to create asteroid belts
+     * @param beltID        identifier for the asteroid belt
+     * @param population    number of asteroids to put in the belt
+     * @param minimumRadius minimum radius of an asteroid
+     * @param maximumRadius maximum radius of an asteroid
+     * @return  list of Asteroids of random compositions and sizes
+     */
+    public static List<Asteroid> createRandomAsteroidBelt(
+            String beltID,
+            int population,
+            double minimumRadius,
+            double maximumRadius,
+            long seed) {
+        List<Asteroid> asteroidBelt = new ArrayList<>();
+
+        Random random;
+        if(seed != 0) {
+            random = new Random(seed);
+        } else {
+            random = new Random();
+        }
+
+        for(int i=0; i < population; i++) {
+            asteroidBelt.add(createAsteroidByType(getRandomAsteroidType(random),
+                    beltID + "-BeltAsteroid-"+i,
+                    Vector3D.ZERO,
+                    Vector3D.ZERO, random.nextDouble(minimumRadius,maximumRadius))
+            );
+        }
+        return asteroidBelt;
+    }
+
+    private static BodyType getRandomAsteroidType(Random random) {
+        int choice = random.nextInt(0,3);
+        switch (choice) {
+            case 0 -> { return BodyType.M_TYPE; }
+            case 1 -> { return BodyType.C_TYPE; }
+            default -> { return BodyType.S_TYPE; }
+        }
+    }
+
 }

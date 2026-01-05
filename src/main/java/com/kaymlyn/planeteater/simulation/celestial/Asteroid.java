@@ -5,6 +5,9 @@ import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import lombok.Getter;
 
+import java.util.List;
+import java.util.Set;
+
 /**
  * Represents an asteroid with minable resources
  * 
@@ -44,6 +47,10 @@ public class Asteroid extends CelestialBody {
      */
     public double getAvailableMaterial(Material material) {
         return crustComposition.getMass(material);
+    }
+
+    public Set<Material> getAvailableMaterials() {
+        return crustComposition.getMaterials().keySet();
     }
 
     @Override
