@@ -15,7 +15,10 @@ public class Composition {
     public Composition() {
         this.materials = new HashMap<>();
     }
-    
+
+    public void addBulkMaterial(Composition composition) {
+        materials.putAll(composition.getMaterials());
+    }
     /**
      * Add a material with a given mass
      */

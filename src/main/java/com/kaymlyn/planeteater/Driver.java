@@ -3,9 +3,6 @@ package com.kaymlyn.planeteater;
 import com.kaymlyn.planeteater.simulation.celestial.Asteroid;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.physics.OrbitalSystem;
-import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
-import com.kaymlyn.planeteater.simulation.physics.Vector3D;
-import com.kaymlyn.planeteater.simulation.resources.Material;
 
 import java.util.List;
 import java.util.Random;

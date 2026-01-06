@@ -1,9 +1,12 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.PlanetInitializer;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Materials;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.LayerProfile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -89,6 +92,68 @@ public class CelestialBodyFactory {
         comp.addMaterialAsVolume(Material.SILICA, (totalVolume * 0.02));
 
         return new Asteroid(id, position, velocity, comp, BodyType.M_TYPE);
+    }
+
+    public static Planet createArbitraryPlanet(PlanetInitializer init,
+                                               LayerProfile core,
+                                               LayerProfile mantle,
+                                               LayerProfile crust,
+                                               LayerProfile atmosphere) {
+
+        Planet planet = new Planet(init.id(), Vector3D.ZERO, Vector3D.ZERO, BodyType.ABBERANT);
+
+
+        planet.getCoreComposition().addBulkMaterial(
+                generateComposition(
+                        core.materials(),
+                        concaveSphericalVolume(0, core.externalRadius()),
+                        core.ratioDivisor()
+                )
+        );
+        planet.getMantleComposition().addBulkMaterial(
+                generateComposition(
+                        mantle.materials(),
+                        concaveSphericalVolume(core.externalRadius(), mantle.externalRadius()),
+                        mantle.ratioDivisor()
+                )
+        );
+        planet.getCrustComposition().addBulkMaterial(
+                generateComposition(
+                        crust.materials(),
+                        concaveSphericalVolume(mantle.externalRadius(), crust.externalRadius()),
+                        crust.ratioDivisor()
+                )
+        );
+        planet.getAtmosphereComposition().addBulkMaterial(
+                generateComposition(
+                        crust.materials(),
+                        concaveSphericalVolume(crust.externalRadius(), atmosphere.externalRadius()),
+                        atmosphere.ratioDivisor()
+                )
+        );
+        return planet;
+    }
+
+    private static Composition generateComposition(List<Materials> materials, double totalVolume, double ratioDivisor) {
+        Composition composition = new Composition();
+
+        for(Materials material : materials) {
+            composition.addMaterialAsVolume(
+                    material.material(),
+                    totalVolume * ((double)material.ratio()/ratioDivisor)
+            );
+        }
+        return composition;
+    }
+
+    private static double concaveSphericalVolume(double internalRadius, double externalRadius) {
+
+        if(externalRadius < internalRadius) {
+            throw new IllegalArgumentException("internalRadius is larger than externalRadius");
+        }
+
+        return ((4.0 / 3.0) * Math.PI * Math.pow(externalRadius, 3))
+                - (internalRadius < 0.00 ? (4.0 / 3.0) * Math.PI * Math.pow(internalRadius, 3) : 0);
     }
 
     /**
