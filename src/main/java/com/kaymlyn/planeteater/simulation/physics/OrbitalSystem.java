@@ -183,17 +183,89 @@ public class OrbitalSystem {
      * @param angle Angle in radians (0 = +X axis)
      */
     public void placeInCircularOrbit(CelestialBody body, double radius, double angle) {
-        // Position
-        double x = radius * Math.cos(angle);
-        double y = radius * Math.sin(angle);
-        body.setPosition(new Vector3D(x, y, 0));
-        
-        // Velocity (perpendicular to position for circular orbit)
-        double v = circularOrbitVelocity(radius);
-        double vx = -v * Math.sin(angle);
-        double vy = v * Math.cos(angle);
-        body.setVelocity(new Vector3D(vx, vy, 0));
-        
+        placeInCircularOrbit(body, radius, angle, 0.0);
+    }
+
+    public void placeInCircularOrbit(CelestialBody body, double radius, double angle, double inclination) {
+        placeInEllipticalOrbit(body, radius, 0.0, inclination, 0.0, 0.0, angle);
+    }
+    /**
+     * Place a body in an elliptical orbit using orbital elements
+     *
+     * @param body The body to place in orbit
+     * @param semiMajorAxis Semi-major axis (a) in meters
+     * @param eccentricity Eccentricity (e), 0 = circular, 0-1 = ellipse
+     * @param inclination Inclination (i) from ecliptic plane in radians
+     * @param longitudeOfAscendingNode Longitude of ascending node (Ω) in radians
+     * @param argumentOfPeriapsis Argument of periapsis (ω) in radians
+     * @param trueAnomaly True anomaly (ν) - position in orbit in radians
+     */
+    public void placeInEllipticalOrbit(CelestialBody body,
+                                       double semiMajorAxis,
+                                       double eccentricity,
+                                       double inclination,
+                                       double longitudeOfAscendingNode,
+                                       double argumentOfPeriapsis,
+                                       double trueAnomaly) {
+
+        // Validate inputs
+        if (eccentricity < 0.0 || eccentricity >= 1.0) {
+            throw new IllegalArgumentException("Eccentricity must be in range [0, 1)");
+        }
+        if (semiMajorAxis <= 0.0) {
+            throw new IllegalArgumentException("Semi-major axis must be positive");
+        }
+
+        // Calculate distance from focus at true anomaly
+        double r = semiMajorAxis * (1.0 - eccentricity * eccentricity) /
+                (1.0 + eccentricity * Math.cos(trueAnomaly));
+
+        // Position in orbital plane (2D)
+        double xOrbital = r * Math.cos(trueAnomaly);
+        double yOrbital = r * Math.sin(trueAnomaly);
+
+        // Velocity in orbital plane
+        // Vis-viva equation: v = sqrt(μ(2/r - 1/a))
+        double mu = PhysicsConstants.G * centralStar.getMass();
+        double vMagnitude = Math.sqrt(mu * (2.0 / r - 1.0 / semiMajorAxis));
+
+        // Velocity direction (perpendicular to radius vector)
+        // Flight path angle: tan(φ) = e*sin(ν) / (1 + e*cos(ν))
+        double flightPathAngle = Math.atan2(eccentricity * Math.sin(trueAnomaly),
+                1.0 + eccentricity * Math.cos(trueAnomaly));
+
+        // Velocity components in orbital plane
+        double vxOrbital = vMagnitude * Math.cos(trueAnomaly + Math.PI/2 + flightPathAngle);
+        double vyOrbital = vMagnitude * Math.sin(trueAnomaly + Math.PI/2 + flightPathAngle);
+
+        // Rotate from orbital plane to 3D space using Euler angles
+        // Apply rotations: Ω (longitude of ascending node), i (inclination), ω (argument of periapsis)
+
+        // Combined rotation matrix elements
+        double cosO = Math.cos(longitudeOfAscendingNode);
+        double sinO = Math.sin(longitudeOfAscendingNode);
+        double cosi = Math.cos(inclination);
+        double sini = Math.sin(inclination);
+        double cosw = Math.cos(argumentOfPeriapsis);
+        double sinw = Math.sin(argumentOfPeriapsis);
+
+        // Position transformation
+        double x = xOrbital * (cosO * cosw - sinO * sinw * cosi) -
+                yOrbital * (cosO * sinw + sinO * cosw * cosi);
+        double y = xOrbital * (sinO * cosw + cosO * sinw * cosi) -
+                yOrbital * (sinO * sinw - cosO * cosw * cosi);
+        double z = xOrbital * (sinw * sini) + yOrbital * (cosw * sini);
+
+        // Velocity transformation
+        double vx = vxOrbital * (cosO * cosw - sinO * sinw * cosi) -
+                vyOrbital * (cosO * sinw + sinO * cosw * cosi);
+        double vy = vxOrbital * (sinO * cosw + cosO * sinw * cosi) -
+                vyOrbital * (sinO * sinw - cosO * cosw * cosi);
+        double vz = vxOrbital * (sinw * sini) + vyOrbital * (cosw * sini);
+
+        body.setPosition(new Vector3D(x, y, z));
+        body.setVelocity(new Vector3D(vx, vy, vz));
+
         addBody(body);
     }
 
@@ -231,6 +303,84 @@ public class OrbitalSystem {
             }
         }
         return planets;
+    }
+
+    /**
+     * Calculate orbital elements from current position and velocity
+     * Useful for analyzing orbits
+     *
+     * @return Map containing: "a" (semi-major axis), "e" (eccentricity),
+     *         "i" (inclination), "Ω" (longitude of ascending node),
+     *         "ω" (argument of periapsis), "ν" (true anomaly)
+     */
+    private Map<String, Double> calculateOrbitalElements(CelestialBody body) {
+        Map<String, Double> elements = new HashMap<>();
+
+        Vector3D r = body.getPosition();
+        Vector3D v = body.getVelocity();
+        double mu = PhysicsConstants.G * centralStar.getMass();
+
+        // Specific orbital energy
+        double energy = v.magnitudeSquared() / 2.0 - mu / r.magnitude();
+
+        // Semi-major axis
+        double a = -mu / (2.0 * energy);
+        elements.put("a", a);
+
+        // Angular momentum vector
+        Vector3D h = r.cross(v);
+        double hMag = h.magnitude();
+
+        // Eccentricity vector
+        Vector3D eVec = v.cross(h).divide(mu).subtract(r.normalize());
+        double e = eVec.magnitude();
+        elements.put("e", e);
+
+        // Inclination
+        double i = Math.acos(h.getZ() / hMag);
+        elements.put("i", i);
+
+        // Node vector (points to ascending node)
+        Vector3D n = Vector3D.UNIT_Z.cross(h);
+        double nMag = n.magnitude();
+
+        // Longitude of ascending node
+        double omega;
+        if (nMag > 1e-10) {
+            omega = Math.acos(n.getX() / nMag);
+            if (n.getY() < 0) omega = 2 * Math.PI - omega;
+        } else {
+            omega = 0.0; // Undefined for non-inclined orbits
+        }
+        elements.put("Omega", omega);
+
+        // Argument of periapsis
+        double w;
+        if (nMag > 1e-10 && e > 1e-10) {
+            w = Math.acos(n.dot(eVec) / (nMag * e));
+            if (eVec.getZ() < 0) w = 2 * Math.PI - w;
+        } else {
+            w = 0.0; // Undefined for circular or non-inclined orbits
+        }
+        elements.put("omega", w);
+
+        // True anomaly
+        double nu;
+        if (e > 1e-10) {
+            nu = Math.acos(eVec.dot(r) / (e * r.magnitude()));
+            if (r.dot(v) < 0) nu = 2 * Math.PI - nu;
+        } else {
+            // For circular orbits, measure from ascending node
+            if (nMag > 1e-10) {
+                nu = Math.acos(n.dot(r) / (nMag * r.magnitude()));
+                if (r.getZ() < 0) nu = 2 * Math.PI - nu;
+            } else {
+                nu = Math.atan2(r.getY(), r.getX());
+            }
+        }
+        elements.put("nu", nu);
+
+        return elements;
     }
     
     @Override
