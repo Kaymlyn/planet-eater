@@ -5,22 +5,17 @@ import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.physics.OrbitalSystem;
 
 import java.util.List;
-import java.util.Random;
 
 public class Driver {
 
     public static void main(String... args) {
 
-        Random rand = new Random(0L);
-
-        OrbitalSystem spark = new OrbitalSystem(CelestialBodyFactory.createMainSequenceStar("Sol2", 1),3600);
+        OrbitalSystem spark = new OrbitalSystem(CelestialBodyFactory.createMainSequenceStar("Sol2", 1),28800);
 
         List<Asteroid> coreBelt = CelestialBodyFactory.createRandomAsteroidBelt("CORE", 1000,10000, 100000, 0);
-        spark.placeAllInCircularOrbits(coreBelt,2,5);
+        spark.placeAllInEllipticalOrbits(coreBelt,2,5, Math.PI/8,0.5);
 
-        new RenderingThread(spark).run();
+        new RenderingThread(spark,480,3).run();
         System.out.println("done");
     }
-
-
 }

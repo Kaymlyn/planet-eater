@@ -7,6 +7,7 @@ import com.kaymlyn.planeteater.simulation.celestial.Star;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
@@ -115,6 +116,7 @@ public class OrbitalSystem {
      * v(t+dt) = v(t) + 0.5*(a(t) + a(t+dt))*dt
      */
     public double stepVerlet() {
+        Date start = new Date();
         // Calculate current accelerations
         Map<CelestialBody, Vector3D> accelerations = new HashMap<>();
         for (CelestialBody body : bodies) {
@@ -146,6 +148,7 @@ public class OrbitalSystem {
         }
         
         currentTime += timeStep;
+        System.out.println("Verlet simulation took " + (new Date().getTime() - start.getTime()) + " milliseconds");
         return currentTime;
     }
     
@@ -183,12 +186,66 @@ public class OrbitalSystem {
      * @param angle Angle in radians (0 = +X axis)
      */
     public void placeInCircularOrbit(CelestialBody body, double radius, double angle) {
-        placeInCircularOrbit(body, radius, angle, 0.0);
+        placeInEllipticalOrbit(
+                body,
+                radius,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                angle
+        );
     }
 
     public void placeInCircularOrbit(CelestialBody body, double radius, double angle, double inclination) {
-        placeInEllipticalOrbit(body, radius, 0.0, inclination, 0.0, 0.0, angle);
+        placeInEllipticalOrbit(
+                body,
+                radius,
+                0.0,
+                inclination,
+                0.0,
+                0.0,
+                angle
+        );
     }
+
+    public void placeAllInCircularOrbits(List<? extends CelestialBody> bodies, double minimumAURadius, double maximumAURadius) {
+        Random random = new Random(0L);
+        bodies.forEach(body -> {
+            placeInCircularOrbit(body,
+                    random.nextDouble(minimumAURadius,maximumAURadius)*PhysicsConstants.AU,
+                    random.nextDouble()*2*Math.PI);
+
+        });
+    }
+
+    /**
+     * Place all provided bodies in an elliptical orbit at random distances and angles to the parent star.
+     *
+     * @param bodies the bodies to place in orbit around the system's star
+     * @param minimumAURadius minimum distance from the star measured in AU
+     * @param maximumAURadius maximum distance
+     * @param maxInclination
+     * @param maximumEccentricity
+     */
+    public void placeAllInEllipticalOrbits(List<? extends CelestialBody> bodies,
+                                           double minimumAURadius,
+                                           double maximumAURadius,
+                                           double maxInclination,
+                                           double maximumEccentricity) {
+        Random random = new Random(0L);
+        bodies.forEach(body -> {
+            placeInEllipticalOrbit(body,
+                    random.nextDouble(minimumAURadius,maximumAURadius)*PhysicsConstants.AU,
+                    random.nextDouble(0,maximumEccentricity),
+                    random.nextDouble(0,maxInclination),
+                    random.nextDouble()*2*Math.PI,
+                    random.nextDouble()*2*Math.PI,
+                    random.nextDouble()*2*Math.PI);
+
+        });
+    }
+
     /**
      * Place a body in an elliptical orbit using orbital elements
      *
@@ -267,16 +324,6 @@ public class OrbitalSystem {
         body.setVelocity(new Vector3D(vx, vy, vz));
 
         addBody(body);
-    }
-
-    public void placeAllInCircularOrbits(List<? extends CelestialBody> bodies, double minimumAURadius, double maximumAURadius) {
-        Random random = new Random(0L);
-        bodies.forEach(body -> {
-            placeInCircularOrbit(body,
-                    random.nextDouble(minimumAURadius,maximumAURadius)*PhysicsConstants.AU,
-                    random.nextDouble()*2*Math.PI);
-
-        });
     }
     
     /**

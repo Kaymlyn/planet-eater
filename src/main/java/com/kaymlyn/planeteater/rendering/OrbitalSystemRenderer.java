@@ -6,16 +6,22 @@ import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import org.jcodec.api.SequenceEncoder;
 import org.jcodec.common.io.NIOUtils;
 import org.jcodec.common.model.ColorSpace;
+import org.jcodec.common.model.Picture;
 import org.jcodec.common.model.Rational;
 import org.jcodec.scale.AWTUtil;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Random;
+
+import static java.awt.image.BufferedImage.TYPE_INT_RGB;
 
 
 public class OrbitalSystemRenderer {
@@ -24,6 +30,8 @@ public class OrbitalSystemRenderer {
     private int i;
     private int scalar;
     private LinkedHashMap<String,BufferedImage> frames;
+
+    private static final int imageType = TYPE_INT_RGB;
     public OrbitalSystemRenderer(OrbitalSystem system) throws IOException {
         scalar = 80;
         i = 0;
@@ -42,10 +50,11 @@ public class OrbitalSystemRenderer {
         frames.put("Frame-" + i, render(system, scalar, maxAUVisible));
         renderInfo("Day " + (int)(system.getCurrentTime()/PhysicsConstants.SECONDS_PER_DAY)
                 + " Hour " + (int)((system.getCurrentTime()%PhysicsConstants.SECONDS_PER_DAY)/3600));
-        i++;
+
         if(saveimage) {
             saveImage("Frame-" + i);
         }
+        i++;
     }
 
     public void renderInfo(String info) throws IOException {
@@ -59,17 +68,40 @@ public class OrbitalSystemRenderer {
         int height = 9;
         int width = 16;
 
+        Random random = new Random(scalar);
+
         double adjustedAU = scaleAUToCanvas(9,16);
         BufferedImage image = new BufferedImage(
                 width * scalar,
                 height * scalar,
-                BufferedImage.TYPE_INT_RGB
+                imageType
         );
         Graphics2D canvas = image.createGraphics();
         canvas.setBackground(Color.BLACK);
-        canvas.setColor(Color.WHITE);
 
         for(CelestialBody body : system.getOrbitingBodies()) {
+            canvas.setColor(Color.WHITE);
+
+            if(body.getId().contains("00"))
+            {
+                canvas.setColor(
+                        new Color(
+                                random.nextInt(0,256),
+                                255,
+                                0
+                        )
+                );
+            }
+            if(body.getId().contains("50"))
+            {
+                canvas.setColor(
+                        new Color(
+                                random.nextInt(0,256),
+                                0,
+                                255
+                        )
+                );
+            }
             Rectangle rectangle = new Rectangle();
             int size;
             if(body.getRadius() > 50000) {
@@ -77,8 +109,8 @@ public class OrbitalSystemRenderer {
             } else {
                 size = 2;
             }
-            double xRaw = body.getPosition().getX()/(PhysicsConstants.AU*(maxAUVisible*3/4));
-            double yRaw = body.getPosition().getY()/(PhysicsConstants.AU*(maxAUVisible*3/4));
+            double xRaw = body.getPosition().getX()/(PhysicsConstants.AU*((double) (maxAUVisible * 3) /4));
+            double yRaw = body.getPosition().getY()/(PhysicsConstants.AU*((double) (maxAUVisible * 3) /4));
             rectangle.setRect(xRaw * adjustedAU + ((double) (width * scalar) /2),yRaw * adjustedAU + ((double)(height*scalar)/2),size, size);
             canvas.fill(rectangle);
         }
@@ -104,21 +136,36 @@ public class OrbitalSystemRenderer {
         ImageIO.write(getCurrentFrame(), "PNG", output);
     }
 
-    public void renderVideoFromImages() throws IOException {
+    public void renderVideoFromImages(double scalar) throws IOException {
         File output = new File("orbits/test.mp4");
+        AffineTransform scale = new AffineTransform();
+        BufferedImage reference = ImageIO.read(new File("orbits/Frame-0.png"));
+        int scaleWidth = (int)Math.round(reference.getWidth()*scalar);
+        int scaleHeight = (int)Math.round(reference.getHeight()*scalar);
+        scale.scale(scaleWidth,scaleHeight);
+        AffineTransformOp scaleOp = new AffineTransformOp(scale, AffineTransformOp.TYPE_BILINEAR);
         SequenceEncoder enc = SequenceEncoder.createWithFps(NIOUtils.writableChannel(output), Rational.R(30,1));
-        int i=1;
+        int i=0;
         File inputFrame = new File("orbits/Frame-" + i + ".png");
         while(inputFrame.exists()) {
             try {
-                enc.encodeNativeFrame(AWTUtil.fromBufferedImage(ImageIO.read(inputFrame), ColorSpace.RGB));
+                enc.encodeNativeFrame(scaleImage(inputFrame, scaleWidth, scaleHeight));
             } catch (IOException e) {
                 System.out.println("exception");
                 throw new RuntimeException(e);
             }
-            inputFrame = new File("orbits/Frame-" + i++ + ".png");
+            inputFrame = new File("orbits/Frame-" + (i++) + ".png");
         }
         enc.finish();
+    }
+
+    private static Picture scaleImage(File source, int scaleWidth, int scaleHeight) throws IOException {
+        Image scaledImage = ImageIO.read(source).getScaledInstance(scaleWidth,scaleHeight,Image.SCALE_SMOOTH);
+        BufferedImage scaled = new BufferedImage(scaleWidth, scaleHeight,imageType);
+        Graphics2D g2d = scaled.createGraphics();
+        g2d.drawImage(scaledImage,0,0,null);
+        g2d.dispose();
+        return AWTUtil.fromBufferedImage(scaled, ColorSpace.RGB);
     }
 
     public void renderVideo() throws IOException {
