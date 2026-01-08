@@ -88,7 +88,7 @@ public class Planet extends CelestialBody {
     
     @Override
     public String toString() {
-        return String.format("com.kaymlyn.planeteater.entites.system.Planet[id=%s, type=%s, pos=%s, mass=%.3e kg, radius=%.3e m]",
+        return String.format("com.kaymlyn.planeteater.celestial.Planet[id=%s, type=%s, pos=%s, mass=%.3e kg, radius=%.3e m]",
             id, type, position, getMass(), getRadius());
     }
 

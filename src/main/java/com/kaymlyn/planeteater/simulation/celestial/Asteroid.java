@@ -5,7 +5,6 @@ import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import lombok.Getter;
 
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -29,7 +28,7 @@ public class Asteroid extends CelestialBody {
 
     /**
      * Mine a specific material from this asteroid
-     * Returns the actual amount mined (may be less than requested)
+     * Returns the actual amount mined (amount may be less than requested)
      */
     public double mineMaterial(Material material, double requestedMass) {
         return crustComposition.removeMaterial(material, requestedMass);

@@ -26,7 +26,7 @@ public enum Material {
     IRON_OXIDE(5240.0, "FeO"),
     
     // Silicates (complex minerals)
-    OLIVINE(3320.0, "Mg,Fe)₂SiO₄"),   // Magnesium-iron silicate
+    OLIVINE(3320.0, "(Mg,Fe)₂SiO₄"),   // Magnesium-iron silicate
     PYROXENE(3300.0, "(Mg,Fe)SiO₃"),   // Chain silicate
     FELDSPAR(2650.0, "NaAlSi₃O₈"),     // Aluminum silicate
     

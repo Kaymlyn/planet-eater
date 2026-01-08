@@ -120,8 +120,7 @@ public class Vector3D {
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
-        if (!(obj instanceof Vector3D)) return false;
-        Vector3D other = (Vector3D) obj;
+        if (!(obj instanceof Vector3D other)) return false;
         return Double.compare(x, other.x) == 0 &&
                Double.compare(y, other.y) == 0 &&
                Double.compare(z, other.z) == 0;

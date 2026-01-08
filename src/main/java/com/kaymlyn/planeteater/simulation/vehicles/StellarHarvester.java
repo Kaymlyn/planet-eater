@@ -145,7 +145,7 @@ public class StellarHarvester {
     }
 
     /**
-     * Calculate actual extraction rate accounting for distance efficiency
+     * Calculate actual extraction rate accounting for distance efficiency.
      * Efficiency decreases with distance
      */
     public double getEffectiveExtractionRate(double distance) {

@@ -60,6 +60,7 @@ public class OrbitalSystem {
     
     /**
      * Get a body by ID
+     * @return CelestialBody identified by id
      */
     public CelestialBody getBody(String id) {
         return bodyMap.get(id);
@@ -67,29 +68,22 @@ public class OrbitalSystem {
     
     /**
      * Get all bodies except the star
+     * @return List containing all the non-star bodies in the System
      */
     public List<CelestialBody> getOrbitingBodies() {
         List<CelestialBody> orbiting = new ArrayList<>(bodies);
         orbiting.remove(centralStar);
         return orbiting;
     }
-    
+
     /**
-     * Calculate gravitational acceleration on a body from all other bodies
+     * Get all stars in the system
+     * @return List containing all the stars in the system
      */
-    private Vector3D calculateAcceleration(CelestialBody body) {
-        Vector3D totalAcceleration = Vector3D.ZERO;
-        
-        for (CelestialBody other : bodies) {
-            if (other == body) continue;
-            
-            Vector3D force = other.gravitationalForceOn(body);
-            // a = F / m
-            Vector3D acceleration = force.divide(body.getMass());
-            totalAcceleration = totalAcceleration.add(acceleration);
-        }
-        
-        return totalAcceleration;
+    public List<Star> getStars() {
+        List<Star> centralStars = new ArrayList<>();
+        centralStars.add(centralStar);
+        return centralStars;
     }
     
     /**
@@ -197,6 +191,14 @@ public class OrbitalSystem {
         );
     }
 
+    /**
+     * Place a body in a circular orbit at specified radius and angle
+     *
+     * @param body The body to place in orbit
+     * @param radius Distance from star in meters
+     * @param angle Angle in radians (0 = +X axis)
+     * @param inclination Inclination in radians (0 = +Z axis)
+     */
     public void placeInCircularOrbit(CelestialBody body, double radius, double angle, double inclination) {
         placeInEllipticalOrbit(
                 body,
@@ -211,22 +213,20 @@ public class OrbitalSystem {
 
     public void placeAllInCircularOrbits(List<? extends CelestialBody> bodies, double minimumAURadius, double maximumAURadius) {
         Random random = new Random(0L);
-        bodies.forEach(body -> {
-            placeInCircularOrbit(body,
-                    random.nextDouble(minimumAURadius,maximumAURadius)*PhysicsConstants.AU,
-                    random.nextDouble()*2*Math.PI);
-
-        });
+        bodies.forEach(body -> placeInCircularOrbit(body,
+                random.nextDouble(minimumAURadius,maximumAURadius)*PhysicsConstants.AU,
+                random.nextDouble()*2*Math.PI));
     }
 
     /**
      * Place all provided bodies in an elliptical orbit at random distances and angles to the parent star.
+     * All undefined values will be set to a value between 0 and 2π
      *
-     * @param bodies the bodies to place in orbit around the system's star
-     * @param minimumAURadius minimum distance from the star measured in AU
-     * @param maximumAURadius maximum distance
-     * @param maxInclination
-     * @param maximumEccentricity
+     * @param bodies The bodies to place in orbit around the system's star
+     * @param minimumAURadius Minimum distance from the star measured in AU
+     * @param maximumAURadius Maximum distance from the star measured in AU
+     * @param maxInclination Maximum angle of inclination measured in radians
+     * @param maximumEccentricity Maximum eccentricity
      */
     public void placeAllInEllipticalOrbits(List<? extends CelestialBody> bodies,
                                            double minimumAURadius,
@@ -234,16 +234,13 @@ public class OrbitalSystem {
                                            double maxInclination,
                                            double maximumEccentricity) {
         Random random = new Random(0L);
-        bodies.forEach(body -> {
-            placeInEllipticalOrbit(body,
-                    random.nextDouble(minimumAURadius,maximumAURadius)*PhysicsConstants.AU,
-                    random.nextDouble(0,maximumEccentricity),
-                    random.nextDouble(0,maxInclination),
-                    random.nextDouble()*2*Math.PI,
-                    random.nextDouble()*2*Math.PI,
-                    random.nextDouble()*2*Math.PI);
-
-        });
+        bodies.forEach(body -> placeInEllipticalOrbit(body,
+                random.nextDouble(minimumAURadius,maximumAURadius)*PhysicsConstants.AU,
+                random.nextDouble(0,maximumEccentricity),
+                random.nextDouble(0,maxInclination),
+                random.nextDouble()*2*Math.PI,
+                random.nextDouble()*2*Math.PI,
+                random.nextDouble()*2*Math.PI));
     }
 
     /**
@@ -257,6 +254,7 @@ public class OrbitalSystem {
      * @param argumentOfPeriapsis Argument of periapsis (ω) in radians
      * @param trueAnomaly True anomaly (ν) - position in orbit in radians
      */
+    @SuppressWarnings("DuplicateExpressions")
     public void placeInEllipticalOrbit(CelestialBody body,
                                        double semiMajorAxis,
                                        double eccentricity,
@@ -360,7 +358,7 @@ public class OrbitalSystem {
      *         "i" (inclination), "Ω" (longitude of ascending node),
      *         "ω" (argument of periapsis), "ν" (true anomaly)
      */
-    private Map<String, Double> calculateOrbitalElements(CelestialBody body) {
+    public static Map<String, Double> calculateOrbitalElements(Star centralStar, CelestialBody body) {
         Map<String, Double> elements = new HashMap<>();
 
         Vector3D r = body.getPosition();
@@ -434,5 +432,23 @@ public class OrbitalSystem {
     public String toString() {
         return String.format("OrbitalSystem[bodies=%d, time=%.2f days]",
             bodies.size(), currentTime / PhysicsConstants.SECONDS_PER_DAY);
+    }
+
+    /**
+     * Calculate gravitational acceleration on a body from all other bodies
+     */
+    private Vector3D calculateAcceleration(CelestialBody body) {
+        Vector3D totalAcceleration = Vector3D.ZERO;
+
+        for (CelestialBody other : bodies) {
+            if (other == body) continue;
+
+            Vector3D force = other.gravitationalForceOn(body);
+            // a = F / m
+            Vector3D acceleration = force.divide(body.getMass());
+            totalAcceleration = totalAcceleration.add(acceleration);
+        }
+
+        return totalAcceleration;
     }
 }

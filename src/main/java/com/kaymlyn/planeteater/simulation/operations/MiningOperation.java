@@ -28,12 +28,12 @@ public class MiningOperation {
         COMPLETED       // Operation finished
     }
     
-    private String id;
-    private Spacecraft spacecraft;
-    private Asteroid target;
-    private List<MiningEntity> miners;
-    private Material targetMaterial;
-    private double targetAmount;        // Amount to mine (kg)
+    private final String id;
+    private final Spacecraft spacecraft;
+    private final Asteroid target;
+    private final List<MiningEntity> miners;
+    private final Material targetMaterial;
+    private final double targetAmount;        // Amount to mine (kg)
     private double minedAmount;         // Amount mined so far (kg)
     private OperationStatus status;
     
@@ -131,11 +131,7 @@ public class MiningOperation {
         }
         
         // Check crew capacity
-        if (miners.size() > spacecraft.getMaxCrewCapacity()) {
-            return false;
-        }
-        
-        return true;
+        return miners.size() <= spacecraft.getMaxCrewCapacity();
     }
     
     /**
@@ -281,7 +277,7 @@ public class MiningOperation {
     
     @Override
     public String toString() {
-        return String.format("com.kaymlyn.planeteater.entites.artifice.actors.MiningOperation[id=%s, target=%s, material=%s, " +
+        return String.format("com.kaymlyn.planeteater.entities.MiningOperation[id=%s, target=%s, material=%s, " +
             "progress=%.1f/%.1f kg, status=%s, miners=%d]",
             id, target.getId(), targetMaterial.getSymbol(),
             minedAmount, targetAmount, status, miners.size());

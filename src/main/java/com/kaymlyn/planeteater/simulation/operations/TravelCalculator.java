@@ -127,11 +127,7 @@ public class TravelCalculator {
         }
         
         // Check if deltaV is achievable
-        if (spacecraft.getAvailableDeltaV() < trajectory.deltaV) {
-            return false;
-        }
-        
-        return true;
+        return !(spacecraft.getAvailableDeltaV() < trajectory.deltaV);
     }
     
     /**

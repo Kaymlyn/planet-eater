@@ -256,7 +256,7 @@ public class Spacecraft {
     
     @Override
     public String toString() {
-        return String.format("com.kaymlyn.planeteater.entites.artifice.actors.Spacecraft[id=%s, state=%s, mass=%.1f kg, fuel=%.1f/%.1f kg, " +
+        return String.format("com.kaymlyn.planeteater.vehicles.Spacecraft[id=%s, state=%s, mass=%.1f kg, fuel=%.1f/%.1f kg, " +
             "cargo=%.1f/%.1f kg, crew=%d/%d, deltaV=%.1f m/s]",
             id, state, getTotalMass(), fuelMass, maxFuelCapacity,
             cargo.getTotalMass(), cargoCapacity, crew.size(), maxCrewCapacity,

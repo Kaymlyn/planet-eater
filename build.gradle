@@ -27,7 +27,7 @@ dependencies {
 }
 
 application {
-    mainClass = 'com.asteroidmining.SimulationDemo'
+    mainClass = 'com.kaymlyn,planeteater.Driver'
 }
 
 tasks.named('test') {
@@ -35,7 +35,7 @@ tasks.named('test') {
 }
 
 // Task to run the simulation demo
-task runDemo(type: JavaExec) {
+tasks.register('runDemo', JavaExec) {
     group = 'application'
     description = 'Run the asteroid mining simulation demo'
     classpath = sourceSets.main.runtimeClasspath

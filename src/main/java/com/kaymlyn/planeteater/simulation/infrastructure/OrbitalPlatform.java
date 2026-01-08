@@ -17,11 +17,11 @@ import java.util.Map;
  */
 @Getter
 public class OrbitalPlatform {
-    private String id;
+    private final String id;
     private Vector3D position; // Position in the system
     private Vector3D velocity; // Orbital velocity
-    private Composition inventory; // Stored resources
-    private double orbitRadius; // Distance from star
+    private final Composition inventory; // Stored resources
+    private final double orbitRadius; // Distance from star
     
     public OrbitalPlatform(String id, double orbitRadius) {
         this.id = id;
@@ -36,9 +36,8 @@ public class OrbitalPlatform {
      */
     public void initializeOrbit(OrbitalSystem system) {
         // Place at angle 0 (positive X axis)
-        double x = orbitRadius;
         double y = 0;
-        this.position = new Vector3D(x, y, 0);
+        this.position = new Vector3D(orbitRadius, y, 0);
         
         // Circular orbit velocity
         double v = system.circularOrbitVelocity(orbitRadius);
@@ -50,7 +49,7 @@ public class OrbitalPlatform {
      */
     public void update(double dt, OrbitalSystem system) {
         // For now, maintain circular orbit
-        // In future, could be affected by launches/docking
+        // In the future, could be affected by launches/docking
         double angularVelocity = velocity.magnitude() / orbitRadius;
         double angle = Math.atan2(position.getY(), position.getX());
         angle += angularVelocity * dt;
@@ -73,7 +72,7 @@ public class OrbitalPlatform {
     
     /**
      * Remove resources from inventory
-     * Returns actual amount removed (may be less if insufficient)
+     * Returns actual amount removed (amount may be less if insufficient)
      */
     public double removeResource(Material material, double mass) {
         return inventory.removeMaterial(material, mass);

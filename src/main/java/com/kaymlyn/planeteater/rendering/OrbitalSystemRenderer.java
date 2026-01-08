@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 import static java.awt.image.BufferedImage.TYPE_INT_RGB;
@@ -26,13 +27,13 @@ import static java.awt.image.BufferedImage.TYPE_INT_RGB;
 
 public class OrbitalSystemRenderer {
 
-    private OrbitalSystem system;
+    private final OrbitalSystem system;
     private int i;
-    private int scalar;
-    private LinkedHashMap<String,BufferedImage> frames;
+    private final int scalar;
+    private final LinkedHashMap<String,BufferedImage> frames;
 
     private static final int imageType = TYPE_INT_RGB;
-    public OrbitalSystemRenderer(OrbitalSystem system) throws IOException {
+    public OrbitalSystemRenderer(OrbitalSystem system) {
         scalar = 80;
         i = 0;
         this.system = system;
@@ -41,23 +42,23 @@ public class OrbitalSystemRenderer {
         if(!directory.exists()) {
             directory.mkdir();
         }
-        for(File file : directory.listFiles()) {
+        for(File file : Objects.requireNonNull(directory.listFiles())) {
             file.delete();
         }
     }
 
-    public void render(boolean saveimage, int maxAUVisible) throws IOException {
+    public void render(boolean saveImage, int maxAUVisible) throws IOException {
         frames.put("Frame-" + i, render(system, scalar, maxAUVisible));
         renderInfo("Day " + (int)(system.getCurrentTime()/PhysicsConstants.SECONDS_PER_DAY)
                 + " Hour " + (int)((system.getCurrentTime()%PhysicsConstants.SECONDS_PER_DAY)/3600));
 
-        if(saveimage) {
+        if(saveImage) {
             saveImage("Frame-" + i);
         }
         i++;
     }
 
-    public void renderInfo(String info) throws IOException {
+    public void renderInfo(String info) {
         Map.Entry<String, BufferedImage> frame = frames.lastEntry();
         Graphics2D canvas = frame.getValue().createGraphics();
         canvas.setColor(Color.WHITE);

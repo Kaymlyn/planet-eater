@@ -19,11 +19,11 @@ public class MiningEntity {
     }
     public enum EntityLocomotion {
         BIPEDAL,
-        QUADRAPEDAL,
+        QUADRUPEDAL,
         SERPENTINE,
         WHEELED,
         TRACKED,
-        BOUYANCY,
+        BUOYANCY,
         FLAPPING,
         PROPELLER,
         JET,
@@ -75,7 +75,7 @@ public class MiningEntity {
      */
     public static MiningEntity createBasicRobot(String id) {
         // Basic robot: heavier but more efficient
-        return new MiningEntity(id, EntityType.INORGANIC, EntityLocomotion.QUADRAPEDAL, .80, 150.0, 1.0);
+        return new MiningEntity(id, EntityType.INORGANIC, EntityLocomotion.QUADRUPEDAL, .80, 150.0, 1.0);
     }
     
     /**
@@ -95,14 +95,14 @@ public class MiningEntity {
 
     public boolean requiresLifeSupport() {
         switch (this.type) {
-            case ORGANIC -> { return true; }
-            default -> { return false; }
+            case ORGANIC, SEMIORGANIC -> { return true; }
+            case INORGANIC -> { return false; }
         }
     }
 
     @Override
     public String toString() {
-        return String.format("com.kaymlyn.planeteater.entites.artifice.actors.MiningEntity[id=%s, type=%s, mass=%.1f kg, rate=%.2f kg/s, state=%s]",
+        return String.format("com.kaymlyn.planeteater.entities.MiningEntity[id=%s, type=%s, mass=%.1f kg, rate=%.2f kg/s, state=%s]",
             id, type, mass, miningRate, state);
     }
 }

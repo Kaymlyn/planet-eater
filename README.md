@@ -1,4 +1,4 @@
-# entites.system.Asteroid Mining Simulator
+# Asteroid Mining Simulator
 
 A Java-based simulation of asteroid mining operations with realistic orbital mechanics and resource management.
 
@@ -10,7 +10,7 @@ A Java-based simulation of asteroid mining operations with realistic orbital mec
 - **Celestial Bodies**: Stars, planets (terrestrial, gas giants, ice giants), and asteroids
 - **Resource System**: 30+ materials including metals, minerals, ices, and gases
 - **Mining Operations**: Complete workflow from planning to execution
-- **entites.artifice.Spacecraft**: Customizable vessels with fuel, cargo, and life support systems
+- **Spacecraft**: Customizable vessels with fuel, cargo, and life support systems
 - **Mining Entities**: Human miners and robots with different capabilities
 
 ## Project Structure
@@ -55,7 +55,7 @@ The `com.kaymlyn.planeteater.SimulationDemo` class demonstrates:
 5. Planning and executing mining operations
 6. Running orbital mechanics simulation
 7. Resource extraction and inventory management
-8. entites.artifice.Spacecraft recycling
+8. Spacecraft recycling
 
 **Run via Gradle:**
 ```bash
@@ -68,26 +68,26 @@ Right-click on `com.kaymlyn.planeteater.SimulationDemo.java` → Run
 ## Key Classes
 
 ### Physics & Orbital Mechanics
-- **universals.Vector3D**: 3D vector mathematics
-- **universals.PhysicsConstants**: Universal constants (G, AU, solar mass, etc.)
-- **entites.system.OrbitalSystem**: Manages celestial bodies and physics simulation
+- **Vector3D**: 3D vector mathematics
+- **PhysicsConstants**: Universal constants (G, AU, solar mass, etc.)
+- **OrbitalSystem**: Manages celestial bodies and physics simulation
 
 ### Celestial Bodies
-- **entites.system.CelestialBody**: Abstract base for all bodies
-- **entites.system.Star**: Central star (e.g., Sun)
-- **entites.system.Asteroid**: Three types (C-type, S-type, M-type)
-- **entites.system.Planet**: Differentiated bodies (terrestrial, gas giant, ice giant)
+- **CelestialBody**: Abstract base for all bodies
+- **Star**: Central star (e.g., Sun)
+- **Asteroid**: Undifferentiated bodies
+- **Planet**: Differentiated bodies
 
 ### Resources & Materials
-- **universals.Material**: 30+ material types with densities
-- **entites.system.Composition**: universals.Material composition management
+- **Material**: 30+ material types with densities
+- **Composition**: Material composition management
 
 ### Operations
-- **entites.artifice.Spacecraft**: Vehicles with fuel, cargo, and crew capacity
-- **entites.artifice.MiningEntity**: Human and robot miners
-- **entites.artifice.MiningOperation**: Complete mining mission management
-- **universals.TravelCalculator**: Trajectory planning and fuel calculations
-- **entites.artifice.OrbitalPlatform**: Home base for operations
+- **Spacecraft**: Vehicles with fuel, cargo, and crew capacity
+- **MiningEntity**: Human and robot miners
+- **MiningOperation**: Complete mining mission management
+- **TravelCalculator**: Trajectory planning and fuel calculations
+- **OrbitalPlatform**: Home base for operations
 
 ## Future Development
 

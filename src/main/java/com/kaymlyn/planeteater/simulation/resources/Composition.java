@@ -19,8 +19,11 @@ public class Composition {
     public void addBulkMaterial(Composition composition) {
         materials.putAll(composition.getMaterials());
     }
+
     /**
-     * Add a material with a given mass
+     * Add a material that will fill the given volume
+     * @param material The type of material to add to the Composition
+     * @param volume The volume in cubic meters
      */
     public void addMaterialAsVolume(Material material, double volume) {
         if (volume < 0) {
@@ -29,6 +32,11 @@ public class Composition {
         addMaterialAsRawMass(material,material.massForVolume(volume));
     }
 
+    /**
+     * Add a material with a given mass
+     * @param material The type of material to add to the Composition
+     * @param mass The mass in kg
+     */
     public void addMaterialAsRawMass(Material material, double mass) {
         if (mass < 0) {
             throw new IllegalArgumentException("Mass cannot be negative");
@@ -38,7 +46,7 @@ public class Composition {
     
     /**
      * Remove a specific amount of a material
-     * Returns the actual amount removed (may be less if insufficient quantity)
+     * Returns the actual amount removed (amount may be less if insufficient quantity)
      */
     public double removeMaterial(Material material, double mass) {
         if (mass < 0) {
