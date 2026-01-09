@@ -67,21 +67,21 @@ public enum Material {
     }
     
     /**
-     * Calculate volume for a given mass of this material
+     * Calculate volume for a given mass of this type
      */
     public double volumeForMass(double mass) {
         return mass / density;
     }
     
     /**
-     * Calculate mass for a given volume of this material
+     * Calculate mass for a given volume of this type
      */
     public double massForVolume(double volume) {
         return volume * density;
     }
     
     /**
-     * Check if this is a volatile/ice material
+     * Check if this is a volatile/ice type
      */
     public boolean isVolatile() {
         return this == WATER_ICE || this == CO2_ICE || this == METHANE_ICE || 
@@ -103,5 +103,9 @@ public enum Material {
         return this == IRON || this == NICKEL || this == ALUMINUM || 
                this == MAGNESIUM || this == TITANIUM || this == CALCIUM ||
                this == SODIUM || this == POTASSIUM || this == CHROMIUM;
+    }
+
+    public String toString() {
+        return this.name();
     }
 }

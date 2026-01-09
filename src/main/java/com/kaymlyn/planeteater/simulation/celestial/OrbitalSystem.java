@@ -1,9 +1,9 @@
-package com.kaymlyn.planeteater.simulation.physics;
+package com.kaymlyn.planeteater.simulation.celestial;
 
-import com.kaymlyn.planeteater.simulation.celestial.Asteroid;
-import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
-import com.kaymlyn.planeteater.simulation.celestial.Planet;
-import com.kaymlyn.planeteater.simulation.celestial.Star;
+import com.kaymlyn.planeteater.simulation.celestial.planetoid.Asteroid;
+import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
+import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;
@@ -26,22 +26,25 @@ public class OrbitalSystem {
     private Map<String, CelestialBody> bodyMap;
     private double currentTime; // seconds since epoch
     private double timeStep; // simulation time step in seconds
+    private CelestialBodyFactory factory;
     
-    public OrbitalSystem(Star centralStar, double timeStep) {
-        this.centralStar = centralStar;
+    protected OrbitalSystem(Star centralStar, double timeStep) {
+
+        this.centralStar = new Star(centralStar.id,this, centralStar.position,centralStar.velocity);
+        this.centralStar.getTotalComposition().addBulkMaterial(centralStar.getTotalComposition());
         this.bodies = new ArrayList<>();
         this.bodyMap = new HashMap<>();
         this.currentTime = 0.0;
         this.timeStep = timeStep;
         
         // Add the star to the system
-        addBody(centralStar);
+        addBody(this.centralStar);
     }
     
     /**
      * Add a celestial body to the system
      */
-    public void addBody(CelestialBody body) {
+    protected void addBody(CelestialBody body) {
         bodies.add(body);
         bodyMap.put(body.getId(), body);
     }
@@ -49,7 +52,7 @@ public class OrbitalSystem {
     /**
      * Remove a celestial body from the system
      */
-    public boolean removeBody(String id) {
+    protected boolean removeBody(String id) {
         CelestialBody body = bodyMap.remove(id);
         if (body != null) {
             bodies.remove(body);
@@ -113,12 +116,12 @@ public class OrbitalSystem {
         Date start = new Date();
         // Calculate current accelerations
         Map<CelestialBody, Vector3D> accelerations = new HashMap<>();
-        for (CelestialBody body : bodies) {
+        for (CelestialBody body : getOrbitingBodies()) {
             accelerations.put(body, calculateAcceleration(body));
         }
         
         // Update positions
-        for (CelestialBody body : bodies) {
+        for (CelestialBody body : getOrbitingBodies()) {
             Vector3D accel = accelerations.get(body);
             Vector3D newPos = body.getPosition()
                 .add(body.getVelocity().multiply(timeStep))
@@ -128,12 +131,12 @@ public class OrbitalSystem {
         
         // Calculate new accelerations at new positions
         Map<CelestialBody, Vector3D> newAccelerations = new HashMap<>();
-        for (CelestialBody body : bodies) {
+        for (CelestialBody body : getOrbitingBodies()) {
             newAccelerations.put(body, calculateAcceleration(body));
         }
         
         // Update velocities using average of old and new accelerations
-        for (CelestialBody body : bodies) {
+        for (CelestialBody body : getOrbitingBodies()) {
             Vector3D oldAccel = accelerations.get(body);
             Vector3D newAccel = newAccelerations.get(body);
             Vector3D avgAccel = oldAccel.add(newAccel).multiply(0.5);
@@ -157,23 +160,6 @@ public class OrbitalSystem {
     }
     
     /**
-     * Calculate orbital velocity for a circular orbit at given radius
-     * v = sqrt(G * M / r)
-     */
-    public double circularOrbitVelocity(double radius) {
-        return Math.sqrt(PhysicsConstants.G * centralStar.getMass() / radius);
-    }
-    
-    /**
-     * Calculate orbital period for a circular orbit at given radius
-     * T = 2π * sqrt(r³ / (G * M))
-     */
-    public double orbitalPeriod(double radius) {
-        return 2.0 * Math.PI * Math.sqrt(Math.pow(radius, 3) / 
-            (PhysicsConstants.G * centralStar.getMass()));
-    }
-    
-    /**
      * Place a body in a circular orbit at specified radius and angle
      * @param body The body to place in orbit
      * @param radius Distance from star in meters
@@ -182,6 +168,7 @@ public class OrbitalSystem {
     public void placeInCircularOrbit(CelestialBody body, double radius, double angle) {
         placeInEllipticalOrbit(
                 body,
+                getCentralStar(),
                 radius,
                 0.0,
                 0.0,
@@ -202,6 +189,7 @@ public class OrbitalSystem {
     public void placeInCircularOrbit(CelestialBody body, double radius, double angle, double inclination) {
         placeInEllipticalOrbit(
                 body,
+                getCentralStar(),
                 radius,
                 0.0,
                 inclination,
@@ -235,6 +223,7 @@ public class OrbitalSystem {
                                            double maximumEccentricity) {
         Random random = new Random(0L);
         bodies.forEach(body -> placeInEllipticalOrbit(body,
+                centralStar,
                 random.nextDouble(minimumAURadius,maximumAURadius)*PhysicsConstants.AU,
                 random.nextDouble(0,maximumEccentricity),
                 random.nextDouble(0,maxInclination),
@@ -247,6 +236,7 @@ public class OrbitalSystem {
      * Place a body in an elliptical orbit using orbital elements
      *
      * @param body The body to place in orbit
+     * @param parentBody The body to orbit
      * @param semiMajorAxis Semi-major axis (a) in meters
      * @param eccentricity Eccentricity (e), 0 = circular, 0-1 = ellipse
      * @param inclination Inclination (i) from ecliptic plane in radians
@@ -256,6 +246,7 @@ public class OrbitalSystem {
      */
     @SuppressWarnings("DuplicateExpressions")
     public void placeInEllipticalOrbit(CelestialBody body,
+                                       CelestialBody parentBody,
                                        double semiMajorAxis,
                                        double eccentricity,
                                        double inclination,
@@ -281,7 +272,7 @@ public class OrbitalSystem {
 
         // Velocity in orbital plane
         // Vis-viva equation: v = sqrt(μ(2/r - 1/a))
-        double mu = PhysicsConstants.G * centralStar.getMass();
+        double mu = PhysicsConstants.G * parentBody.getMass();
         double vMagnitude = Math.sqrt(mu * (2.0 / r - 1.0 / semiMajorAxis));
 
         // Velocity direction (perpendicular to radius vector)
@@ -317,6 +308,12 @@ public class OrbitalSystem {
         double vy = vxOrbital * (sinO * cosw + cosO * sinw * cosi) -
                 vyOrbital * (sinO * sinw - cosO * cosw * cosi);
         double vz = vxOrbital * (sinw * sini) + vyOrbital * (cosw * sini);
+
+        Vector3D absolutePosition = parentBody.getPosition().add(new Vector3D(x, y, z));
+        Vector3D absoluteVelocity = parentBody.getVelocity().add(new Vector3D(vx, vy, vz));
+
+        body.setPosition(absolutePosition);
+        body.setVelocity(absoluteVelocity);
 
         body.setPosition(new Vector3D(x, y, z));
         body.setVelocity(new Vector3D(vx, vy, vz));
@@ -440,9 +437,8 @@ public class OrbitalSystem {
     private Vector3D calculateAcceleration(CelestialBody body) {
         Vector3D totalAcceleration = Vector3D.ZERO;
 
-        for (CelestialBody other : bodies) {
+        for (CelestialBody other : getOrbitingBodies()) {
             if (other == body) continue;
-
             Vector3D force = other.gravitationalForceOn(body);
             // a = F / m
             Vector3D acceleration = force.divide(body.getMass());
@@ -450,5 +446,242 @@ public class OrbitalSystem {
         }
 
         return totalAcceleration;
+
+    }    /**
+     * Check if a body's mass is significant enough to affect the star's position
+     * Uses barycenter calculation to determine if center of mass is outside star's radius
+     *
+     * @param body The celestial body to check
+     * @return true if the body significantly affects the star's motion
+     */
+    public boolean bodyAffectsStarPosition(CelestialBody body) {
+        double massRatio = body.getMass() / centralStar.getMass();
+        double separation = body.getPosition().magnitude();
+
+        // Calculate barycenter distance from star center
+        double barycenterDistance = separation * massRatio / (1.0 + massRatio);
+
+        // Significant if barycenter is outside star's radius
+        return barycenterDistance > centralStar.getRadius();
     }
+
+    /**
+     * Get all bodies that significantly affect the star's position
+     * These bodies should potentially be modeled in a proper n-body simulation
+     */
+    public List<CelestialBody> getBodiesAffectingStar() {
+        List<CelestialBody> significantBodies = new ArrayList<>();
+        for (CelestialBody body : bodies) {
+            if (body != centralStar && bodyAffectsStarPosition(body)) {
+                significantBodies.add(body);
+            }
+        }
+        return significantBodies;
+    }
+
+    /**
+     * Calculate the distance from star center to the barycenter with a given body
+     */
+    public double calculateBarycenterDistance(CelestialBody body) {
+        double massRatio = body.getMass() / centralStar.getMass();
+        double separation = body.getPosition().magnitude();
+        return separation * massRatio / (1.0 + massRatio);
+    }
+
+    /**
+     * Calculate the five Lagrange points for a two-body system
+     * Returns positions of L1, L2, L3, L4, and L5
+     *
+     * @param primary The more massive body (e.g., star or planet)
+     * @param secondary The less massive body (e.g., planet or moon)
+     * @return Map with keys "L1" through "L5", values are positions as Vector3D
+     */
+    public static Map<String, Vector3D> calculateLagrangePoints(CelestialBody primary,
+                                                                CelestialBody secondary) {
+        Map<String, Vector3D> points = new HashMap<>();
+
+        double M = primary.getMass();
+        double m = secondary.getMass();
+        double mu = m / (M + m); // Mass parameter
+
+        Vector3D r1 = primary.getPosition();
+        Vector3D r2 = secondary.getPosition();
+        Vector3D r12 = r2.subtract(r1);
+        double R = r12.magnitude(); // Distance between bodies
+
+        // Unit vector from primary to secondary
+        Vector3D direction = r12.normalize();
+
+        // Perpendicular unit vector (for L4 and L5)
+        // Rotate direction 90 degrees in the orbital plane
+        Vector3D perpendicular = new Vector3D(-direction.getY(), direction.getX(), direction.getZ());
+
+        // L1: Between the two bodies
+        // Approximate distance from secondary (valid for mu << 1)
+        double r_L1 = R * Math.pow(mu / 3.0, 1.0/3.0);
+        Vector3D L1 = r2.subtract(direction.multiply(r_L1));
+        points.put("L1", L1);
+
+        // L2: Beyond the secondary, away from primary
+        double r_L2 = R * Math.pow(mu / 3.0, 1.0/3.0);
+        Vector3D L2 = r2.add(direction.multiply(r_L2));
+        points.put("L2", L2);
+
+        // L3: Beyond the primary, opposite the secondary
+        double r_L3 = R * (1.0 + 5.0 * mu / 12.0);
+        Vector3D L3 = r1.subtract(direction.multiply(r_L3));
+        points.put("L3", L3);
+
+        // L4: 60 degrees ahead of secondary in its orbit
+        // Forms equilateral triangle with primary and secondary
+        Vector3D centerOfMass = r1.multiply(M / (M + m)).add(r2.multiply(m / (M + m)));
+        double distanceFromCM = R * Math.sqrt(3.0) / 2.0;
+
+        // L4 and L5 are at equal distances from both primary and secondary
+        // They form equilateral triangles
+        Vector3D toL4 = direction.multiply(R / 2.0).add(perpendicular.multiply(R * Math.sqrt(3.0) / 2.0));
+        Vector3D L4 = r1.add(toL4);
+        points.put("L4", L4);
+
+        // L5: 60 degrees behind secondary in its orbit
+        Vector3D toL5 = direction.multiply(R / 2.0).subtract(perpendicular.multiply(R * Math.sqrt(3.0) / 2.0));
+        Vector3D L5 = r1.add(toL5);
+        points.put("L5", L5);
+
+        return points;
+    }
+
+    /**
+     * Calculate Lagrange points relative to the central star and a planet
+     * Convenience method for the common case
+     */
+    public Map<String, Vector3D> calculateLagrangePoints(CelestialBody body) {
+        return calculateLagrangePoints(centralStar, body);
+    }
+
+    /**
+     * Check if a position is near a Lagrange point (within given tolerance)
+     */
+    public static String findNearestLagrangePoint(Vector3D position,
+                                                  Map<String, Vector3D> lagrangePoints,
+                                                  double tolerance) {
+        String nearest = null;
+        double minDistance = Double.POSITIVE_INFINITY;
+
+        for (Map.Entry<String, Vector3D> entry : lagrangePoints.entrySet()) {
+            double distance = position.distanceTo(entry.getValue());
+            if (distance < tolerance && distance < minDistance) {
+                minDistance = distance;
+                nearest = entry.getKey();
+            }
+        }
+
+        return nearest;
+    }
+//
+//    /**
+//     * Get all satellites in the system
+//     */
+//    public List<NaturalSatellite> getSatellites() {
+//        List<NaturalSatellite> naturalSatellites = new ArrayList<>();
+//        for (CelestialBody body : bodies) {
+//            if (body instanceof NaturalSatellite) {
+//                naturalSatellites.add((NaturalSatellite) body);
+//            }
+//        }
+//        return naturalSatellites;
+//    }
+
+//    /**
+//     * Get satellites orbiting a specific body
+//     */
+//    public List<NaturalSatellite> getSatellitesOf(String parentBodyId) {
+//        List<NaturalSatellite> naturalSatellites = new ArrayList<>();
+//        for (CelestialBody body : bodies) {
+//            if (body instanceof NaturalSatellite) {
+//                NaturalSatellite sat = (NaturalSatellite) body;
+//                if (sat.getParentBodyId().equals(parentBodyId)) {
+//                    naturalSatellites.add(sat);
+//                }
+//            }
+//        }
+//        return naturalSatellites;
+//    }
+//
+//    /**
+//     * Place a satellite in circular orbit around a parent body
+//     */
+//    public void placeSatelliteInOrbit(NaturalSatellite naturalSatellite, CelestialBody parent,
+//                                      double orbitRadius, double angle) {
+//        placeSatelliteInOrbit(naturalSatellite, parent, orbitRadius, angle, 0.0);
+//    }
+
+//    /**
+//     * Place a satellite in circular orbit with inclination
+//     */
+//    public void placeSatelliteInOrbit(NaturalSatellite naturalSatellite, CelestialBody parent,
+//                                      double orbitRadius, double angle, double inclination) {
+//        // Calculate orbital velocity around the parent
+//        double mu = PhysicsConstants.G * parent.getMass();
+//        double orbitalVelocity = Math.sqrt(mu / orbitRadius);
+//
+//        // Position relative to parent
+//        double x = orbitRadius * Math.cos(angle);
+//        double y = orbitRadius * Math.sin(angle);
+//        double z = 0.0;
+//
+//        // Apply inclination
+//        if (inclination != 0.0) {
+//            double xRot = x;
+//            double yRot = y * Math.cos(inclination);
+//            double zRot = y * Math.sin(inclination);
+//            x = xRot;
+//            y = yRot;
+//            z = zRot;
+//        }
+//
+//        // Velocity perpendicular to position
+//        double vx = -orbitalVelocity * Math.sin(angle);
+//        double vy = orbitalVelocity * Math.cos(angle);
+//        double vz = 0.0;
+//
+//        // Apply inclination to velocity
+//        if (inclination != 0.0) {
+//            double vyRot = vy * Math.cos(inclination);
+//            double vzRot = vy * Math.sin(inclination);
+//            vy = vyRot;
+//            vz = vzRot;
+//        }
+//
+//        // Add parent's position and velocity
+//        Vector3D absolutePosition = parent.getPosition().add(new Vector3D(x, y, z));
+//        Vector3D absoluteVelocity = parent.getVelocity().add(new Vector3D(vx, vy, vz));
+//
+//        naturalSatellite.setPosition(absolutePosition);
+//        naturalSatellite.setVelocity(absoluteVelocity);
+//        naturalSatellite.setOrbitalRadius(orbitRadius);
+//
+//        addBody(naturalSatellite);
+//    }
+
+//    /**
+//     * Place a satellite at a Lagrange point
+//     */
+//    public void placeSatelliteAtLagrangePoint(NaturalSatellite naturalSatellite, CelestialBody parent,
+//                                              String lagrangePoint) {
+//        Map<String, Vector3D> points = calculateLagrangePoints(parent);
+//        Vector3D position = points.get(lagrangePoint);
+//
+//        if (position == null) {
+//            throw new IllegalArgumentException("Invalid Lagrange point: " + lagrangePoint);
+//        }
+//
+//        // Velocity should match the parent's orbital velocity
+//        // (Lagrange points are in the rotating frame with the parent)
+//        naturalSatellite.setPosition(position);
+//        naturalSatellite.setVelocity(parent.getVelocity());
+//
+//        addBody(naturalSatellite);
+//    }
+
 }

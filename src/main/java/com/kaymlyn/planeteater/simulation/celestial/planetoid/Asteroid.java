@@ -1,5 +1,8 @@
-package com.kaymlyn.planeteater.simulation.celestial;
+package com.kaymlyn.planeteater.simulation.celestial.planetoid;
 
+import com.kaymlyn.planeteater.simulation.celestial.BodyType;
+import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
+import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
@@ -19,15 +22,15 @@ public class Asteroid extends CelestialBody {
     
     private final BodyType type;
     
-    public Asteroid(String id, Vector3D position, Vector3D velocity,
+    public Asteroid(String id, OrbitalSystem system, Vector3D position, Vector3D velocity,
                     Composition composition, BodyType type) {
-        super(id, position, velocity);
+        super(id, system, position, velocity);
         this.type = type;
         this.crustComposition = composition;
     }
 
     /**
-     * Mine a specific material from this asteroid
+     * Mine a specific type from this asteroid
      * Returns the actual amount mined (amount may be less than requested)
      */
     public double mineMaterial(Material material, double requestedMass) {
@@ -35,14 +38,14 @@ public class Asteroid extends CelestialBody {
     }
     
     /**
-     * Check if this asteroid has a specific material available
+     * Check if this asteroid has a specific type available
      */
     public boolean hasMaterial(Material material) {
         return crustComposition.contains(material);
     }
     
     /**
-     * Get the amount of a specific material available
+     * Get the amount of a specific type available
      */
     public double getAvailableMaterial(Material material) {
         return crustComposition.getMass(material);
@@ -53,7 +56,7 @@ public class Asteroid extends CelestialBody {
     }
 
     @Override
-    public double getMass() {
+    protected double getAggregatedMass() {
         return crustComposition.getTotalMass();
     }
 
@@ -66,6 +69,11 @@ public class Asteroid extends CelestialBody {
     @Override
     public double getDensity() {
         return crustComposition.getBulkDensity();
+    }
+
+    @Override
+    public double getVolume() {
+        return crustComposition.getTotalVolume();
     }
 
     @Override

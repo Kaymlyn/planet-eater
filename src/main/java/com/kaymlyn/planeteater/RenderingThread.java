@@ -1,7 +1,7 @@
 package com.kaymlyn.planeteater;
 
 import com.kaymlyn.planeteater.rendering.OrbitalSystemRenderer;
-import com.kaymlyn.planeteater.simulation.physics.OrbitalSystem;
+import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 
 import java.io.IOException;
 import java.util.Date;

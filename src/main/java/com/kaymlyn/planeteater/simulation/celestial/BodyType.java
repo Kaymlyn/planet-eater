@@ -1,5 +1,8 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
+/**
+ * Some definitions of extant planetary and asteroid types
+ */
 public enum BodyType {
     //Asteroids - Non-Differentiated Non-spheres
     C_TYPE,  // Carbonaceous - rich in water, carbon
@@ -14,5 +17,5 @@ public enum BodyType {
 
     ICE_GIANT,      //Neptune, Uranus
     GAS_GIANT,      //Jupiter, Saturn
-    ABBERANT        //Planets that Make no sense
+    ABERRANT        //Planets that Make no sense
 }

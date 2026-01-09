@@ -23,7 +23,10 @@ public class Star extends CelestialBody {
     private final double massLossRate;                // Natural mass loss rate (kg/s)               // Actual radius accounting for gravity/pressure (meters)
 
     public Star(String id, Vector3D position, Vector3D velocity) {
-        super(id, position, velocity);
+        this(id, null, position, velocity);
+    }
+    protected  Star(String id, OrbitalSystem system, Vector3D position, Vector3D velocity) {
+        super(id, system, position, velocity);
         this.totalComposition = new Composition();
         this.atmosphereComposition = new Composition();
         this.surfaceTemperature = calculateMainSequenceTemperature();
@@ -93,9 +96,12 @@ public class Star extends CelestialBody {
      */
     @Override
     public double getDensity() {
-        double volume = (4.0 / 3.0) * Math.PI * Math.pow(calculateMainSequenceRadius(), 3);
-        System.out.println(volume);
-        return getMass() / volume;
+        return getMass() / getVolume();
+    }
+
+    @Override
+    public double getVolume() {
+        return (4.0 / 3.0) * Math.PI * Math.pow(calculateMainSequenceRadius(), 3);
     }
 
     /**
@@ -108,12 +114,12 @@ public class Star extends CelestialBody {
     }
 
     @Override
-    public double getMass() {
+    protected double getAggregatedMass() {
         return totalComposition.getTotalMass();
     }
 
     /**
-     * Extract material from the star's corona/photosphere
+     * Extract type from the star's corona/photosphere
      * This represents stellar lifting or mass stream capture
      */
     public double extractStellarMaterial(Material material, double requestedMass,
@@ -139,14 +145,14 @@ public class Star extends CelestialBody {
     }
 
     /**
-     * Check if star has a specific material available for extraction
+     * Check if star has a specific type available for extraction
      */
     public boolean hasExtractableMaterial(Material material) {
         return atmosphereComposition.contains(material);
     }
 
     /**
-     * Get amount of extractable material
+     * Get amount of extractable type
      */
     public double getExtractableAmount(Material material) {
         return atmosphereComposition.getMass(material);

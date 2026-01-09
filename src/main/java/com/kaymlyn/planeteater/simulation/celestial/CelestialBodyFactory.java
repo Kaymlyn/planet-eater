@@ -1,33 +1,72 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.PlanetInitializer;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
+import com.kaymlyn.planeteater.simulation.celestial.planetoid.Asteroid;
+import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Materials;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.LayerProfile;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class CelestialBodyFactory {
 
-    public static Asteroid createAsteroidByType(BodyType type,
-                                                String id,
-                                                Vector3D position,
-                                                Vector3D velocity,
-                                                double targetRadius) {
+    private final OrbitalSystem system;
+
+    private final HashMap<String,LayerProfile> profiles;
+
+    private final ObjectMapper mapper;
+
+    public CelestialBodyFactory(Star star, double timeStep) {
+        mapper = JsonMapper.builder().build();
+        profiles = new HashMap<>();
+        system = new OrbitalSystem(star,timeStep);
+        try {
+            List<LayerProfile> profileList = mapper.readValue(
+                    new File("src/main/resources/bodyprofiles.json"),
+                    new TypeReference<>() {
+                    }
+            );
+            profileList.forEach((layerProfile -> profiles.put(layerProfile.bodyType() + "_" + layerProfile.zone(),layerProfile)));
+        } catch (JacksonException je) {
+            je.printStackTrace();
+        }
+    }
+
+    public Star getCentralStar() {
+        return system.getCentralStar();
+    }
+
+    public Map<String,LayerProfile> getProfiles() {
+        return profiles;
+    }
+
+    public Asteroid createAsteroidByType(BodyType type,
+                                         String id,
+                                         Vector3D position,
+                                         Vector3D velocity,
+                                         double targetRadius) {
         switch(type) {
             case C_TYPE -> {
-                return createCType(id,position,velocity,targetRadius);
+                return createCType(id,system,position,velocity,targetRadius);
             }
             case M_TYPE -> {
-                return createMType(id,position,velocity,targetRadius);
+                return createMType(id,system,position,velocity,targetRadius);
             }
             case S_TYPE -> {
-                return createSType(id,position,velocity,targetRadius);
+                return createSType(id,system,position,velocity,targetRadius);
             }
             default -> {
                 return null;
@@ -38,7 +77,10 @@ public class CelestialBodyFactory {
      * Create a C-type (carbonaceous) asteroid
      * Rich in volatiles, organic compounds, and hydrated minerals
      */
-    public static Asteroid createCType(String id, Vector3D position, Vector3D velocity, double targetRadius) {
+    public Asteroid createCType(String id, OrbitalSystem system, Vector3D position, Vector3D velocity, double targetRadius) {
+
+//        createArbitraryPlanet(null,)
+
         Composition comp = new Composition();
 
         // C-type composition (approximate)
@@ -52,14 +94,14 @@ public class CelestialBodyFactory {
         comp.addMaterialAsVolume(Material.MAGNESIUM_OXIDE, (totalVolume * 0.10));
         comp.addMaterialAsVolume(Material.IRON_SULFIDE, (totalVolume * 0.05));
 
-        return new Asteroid(id, position, velocity, comp, BodyType.C_TYPE);
+        return new Asteroid(id, system, position, velocity, comp, BodyType.C_TYPE);
     }
 
     /**
      * Create an S-type (silicaceous) asteroid
      * Silicate minerals with moderate metal content
      */
-    public static Asteroid createSType(String id, Vector3D position, Vector3D velocity, double targetRadius) {
+    public static Asteroid createSType(String id, OrbitalSystem system, Vector3D position, Vector3D velocity, double targetRadius) {
         Composition comp = new Composition();
 
         double totalVolume = (4.0 / 3.0) * Math.PI * Math.pow(targetRadius, 3);
@@ -72,14 +114,14 @@ public class CelestialBodyFactory {
         comp.addMaterialAsVolume(Material.IRON_SULFIDE, (totalVolume * 0.05));
         comp.addMaterialAsVolume(Material.CHROMIUM, (totalVolume * 0.02));
 
-        return new Asteroid(id, position, velocity, comp, BodyType.S_TYPE);
+        return new Asteroid(id, system, position, velocity, comp, BodyType.S_TYPE);
     }
 
     /**
      * Create an M-type (metallic) asteroid
      * Iron-nickel rich, potentially exposed planetary cores
      */
-    public static Asteroid createMType(String id, Vector3D position, Vector3D velocity, double targetRadius) {
+    public static Asteroid createMType(String id, OrbitalSystem system, Vector3D position, Vector3D velocity, double targetRadius) {
         Composition comp = new Composition();
 
         double totalVolume = (4.0 / 3.0) * Math.PI * Math.pow(targetRadius, 3);
@@ -91,46 +133,72 @@ public class CelestialBodyFactory {
         comp.addMaterialAsVolume(Material.PHOSPHORUS, (totalVolume * 0.02));
         comp.addMaterialAsVolume(Material.SILICA, (totalVolume * 0.02));
 
-        return new Asteroid(id, position, velocity, comp, BodyType.M_TYPE);
+        return new Asteroid(id, system, position, velocity, comp, BodyType.M_TYPE);
+    }
+    public Planet createArbitraryPlanet(String id,
+                                        OrbitInitializer init,
+                                        LayerProfile core, double coreRadius,
+                                        LayerProfile mantle, double mantleRadius,
+                                        LayerProfile crust, double crustRadius,
+                                        LayerProfile atmosphere, double atmosphereRadius) {
+        return createArbitraryPlanet(id,getCentralStar(),init,core,coreRadius,mantle,mantleRadius,crust,crustRadius,atmosphere,atmosphereRadius);
     }
 
-    public static Planet createArbitraryPlanet(PlanetInitializer init,
-                                               LayerProfile core,
-                                               LayerProfile mantle,
-                                               LayerProfile crust,
-                                               LayerProfile atmosphere) {
+    public Planet createArbitraryPlanet(String id,
+                                        CelestialBody parentBody,
+                                        OrbitInitializer init,
+                                        LayerProfile core, double coreRadius,
+                                        LayerProfile mantle, double mantleRadius,
+                                        LayerProfile crust, double crustRadius,
+                                        LayerProfile atmosphere, double atmosphereRadius) {
 
-        Planet planet = new Planet(init.id(), Vector3D.ZERO, Vector3D.ZERO, BodyType.ABBERANT);
+        Planet planet = new Planet(id, system.getCentralStar(), system, Vector3D.ZERO, Vector3D.ZERO, BodyType.ABERRANT);
+
+        if(core != null)
+            planet.getCoreComposition().addBulkMaterial(
+                    generateComposition(
+                            core.materials(),
+                            concaveSphericalVolume(0, coreRadius),
+                            core.ratioDivisor()
+                    )
+            );
+
+        if(mantle != null)
+            planet.getMantleComposition().addBulkMaterial(
+                    generateComposition(
+                            mantle.materials(),
+                            concaveSphericalVolume(coreRadius, mantleRadius),
+                            mantle.ratioDivisor()
+                    )
+            );
+
+        if(crust != null)
+            planet.getCrustComposition().addBulkMaterial(
+                    generateComposition(
+                            crust.materials(),
+                            concaveSphericalVolume(mantleRadius, crustRadius),
+                            crust.ratioDivisor()
+                    )
+            );
+        if(atmosphere != null)
+            planet.getAtmosphereComposition().addBulkMaterial(
+                    generateComposition(
+                            atmosphere.materials(),
+                            concaveSphericalVolume(crustRadius, atmosphereRadius),
+                            atmosphere.ratioDivisor()
+                    )
+            );
+
+        system.placeInEllipticalOrbit(planet,
+                parentBody,
+                init.semiMajorAxis(),
+                init.eccentricity(),
+                init.inclination(),
+                init.ascendingNode(),
+                init.periapsis(),
+                init.trueAnomaly());
 
 
-        planet.getCoreComposition().addBulkMaterial(
-                generateComposition(
-                        core.materials(),
-                        concaveSphericalVolume(0, core.externalRadius()),
-                        core.ratioDivisor()
-                )
-        );
-        planet.getMantleComposition().addBulkMaterial(
-                generateComposition(
-                        mantle.materials(),
-                        concaveSphericalVolume(core.externalRadius(), mantle.externalRadius()),
-                        mantle.ratioDivisor()
-                )
-        );
-        planet.getCrustComposition().addBulkMaterial(
-                generateComposition(
-                        crust.materials(),
-                        concaveSphericalVolume(mantle.externalRadius(), crust.externalRadius()),
-                        crust.ratioDivisor()
-                )
-        );
-        planet.getAtmosphereComposition().addBulkMaterial(
-                generateComposition(
-                        crust.materials(),
-                        concaveSphericalVolume(crust.externalRadius(), atmosphere.externalRadius()),
-                        atmosphere.ratioDivisor()
-                )
-        );
         return planet;
     }
 
@@ -139,8 +207,8 @@ public class CelestialBodyFactory {
 
         for(Materials material : materials) {
             composition.addMaterialAsVolume(
-                    material.material(),
-                    totalVolume * ((double)material.ratio()/ratioDivisor)
+                    material.type(),
+                    totalVolume * (material.ratio()/ratioDivisor)
             );
         }
         return composition;
@@ -160,8 +228,8 @@ public class CelestialBodyFactory {
      * Create an Earth-like terrestrial planet
      * Composition by mass: ~32% Fe, ~30% O, ~15% Si, ~14% Mg, ~3% S, ~2% Ni, ~1.5% Ca, ~1.4% Al
      */
-    public static Planet createEarthLike(String id, Vector3D position, Vector3D velocity) {
-        Planet planet = new Planet(id, position, velocity, BodyType.HABITABLE);
+    public Planet createEarthLike(String id, Vector3D position, Vector3D velocity) {
+        Planet planet = new Planet(id, system.getCentralStar(), system, position, velocity, BodyType.HABITABLE);
 
         // Core: Iron-nickel with sulfur (radius ~3480 km, ~32% of Earth's mass)
         double coreVolume = (4.0 / 3.0) * Math.PI * Math.pow(3.48e6, 3);
@@ -200,8 +268,8 @@ public class CelestialBodyFactory {
      * Create a Jupiter-like gas giant
      * Composition: ~71% H, ~24% He, ~5% heavier elements
      */
-    public static Planet createJupiterLike(String id, Vector3D position, Vector3D velocity) {
-        Planet planet = new Planet(id, position, velocity, BodyType.GAS_GIANT);
+    public Planet createJupiterLike(String id, Vector3D position, Vector3D velocity) {
+        Planet planet = new Planet(id, null, system, position, velocity, BodyType.GAS_GIANT);
 
         // Core: Rock and ice (radius ~10,000 km)
         double coreVolume = (4.0 / 3.0) * Math.PI * Math.pow(1.0e7, 3);
@@ -225,8 +293,8 @@ public class CelestialBodyFactory {
      * Create a Neptune-like ice giant
      * Composition: ~20% H/He, ~60-70% ices, ~10-20% rock/metal
      */
-    public static Planet createNeptuneLike(String id, Vector3D position, Vector3D velocity) {
-        Planet planet = new Planet(id, position, velocity, BodyType.ICE_GIANT);
+    public Planet createNeptuneLike(String id, Vector3D position, Vector3D velocity) {
+        Planet planet = new Planet(id, getCentralStar(), system, position, velocity, BodyType.ICE_GIANT);
 
         // Core: Rock and metal (radius ~8,000 km)
         double coreVolume = (4.0 / 3.0) * Math.PI * Math.pow(8.0e6, 3);
@@ -255,7 +323,7 @@ public class CelestialBodyFactory {
      * Create a star with specific mass (in solar masses)
      */
     public static Star createMainSequenceStar(String id, double solarMasses) {
-        Star star = new Star(id, Vector3D.ZERO, Vector3D.ZERO);
+        Star star = new Star(id,Vector3D.ZERO, Vector3D.ZERO);
 
         double totalMass = solarMasses * PhysicsConstants.SOLAR_MASS;
 
@@ -264,7 +332,6 @@ public class CelestialBodyFactory {
         star.getTotalComposition().addMaterialAsRawMass(Material.OXYGEN_GAS, totalMass * 0.01);
         star.getTotalComposition().addMaterialAsRawMass(Material.CARBON, totalMass * 0.003);
         star.getTotalComposition().addMaterialAsRawMass(Material.IRON, totalMass * 0.001);
-
 
         // Set up extractable atmosphere proportional to mass loss rate
         double atmosphereMass = star.getMassLossRate() * 1e10; // ~100,000 seconds worth
@@ -275,7 +342,6 @@ public class CelestialBodyFactory {
         return star;
     }
 
-
     /**
      * Convenience Method to create asteroid belts
      * @param beltID        identifier for the asteroid belt
@@ -284,7 +350,7 @@ public class CelestialBodyFactory {
      * @param maximumRadius maximum radius of an asteroid
      * @return  list of Asteroids of random compositions and sizes
      */
-    public static List<Asteroid> createRandomAsteroidBelt(
+    public List<Asteroid> createRandomAsteroidBelt(
             String beltID,
             int population,
             double minimumRadius,

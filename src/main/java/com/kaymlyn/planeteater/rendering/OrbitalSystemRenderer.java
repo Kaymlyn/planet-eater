@@ -1,7 +1,7 @@
 package com.kaymlyn.planeteater.rendering;
 
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
-import com.kaymlyn.planeteater.simulation.physics.OrbitalSystem;
+import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import org.jcodec.api.SequenceEncoder;
 import org.jcodec.common.io.NIOUtils;

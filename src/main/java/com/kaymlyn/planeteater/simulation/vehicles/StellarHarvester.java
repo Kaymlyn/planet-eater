@@ -18,14 +18,14 @@ import lombok.Setter;
 public class StellarHarvester {
 
     public enum HarvesterType {
-        STELLAR_LIFT,       // Magnetic field lifting of corona material
-        SOLAR_WIND_SCOOP,   // Captures material from solar wind
+        STELLAR_LIFT,       // Magnetic field lifting of corona type
+        SOLAR_WIND_SCOOP,   // Captures type from solar wind
         MASS_STREAM         // Advanced: creates artificial mass streams
     }
 
     private String id;
     private HarvesterType type;
-    private double extractionRate;      // kg/s of material extraction
+    private double extractionRate;      // kg/s of type extraction
     private double operatingDistance;   // Minimum safe distance from star (meters)
     private double powerRequirement;    // Energy needed (watts)
     private double maxTemperature;      // Maximum temperature it can withstand (K)
@@ -54,7 +54,7 @@ public class StellarHarvester {
 
     /**
      * Create a basic stellar lift harvester
-     * Uses magnetic fields to extract corona material
+     * Uses magnetic fields to extract corona type
      */
     public static StellarHarvester createBasicStellarLift(String id) {
         StellarHarvester harvester = new StellarHarvester(
@@ -77,7 +77,7 @@ public class StellarHarvester {
 
     /**
      * Create a solar wind scoop
-     * Passively captures material from solar wind
+     * Passively captures type from solar wind
      */
     public static StellarHarvester createSolarWindScoop(String id) {
         StellarHarvester harvester = new StellarHarvester(

@@ -2,7 +2,7 @@ package com.kaymlyn.planeteater.simulation.infrastructure;
 
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
-import com.kaymlyn.planeteater.simulation.physics.OrbitalSystem;
+import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import lombok.Getter;
@@ -22,32 +22,22 @@ public class OrbitalPlatform {
     private Vector3D velocity; // Orbital velocity
     private final Composition inventory; // Stored resources
     private final double orbitRadius; // Distance from star
+    private OrbitalSystem system; // Reference to the Orbital System in which it resides
     
-    public OrbitalPlatform(String id, double orbitRadius) {
+    public OrbitalPlatform(String id, double orbitRadius, OrbitalSystem system) {
         this.id = id;
         this.orbitRadius = orbitRadius;
         this.inventory = new Composition();
-        this.position = Vector3D.ZERO;
-        this.velocity = Vector3D.ZERO;
-    }
-    
-    /**
-     * Set up the platform in a circular orbit
-     */
-    public void initializeOrbit(OrbitalSystem system) {
-        // Place at angle 0 (positive X axis)
-        double y = 0;
-        this.position = new Vector3D(orbitRadius, y, 0);
-        
-        // Circular orbit velocity
-        double v = system.circularOrbitVelocity(orbitRadius);
-        this.velocity = new Vector3D(0, v, 0);
+        this.position = new Vector3D(orbitRadius, 0, 0);
+        this.velocity = new Vector3D(0, system.getCentralStar().circularOrbitVelocity(this.orbitRadius), 0);
+
+        this.system = system;
     }
     
     /**
      * Update platform position (follows simple circular orbit)
      */
-    public void update(double dt, OrbitalSystem system) {
+    public void update(double dt) {
         // For now, maintain circular orbit
         // In the future, could be affected by launches/docking
         double angularVelocity = velocity.magnitude() / orbitRadius;
@@ -61,6 +51,10 @@ public class OrbitalPlatform {
         double vx = -velocity.magnitude() * Math.sin(angle);
         double vy = velocity.magnitude() * Math.cos(angle);
         velocity = new Vector3D(vx, vy, 0);
+
+        // above is the target to maintain,
+        // to find stabilization energy:
+        // recalculate based on current mass of platform and use the differential to indicate fuel impulse required
     }
     
     /**

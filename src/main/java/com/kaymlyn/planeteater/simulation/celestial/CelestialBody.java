@@ -13,20 +13,28 @@ import lombok.Setter;
 @Getter
 @Setter
 public abstract class CelestialBody {
+
     protected String id;
     protected Vector3D position; // meters
     protected Vector3D velocity; // m/s
+
+    private final OrbitalSystem system;
     
-    public CelestialBody(String id, Vector3D position, Vector3D velocity) {
+    public CelestialBody(String id, OrbitalSystem system, Vector3D position, Vector3D velocity) {
         this.id = id;
         this.position = position;
         this.velocity = velocity;
+        this.system = system;
     }
 
     /**
      * Get the total mass of this body in kg
      */
-    public abstract double getMass();
+    public double getMass() {
+        return getAggregatedMass();
+    }
+
+    protected abstract double getAggregatedMass();
 
     /**
      * Calculate radius assuming spherical body
@@ -38,7 +46,7 @@ public abstract class CelestialBody {
      * Get the bulk density of this body
      */
     public abstract double getDensity();
-    
+
     /**
      * Calculate gravitational force this body exerts on another body
      * F = G * m1 * m2 / r²
@@ -66,7 +74,26 @@ public abstract class CelestialBody {
         // p = p + v * dt
         position = position.add(velocity.multiply(dt));
     }
-    
+
+    /**
+     * Calculate orbital velocity for a circular orbit at given radius
+     * v = sqrt(G * M / r)
+     */
+    public double circularOrbitVelocity(double radius) {
+        return Math.sqrt(PhysicsConstants.G * this.getMass() / radius);
+    }
+
+    /**
+     * Calculate orbital period for a circular orbit at given radius
+     * T = 2π * sqrt(r³ / (G * M))
+     */
+    public double orbitalPeriod(double radius) {
+        return 2.0 * Math.PI * Math.sqrt(Math.pow(radius, 3) /
+                (PhysicsConstants.G * this.getMass()));
+    }
+
+    public abstract double getVolume();
+
     @Override
     public String toString() {
         return String.format("%s[id=%s, pos=%s, vel=%s, mass=%.3e kg, radius=%.3e m]",

@@ -34,7 +34,7 @@ public class MiningEntity {
     private EntityType type;
     private EntityLocomotion motion;
     private double mass; // kg
-    private double miningRate; // kg of material per second
+    private double miningRate; // kg of type per second
     private boolean requiresLifeSupport;
     private boolean providesLifeSupport;
     private boolean crewable;
@@ -87,7 +87,7 @@ public class MiningEntity {
     }
     
     /**
-     * Calculate amount of material this entity can mine in given time
+     * Calculate amount of type this entity can mine in given time
      */
     public double calculateMiningYield(double timeSeconds) {
         return miningRate * productivity * timeSeconds;
@@ -98,6 +98,7 @@ public class MiningEntity {
             case ORGANIC, SEMIORGANIC -> { return true; }
             case INORGANIC -> { return false; }
         }
+        return false;
     }
 
     @Override
