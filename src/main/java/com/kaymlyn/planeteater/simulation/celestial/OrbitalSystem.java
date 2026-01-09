@@ -1,5 +1,6 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Asteroid;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
@@ -27,6 +28,7 @@ public class OrbitalSystem {
     private double currentTime; // seconds since epoch
     private double timeStep; // simulation time step in seconds
     private CelestialBodyFactory factory;
+    private Random globalRandom;
     
     protected OrbitalSystem(Star centralStar, double timeStep) {
 
@@ -36,6 +38,7 @@ public class OrbitalSystem {
         this.bodyMap = new HashMap<>();
         this.currentTime = 0.0;
         this.timeStep = timeStep;
+        this.globalRandom = new Random(0L);
         
         // Add the star to the system
         addBody(this.centralStar);
@@ -577,6 +580,30 @@ public class OrbitalSystem {
         }
 
         return nearest;
+    }
+
+    public static OrbitInitializer generateRandomOrbitInitializer(double minimumAURadius,
+                                                                  double maximumAURadius,
+                                                                  double maximumEccentricity,
+                                                                  double maxInclination,
+                                                                  boolean prograde,
+                                                                  long seed) {
+        Random random = new Random(seed);
+        double inclinationMax = maxInclination;
+        while (maxInclination > Math.PI/2){
+            inclinationMax -= (Math.PI/2);
+        }
+
+        return new OrbitInitializer(
+                random.nextDouble(Double.min(Math.abs(minimumAURadius),Math.abs(maximumAURadius))*PhysicsConstants.AU,
+                        Double.max(Math.abs(minimumAURadius),Math.abs(maximumAURadius))*PhysicsConstants.AU),
+                random.nextDouble(0, maximumEccentricity - (int)maximumEccentricity),
+                prograde ? random.nextDouble(0,inclinationMax)
+                        : random.nextDouble(inclinationMax + Math.PI/2, Math.PI),
+                random.nextDouble()*2*Math.PI,
+                random.nextDouble()*2*Math.PI,
+                random.nextDouble()*2*Math.PI
+        );
     }
 //
 //    /**

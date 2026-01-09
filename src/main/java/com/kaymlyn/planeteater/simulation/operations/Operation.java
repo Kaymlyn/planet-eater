@@ -1,11 +1,10 @@
 package com.kaymlyn.planeteater.simulation.operations;
 
-import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
+import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.entities.MiningEntity;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import com.kaymlyn.planeteater.simulation.infrastructure.OrbitalPlatform;
-import com.kaymlyn.planeteater.simulation.celestial.planetoid.Asteroid;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.operations.TravelCalculator.Trajectory;
 import lombok.Getter;
@@ -36,18 +35,15 @@ public abstract class Operation {
     private final Spacecraft spacecraft;
     private final Composition supplies;
     private final Composition inventory;
-    private final CelestialBody target;
-    private final List<MiningEntity> miners;        // Amount to mine (kg)
-    private double minedAmount;         // Amount mined so far (kg)
+    private final Planet target;
+    private final List<MiningEntity> miners;       // Amount mined so far (kg)
     private OperationStatus status;
 
     private final double deploymentTime;
     private double startTime;           // When mining started (simulation time)
-    private double elapsedMiningTime;   // Actual mining time (seconds)
     private Trajectory outboundTrajectory;
-    private Trajectory returnTrajectory;
     
-    public Operation(String id, OrbitalSystem system, Spacecraft spacecraft, Asteroid target,
+    public Operation(String id, OrbitalSystem system, Spacecraft spacecraft, Planet target,
                      Composition supplies, double deploymentTime) {
         this.id = id;
         this.system = system;
@@ -55,40 +51,10 @@ public abstract class Operation {
         this.target = target;
         this.supplies = supplies;
         this.inventory = supplies;
-        this.minedAmount = 0.0;
         this.miners = new ArrayList<>();
         this.status = OperationStatus.PLANNING;
         this.deploymentTime = deploymentTime;
     }
-    
-//    /**
-//     * Add a miner to the operation
-//     */
-//    public boolean addMiner(MiningEntity miner) {
-//        if (!spacecraft.boardEntity(miner)) {
-//            return false;
-//        }
-//        miners.add(miner);
-//        return true;
-//    }
-    
-//    /**
-//     * Calculate total mining rate of all assigned miners
-//     */
-//    public double getTotalMiningRate() {
-//        return miners.stream()
-//            .mapToDouble(MiningEntity::getMiningRate)
-//            .sum();
-//    }
-    
-//    /**
-//     * Calculate estimated time to complete mining
-//     */
-//    public double estimateMiningTime() {
-//        double rate = getTotalMiningRate();
-//        if (rate <= 0) return Double.POSITIVE_INFINITY;
-//        return (targetAmount - minedAmount) / rate;
-//    }
     
     /**
      * Plan the operation - calculate trajectories and check feasibility
@@ -108,26 +74,11 @@ public abstract class Operation {
             system
         );
 
-//        // Calculate return trajectory (will be from asteroid to platform)
-//        returnTrajectory = TravelCalculator.calculateDirectTransfer(
-//            target.getPosition(),
-//            platform.getPosition(),
-//            spacecraft
-//        );
-        
-        // Check if spacecraft has enough fuel for round trip
-//        double totalFuelNeeded = outboundTrajectory.fuelRequired + returnTrajectory.fuelRequired;
-
-        // Round Trips aren't needed for operations as they will maintain permanent (semi permanent)
+        // Round Trips aren't needed for operations as they will maintain permanent (semi permanent) activity
         double totalFuelNeeded = outboundTrajectory.fuelRequired;
         if (spacecraft.getFuelMass() < totalFuelNeeded) {
             return false;
         }
-//
-//        // Check if cargo space is sufficient
-//        if (spacecraft.getCargoCapacity() < targetAmount) {
-//            return false;
-//        }
         
         // Check crew capacity
         return miners.size() <= spacecraft.getMaxCrewCapacity();
@@ -223,7 +174,7 @@ public abstract class Operation {
                 system
         );
 
-        spacecraft.consumeFuel(returnTrajectory.fuelRequired);
+        spacecraft.consumeFuel(outboundTrajectory.fuelRequired);
         spacecraft.setState(Spacecraft.SpacecraftState.RETURNING);
         startTime = System.currentTimeMillis() / 1000.0; // Use real time for simplicity
     }
@@ -281,10 +232,10 @@ public abstract class Operation {
      * Calculate total fuel cost
      */
     public double getTotalFuelCost() {
-        if (outboundTrajectory == null || returnTrajectory == null) {
+        if (outboundTrajectory == null) {
             return 0.0;
         }
-        return outboundTrajectory.fuelRequired + returnTrajectory.fuelRequired;
+        return outboundTrajectory.fuelRequired;
     }
     
 //    /**

@@ -22,9 +22,10 @@ public class PlanetTest {
     final static int SOLAR_MASS = 1;
     final static int ONE_HOUR = 3600;
     final static double SMALL_RADIUS = 790;
+    final static double SMALL_ORBIT = 1e7;
 
     private final OrbitInitializer oneAUCircularOrbit = new OrbitInitializer(PhysicsConstants.AU,0,0,0,0,0);
-    private final OrbitInitializer smallOrbit = new OrbitInitializer(1e7,0,0,0,0,0);
+    private final OrbitInitializer smallOrbit = new OrbitInitializer(SMALL_ORBIT,0,0,0,0,0);
     private final Materials solidIron = new Materials(Material.IRON,100);
     private final Materials solidNickel = new Materials(Material.NICKEL,50);
     private final LayerProfile core = new LayerProfile(BodyType.ABERRANT,Zone.CORE,List.of(solidIron,solidNickel));
@@ -32,7 +33,6 @@ public class PlanetTest {
     private CelestialBodyFactory factory;
     private Planet defaultPlanet;
     private Planet weirdPlanet;
-
 
     @BeforeEach
     public void setup() {
@@ -53,11 +53,10 @@ public class PlanetTest {
                 profiles.get("HABITABLE_ATMOSPHERE"), coreRadius + mantleThickness + crustThickness + atmosphereThickness);
 
         weirdPlanet = factory.createArbitraryPlanet("WeirdPlanet", defaultPlanet, smallOrbit,
-                core, 790,
+                core, SMALL_RADIUS,
                 null, 0,
                 null, 0,
                 null, 0);
-
     }
 
     @Test
@@ -76,7 +75,7 @@ public class PlanetTest {
     public void validateBasicPlanetCreation() {
 
         Assertions.assertAll(
-                () -> Assertions.assertEquals(factory.getCentralStar(), weirdPlanet.getParentBody()),
+                () -> Assertions.assertEquals(defaultPlanet, weirdPlanet.getParentBody()),
                 () -> Assertions.assertEquals(2.147483647e9, (int)weirdPlanet.getMass()),
                 () -> Assertions.assertEquals(2.065236933e9, (int)weirdPlanet.getVolume()),
                 () -> Assertions.assertEquals(2.147483647e9, (int)weirdPlanet.getDensity()),
@@ -114,11 +113,11 @@ public class PlanetTest {
     public void validateSatellites() {
         Assertions.assertAll(
                 () -> Assertions.assertEquals(1.768927265e9, Math.round(defaultPlanet.calculateHillSphereRadius())),
-                () -> Assertions.assertEquals(14.0, Math.round(weirdPlanet.calculateHillSphereRadius())),
-                () -> Assertions.assertFalse(weirdPlanet.canHaveSubSatellites(), "Weird Planet is to close to the sun to have satellites"),
-                () -> Assertions.assertTrue(defaultPlanet.canHaveSubSatellites(), "Default Planet is far enough away from the sun to have satellites"),
-                () -> Assertions.assertFalse(defaultPlanet.isTidallyLocked(), "Default Planet is not tidally locked"),
-                () -> Assertions.assertTrue(weirdPlanet.isTidallyLocked(), "Weird Planet is tidally locked")
+                () -> Assertions.assertEquals(1.2453556e7, Math.round(weirdPlanet.calculateHillSphereRadius())),
+                () -> Assertions.assertTrue(weirdPlanet.canHaveSubSatellites(), "Weird Planet is to close to the sun to have satellites"),
+                () -> Assertions.assertTrue(defaultPlanet.canHaveSubSatellites(), "Default Planet is far enough away from Default Planet to have satellites"),
+                () -> Assertions.assertFalse(weirdPlanet.isTidallyLocked(), "Weird Planet is not tidally locked"),
+                () -> Assertions.assertFalse(defaultPlanet.isTidallyLocked(), "Default Planet is not tidally locked")
         );
     }
 

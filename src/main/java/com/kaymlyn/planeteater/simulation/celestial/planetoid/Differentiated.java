@@ -7,6 +7,10 @@ public interface Differentiated {
 
     boolean canHarvestAtmosphere();
 
+    boolean canMineMantle();
+
+    boolean canMineCore();
+
     double mineCrustMaterial(Material material, double requestedMass);
 
     double harvestAtmosphere(Material material, double requestedMass);
