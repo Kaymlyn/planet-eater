@@ -1,7 +1,6 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
-import com.kaymlyn.planeteater.simulation.celestial.planetoid.Asteroid;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
@@ -322,19 +321,6 @@ public class OrbitalSystem {
         body.setVelocity(new Vector3D(vx, vy, vz));
 
         addBody(body);
-    }
-    
-    /**
-     * Get all asteroids in the system
-     */
-    public List<Asteroid> getAsteroids() {
-        List<Asteroid> asteroids = new ArrayList<>();
-        for (CelestialBody body : bodies) {
-            if (body instanceof Asteroid) {
-                asteroids.add((Asteroid) body);
-            }
-        }
-        return asteroids;
     }
     
     /**

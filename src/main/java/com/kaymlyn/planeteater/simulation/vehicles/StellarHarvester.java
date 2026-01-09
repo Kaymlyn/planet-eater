@@ -125,6 +125,7 @@ public class StellarHarvester {
      * Check if this harvester can safely operate at a given distance from a star
      */
     public boolean canOperateAtDistance(double distance, Star star) {
+
         // Must be beyond minimum safe distance
         if (distance < operatingDistance) {
             return false;
@@ -138,7 +139,7 @@ public class StellarHarvester {
         // Check temperature constraints (rough approximation)
         // Temperature decreases with square of distance
         double starRadius = 6.96e8; // Sun radius in meters
-        double approximateTemp = star.getSurfaceTemperature() *
+        double approximateTemp = star.calculateMainSequenceTemperature() *
                 Math.pow(starRadius / distance, 2);
 
         return approximateTemp <= maxTemperature;

@@ -52,67 +52,6 @@ public class CelestialBodyFactory {
         return profiles;
     }
 
-//    /**
-//     * Create a C-type (carbonaceous) asteroid
-//     * Rich in volatiles, organic compounds, and hydrated minerals
-//     */
-//    public Asteroid createCType(String id, OrbitalSystem system, Vector3D position, Vector3D velocity, double targetRadius) {
-//
-//
-//        Composition comp = new Composition();
-//
-//        // C-type composition (approximate)
-//        double totalVolume = (4.0 / 3.0) * Math.PI * Math.pow(targetRadius, 3);
-//
-//        comp.addMaterialAsVolume(Material.ORGANIC_COMPOUNDS, (totalVolume * 0.20));
-//        comp.addMaterialAsVolume(Material.WATER_ICE, (totalVolume * 0.20));
-//        comp.addMaterialAsVolume(Material.CARBON, (totalVolume * 0.10));
-//        comp.addMaterialAsVolume(Material.SILICA, (totalVolume * 0.25));
-//        comp.addMaterialAsVolume(Material.IRON_OXIDE, (totalVolume * 0.10));
-//        comp.addMaterialAsVolume(Material.MAGNESIUM_OXIDE, (totalVolume * 0.10));
-//        comp.addMaterialAsVolume(Material.IRON_SULFIDE, (totalVolume * 0.05));
-//
-//        return new Asteroid(id, system, position, velocity, comp, BodyType.C_TYPE);
-//    }
-
-//    /**
-//     * Create an S-type (silicaceous) asteroid
-//     * Silicate minerals with moderate metal content
-//     */
-//    public static Asteroid createSType(String id, OrbitalSystem system, Vector3D position, Vector3D velocity, double targetRadius) {
-//        Composition comp = new Composition();
-//
-//        double totalVolume = (4.0 / 3.0) * Math.PI * Math.pow(targetRadius, 3);
-//
-//        comp.addMaterialAsVolume(Material.OLIVINE, (totalVolume * 0.35));
-//        comp.addMaterialAsVolume(Material.PYROXENE, (totalVolume * 0.25));
-//        comp.addMaterialAsVolume(Material.IRON, (totalVolume * 0.15));
-//        comp.addMaterialAsVolume(Material.FELDSPAR, (totalVolume * 0.10));
-//        comp.addMaterialAsVolume(Material.NICKEL, (totalVolume * 0.08));
-//        comp.addMaterialAsVolume(Material.IRON_SULFIDE, (totalVolume * 0.05));
-//        comp.addMaterialAsVolume(Material.CHROMIUM, (totalVolume * 0.02));
-//
-//        return new Asteroid(id, system, position, velocity, comp, BodyType.S_TYPE);
-//    }
-
-//    /**
-//     * Create an M-type (metallic) asteroid
-//     * Iron-nickel rich, potentially exposed planetary cores
-//     */
-//    public static Asteroid createMType(String id, OrbitalSystem system, Vector3D position, Vector3D velocity, double targetRadius) {
-//        Composition comp = new Composition();
-//
-//        double totalVolume = (4.0 / 3.0) * Math.PI * Math.pow(targetRadius, 3);
-//
-//        comp.addMaterialAsVolume(Material.IRON, (totalVolume * 0.70));
-//        comp.addMaterialAsVolume(Material.NICKEL, (totalVolume * 0.18));
-//        comp.addMaterialAsVolume(Material.IRON_SULFIDE, (totalVolume * 0.05));
-//        comp.addMaterialAsVolume(Material.CHROMIUM, (totalVolume * 0.03));
-//        comp.addMaterialAsVolume(Material.PHOSPHORUS, (totalVolume * 0.02));
-//        comp.addMaterialAsVolume(Material.SILICA, (totalVolume * 0.02));
-//
-//        return new Asteroid(id, system, position, velocity, comp, BodyType.M_TYPE);
-//    }
     public Planet createArbitraryPlanet(String id,
                                         OrbitInitializer init,
                                         LayerProfile core, double coreRadius,
@@ -216,11 +155,7 @@ public class CelestialBodyFactory {
         star.getTotalComposition().addMaterialAsRawMass(Material.CARBON, totalMass * 0.003);
         star.getTotalComposition().addMaterialAsRawMass(Material.IRON, totalMass * 0.001);
 
-        // Set up extractable atmosphere proportional to mass loss rate
-        double atmosphereMass = star.getMassLossRate() * 1e10; // ~100,000 seconds worth
-        star.getAtmosphereComposition().addMaterialAsVolume(Material.HYDROGEN, atmosphereMass * 0.73);
-        star.getAtmosphereComposition().addMaterialAsVolume(Material.HELIUM, atmosphereMass * 0.25);
-        star.getAtmosphereComposition().addMaterialAsVolume(Material.OXYGEN_GAS, atmosphereMass * 0.01);
+        star.initialize();
 
         return star;
     }
