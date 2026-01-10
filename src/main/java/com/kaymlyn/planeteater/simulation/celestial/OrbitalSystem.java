@@ -23,13 +23,14 @@ import java.util.Random;
 public class OrbitalSystem {
     private Star centralStar;
     private List<CelestialBody> bodies;
+    private List<Orbiter> orbiters;
     private Map<String, CelestialBody> bodyMap;
     private double currentTime; // seconds since epoch
     private double timeStep; // simulation time step in seconds
     private CelestialBodyFactory factory;
     private Random globalRandom;
     
-    protected OrbitalSystem(Star centralStar, double timeStep) {
+    protected OrbitalSystem(Star centralStar, double timeStep){
 
         this.centralStar = new Star(centralStar.id,this, centralStar.position,centralStar.velocity);
         this.centralStar.getTotalComposition().addBulkMaterial(centralStar.getTotalComposition());
@@ -38,7 +39,8 @@ public class OrbitalSystem {
         this.currentTime = 0.0;
         this.timeStep = timeStep;
         this.globalRandom = new Random(0L);
-        
+        this.orbiters = new ArrayList<>();
+
         // Add the star to the system
         addBody(this.centralStar);
     }
@@ -49,6 +51,13 @@ public class OrbitalSystem {
     protected void addBody(CelestialBody body) {
         bodies.add(body);
         bodyMap.put(body.getId(), body);
+    }
+
+    /**
+     * Add a simple orbiter  to the system
+     */
+    protected void addOrbiter(Orbiter orbiter) {
+        orbiters.add(orbiter);
     }
     
     /**
@@ -75,9 +84,10 @@ public class OrbitalSystem {
      * Get all bodies except the star
      * @return List containing all the non-star bodies in the System
      */
-    public List<CelestialBody> getOrbitingBodies() {
-        List<CelestialBody> orbiting = new ArrayList<>(bodies);
-        orbiting.remove(centralStar);
+    public List<OrbitingBody> getOrbitingBodies() {
+        List<OrbitingBody> orbiting = new ArrayList<>();
+        bodies.forEach(body -> {if(body instanceof OrbitingBody) orbiting.add((OrbitingBody) body); }
+    );
         return orbiting;
     }
 
@@ -96,13 +106,13 @@ public class OrbitalSystem {
      */
     public void stepEuler() {
         // Calculate accelerations for all bodies
-        Map<CelestialBody, Vector3D> accelerations = new HashMap<>();
-        for (CelestialBody body : bodies) {
+        Map<Orbiter, Vector3D> accelerations = new HashMap<>();
+        for (Orbiter body : orbiters) {
             accelerations.put(body, calculateAcceleration(body));
         }
         
         // Update all bodies
-        for (CelestialBody body : bodies) {
+        for (Orbiter body : orbiters) {
             body.update(accelerations.get(body), timeStep);
         }
         
@@ -117,13 +127,13 @@ public class OrbitalSystem {
     public double stepVerlet() {
         Date start = new Date();
         // Calculate current accelerations
-        Map<CelestialBody, Vector3D> accelerations = new HashMap<>();
-        for (CelestialBody body : getOrbitingBodies()) {
+        Map<Orbiter, Vector3D> accelerations = new HashMap<>();
+        for (Orbiter body : getOrbitingBodies()) {
             accelerations.put(body, calculateAcceleration(body));
         }
         
         // Update positions
-        for (CelestialBody body : getOrbitingBodies()) {
+        for (OrbitingBody body : getOrbitingBodies()) {
             Vector3D accel = accelerations.get(body);
             Vector3D newPos = body.getPosition()
                 .add(body.getVelocity().multiply(timeStep))
@@ -132,13 +142,13 @@ public class OrbitalSystem {
         }
         
         // Calculate new accelerations at new positions
-        Map<CelestialBody, Vector3D> newAccelerations = new HashMap<>();
-        for (CelestialBody body : getOrbitingBodies()) {
+        Map<OrbitingBody, Vector3D> newAccelerations = new HashMap<>();
+        for (OrbitingBody body : getOrbitingBodies()) {
             newAccelerations.put(body, calculateAcceleration(body));
         }
         
         // Update velocities using average of old and new accelerations
-        for (CelestialBody body : getOrbitingBodies()) {
+        for (OrbitingBody body : getOrbitingBodies()) {
             Vector3D oldAccel = accelerations.get(body);
             Vector3D newAccel = newAccelerations.get(body);
             Vector3D avgAccel = oldAccel.add(newAccel).multiply(0.5);
@@ -167,7 +177,7 @@ public class OrbitalSystem {
      * @param radius Distance from star in meters
      * @param angle Angle in radians (0 = +X axis)
      */
-    public void placeInCircularOrbit(CelestialBody body, double radius, double angle) {
+    public void placeInCircularOrbit(Orbiter body, double radius, double angle) {
         placeInEllipticalOrbit(
                 body,
                 getCentralStar(),
@@ -188,7 +198,7 @@ public class OrbitalSystem {
      * @param angle Angle in radians (0 = +X axis)
      * @param inclination Inclination in radians (0 = +Z axis)
      */
-    public void placeInCircularOrbit(CelestialBody body, double radius, double angle, double inclination) {
+    public void placeInCircularOrbit(OrbitingBody body, double radius, double angle, double inclination) {
         placeInEllipticalOrbit(
                 body,
                 getCentralStar(),
@@ -201,7 +211,7 @@ public class OrbitalSystem {
         );
     }
 
-    public void placeAllInCircularOrbits(List<? extends CelestialBody> bodies, double minimumAURadius, double maximumAURadius) {
+    public void placeAllInCircularOrbits(List<? extends OrbitingBody> bodies, double minimumAURadius, double maximumAURadius) {
         Random random = new Random(0L);
         bodies.forEach(body -> placeInCircularOrbit(body,
                 random.nextDouble(minimumAURadius,maximumAURadius)*PhysicsConstants.AU,
@@ -218,7 +228,7 @@ public class OrbitalSystem {
      * @param maxInclination Maximum angle of inclination measured in radians
      * @param maximumEccentricity Maximum eccentricity
      */
-    public void placeAllInEllipticalOrbits(List<? extends CelestialBody> bodies,
+    public void placeAllInEllipticalOrbits(List<? extends OrbitingBody> bodies,
                                            double minimumAURadius,
                                            double maximumAURadius,
                                            double maxInclination,
@@ -247,7 +257,7 @@ public class OrbitalSystem {
      * @param trueAnomaly True anomaly (ν) - position in orbit in radians
      */
     @SuppressWarnings("DuplicateExpressions")
-    public void placeInEllipticalOrbit(CelestialBody body,
+    public void placeInEllipticalOrbit(Orbiter body,
                                        CelestialBody parentBody,
                                        double semiMajorAxis,
                                        double eccentricity,
@@ -312,7 +322,13 @@ public class OrbitalSystem {
         double vz = vxOrbital * (sinw * sini) + vyOrbital * (cosw * sini);
 
         Vector3D absolutePosition = parentBody.getPosition().add(new Vector3D(x, y, z));
-        Vector3D absoluteVelocity = parentBody.getVelocity().add(new Vector3D(vx, vy, vz));
+
+        Vector3D absoluteVelocity;
+        if(parentBody instanceof OrbitingBody) {
+            absoluteVelocity = ((OrbitingBody)parentBody).getVelocity().add(new Vector3D(vx, vy, vz));
+        } else {
+            absoluteVelocity = Vector3D.ZERO;
+        }
 
         body.setPosition(absolutePosition);
         body.setVelocity(absoluteVelocity);
@@ -320,7 +336,12 @@ public class OrbitalSystem {
         body.setPosition(new Vector3D(x, y, z));
         body.setVelocity(new Vector3D(vx, vy, vz));
 
-        addBody(body);
+        if(body instanceof CelestialBody) {
+            addBody((CelestialBody) body);
+            addOrbiter(body);
+        } else {
+            addOrbiter(body);
+        }
     }
     
     /**
@@ -344,7 +365,7 @@ public class OrbitalSystem {
      *         "i" (inclination), "Ω" (longitude of ascending node),
      *         "ω" (argument of periapsis), "ν" (true anomaly)
      */
-    public static Map<String, Double> calculateOrbitalElements(Star centralStar, CelestialBody body) {
+    public static Map<String, Double> calculateOrbitalElements(Star centralStar, OrbitingBody body) {
         Map<String, Double> elements = new HashMap<>();
 
         Vector3D r = body.getPosition();
@@ -423,12 +444,16 @@ public class OrbitalSystem {
     /**
      * Calculate gravitational acceleration on a body from all other bodies
      */
-    private Vector3D calculateAcceleration(CelestialBody body) {
+    private Vector3D calculateAcceleration(Orbiter body) {
         Vector3D totalAcceleration = Vector3D.ZERO;
 
-        for (CelestialBody other : getOrbitingBodies()) {
-            if (other == body) continue;
-            Vector3D force = other.gravitationalForceOn(body);
+        for (Orbiter other : getOrbitingBodies()) {
+            if (other == body || other.getMass() == 0.0 || !(other instanceof CelestialBody)) continue;
+
+            Vector3D force = ((CelestialBody)other).gravitationalForceOn(body);
+
+            if(force == Vector3D.ZERO || force == null) return totalAcceleration; //No force t
+
             // a = F / m
             Vector3D acceleration = force.divide(body.getMass());
             totalAcceleration = totalAcceleration.add(acceleration);
@@ -471,7 +496,7 @@ public class OrbitalSystem {
     /**
      * Calculate the distance from star center to the barycenter with a given body
      */
-    public double calculateBarycenterDistance(CelestialBody body) {
+    public double calculateBarycenterDistance(OrbitingBody body) {
         double massRatio = body.getMass() / centralStar.getMass();
         double separation = body.getPosition().magnitude();
         return separation * massRatio / (1.0 + massRatio);
@@ -486,7 +511,7 @@ public class OrbitalSystem {
      * @return Map with keys "L1" through "L5", values are positions as Vector3D
      */
     public static Map<String, Vector3D> calculateLagrangePoints(CelestialBody primary,
-                                                                CelestialBody secondary) {
+                                                                OrbitingBody secondary) {
         Map<String, Vector3D> points = new HashMap<>();
 
         double M = primary.getMass();
@@ -544,7 +569,7 @@ public class OrbitalSystem {
      * Calculate Lagrange points relative to the central star and a planet
      * Convenience method for the common case
      */
-    public Map<String, Vector3D> calculateLagrangePoints(CelestialBody body) {
+    public Map<String, Vector3D> calculateLagrangePoints(OrbitingBody body) {
         return calculateLagrangePoints(centralStar, body);
     }
 

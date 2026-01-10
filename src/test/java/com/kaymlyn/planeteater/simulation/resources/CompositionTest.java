@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CompositionTest {
@@ -62,6 +63,36 @@ public class CompositionTest {
     }
 
     @Test
+    public void validateErrorChecking() {
+        Composition composition = new Composition();
+
+        Assertions.assertAll(
+                () -> assertEquals(0.0, composition.removeMaterial(Material.IRON, -3), "Cannot remove negative mass"),
+                () -> assertFalse(composition.addMaterialAsRawMass(Material.IRON, -3).contains(Material.IRON), "Cannot add negative mass"),
+                () -> assertFalse(composition.addMaterialAsVolume(Material.IRON, -3).contains(Material.IRON),"Cannot add a negative volume of material"),
+                () -> assertEquals(0.0, composition.removeMaterial(null, 10), "Material must be defined when removing mass"),
+                () -> assertEquals(0.0, composition.addMaterialAsRawMass(null, 10).getTotalMass(), "Material must be defined when adding mass"),
+                () -> assertEquals(0.0, composition.addMaterialAsVolume(null, 10).getTotalMass(),"Material must be defined when adding material by volume")
+        );
+    }
+
+    @Test
+    public void validateMetrics() {
+        Composition composition = new Composition().addMaterialAsVolume(Material.IRON, standardVolume);
+        double ironDensity = composition.getBulkDensity();
+        composition.addMaterialAsVolume(Material.IRON_OXIDE, standardVolume);
+        double ironMixDensity = composition.getBulkDensity();
+        double mixedDensity = (Material.IRON.getDensity() + Material.IRON_OXIDE.getDensity())/2;
+
+        Assertions.assertAll(
+                () -> assertEquals(Material.IRON.getDensity(), ironDensity),
+                () -> assertEquals(mixedDensity, ironMixDensity),
+                () -> assertEquals("Composition[Fe: 7.87e+05 kg, FeO: 5.24e+05 kg]", composition.toString()),
+                () -> assertEquals("Composition[]", new Composition().toString())
+        );
+    }
+
+    @Test
     public void validateExtraction(){
         Composition composition = new Composition() //1 : 2 : 10
                 .addMaterialAsRawMass(Material.IRON,1e4)
@@ -80,14 +111,11 @@ public class CompositionTest {
         double postSmallTargetedExtractionFeO = smallTargetedExtracted.getMass(Material.IRON_OXIDE); // 200/7 ~ 28.57 | retain 5% = 1.42
         double postSmallTargetedExtractionSi = smallTargetedExtracted.getMass(Material.SILICA); //2000/14 ~ 142.84 | retain 5% = 7.14
 
-
         //Composition: 9956.05 Fe, 19967.82 FeO, 99839.02 Si | 129762.89 : Fe 7.67%, FeO 15.39%, Si %76.94
         Composition smallMultiTargetedExtracted = composition.extract(standardMass*2, 2.0, Material.IRON, Material.IRON_OXIDE); // expected: 15.34 Fe, 30.78 FeO, 7.694 Si
         double postSmallMultiTargetedExtractionFe = smallMultiTargetedExtracted.getMass(Material.IRON); // 200*1534/12306 ~ 24.93
-        double postSmallMultiTargetedExtractionFeO = smallMultiTargetedExtracted.getMass(Material.IRON_OXIDE); // 200*3078/12306 ~ 50.02
+        double postSmallMultiTargetedExtractionFeO = smallMultiTargetedExtracted.getMass(Material.IRON_OXIDE); // 200*3078/12306 ~ 50.01
         double postSmallMultiTargetedExtractionSi = smallMultiTargetedExtracted.getMass(Material.SILICA); //200*7694/12306 ~ 125.04 | retain 5% = 6.25
-
-        //129,762.89
 
         Assertions.assertAll(
                 () -> assertEquals(standardMass*2, (int)smallExtracted.getTotalMass(), "Untargeted extraction should get the full desired amount"),
@@ -99,9 +127,9 @@ public class CompositionTest {
                 () -> assertEquals(142, (int)(postSmallTargetedExtractionFeO*100), "FeO amount after targeted extraction should be 95% of 14.28%"),
                 () -> assertEquals(714, (int)(postSmallTargetedExtractionSi*100), "Si amount after targeted extraction should be 95% of 71.44%"),
                 () -> assertEquals(8120, (int)(smallMultiTargetedExtracted.getTotalMass()*100), "Targeted extraction of multiple resources should get efficiency multiplied value and 5% of untargeted resources"),
-                () -> assertEquals(2493, (int)(postSmallMultiTargetedExtractionFe*100), "Fe amount after multi targeted extraction should be 7.67%"),
-                () -> assertEquals(5001, (int)(postSmallMultiTargetedExtractionFeO*100), "FeO amount after multi targeted extraction should be 15.39%"),
-                () -> assertEquals(625, (int)(postSmallMultiTargetedExtractionSi*100), "Si amount after multi targeted extraction should be 95% of 76.94%")
+                () -> assertEquals(2493, (int)(postSmallMultiTargetedExtractionFe*100), "Fe amount after multi targeted extraction should be 12.47%"),
+                () -> assertEquals(5001, (int)(postSmallMultiTargetedExtractionFeO*100), "FeO amount after multi targeted extraction should be 25.01%"),
+                () -> assertEquals(625, (int)(postSmallMultiTargetedExtractionSi*100), "Si amount after multi targeted extraction should be 95% of 62.52%")
         );
     }
 }

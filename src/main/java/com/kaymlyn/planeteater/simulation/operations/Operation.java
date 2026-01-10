@@ -1,10 +1,11 @@
 package com.kaymlyn.planeteater.simulation.operations;
 
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
+import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.entities.MiningEntity;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
-import com.kaymlyn.planeteater.simulation.infrastructure.OrbitalPlatform;
+import com.kaymlyn.planeteater.simulation.vehicles.CentralMind;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.operations.TravelCalculator.Trajectory;
 import lombok.Getter;
@@ -36,7 +37,7 @@ public abstract class Operation {
     private final Composition supplies;
     private final Composition inventory;
     private final Planet target;
-    private final List<MiningEntity> miners;       // Amount mined so far (kg)
+    private final List<Automaton> crew;       // Amount mined so far (kg)
     private OperationStatus status;
 
     private final double deploymentTime;
@@ -51,7 +52,7 @@ public abstract class Operation {
         this.target = target;
         this.supplies = supplies;
         this.inventory = supplies;
-        this.miners = new ArrayList<>();
+        this.crew = new ArrayList<>();
         this.status = OperationStatus.PLANNING;
         this.deploymentTime = deploymentTime;
     }
@@ -59,7 +60,7 @@ public abstract class Operation {
     /**
      * Plan the operation - calculate trajectories and check feasibility
      */
-    public boolean planOperation(OrbitalPlatform platform, OrbitalSystem system) {
+    public boolean planOperation(CentralMind platform, OrbitalSystem system) {
         if (status != OperationStatus.PLANNING) {
             return false;
         }
@@ -81,7 +82,7 @@ public abstract class Operation {
         }
         
         // Check crew capacity
-        return miners.size() <= spacecraft.getMaxCrewCapacity();
+        return crew.size() <= spacecraft.getMaxCrewCapacity();
     }
     
     /**
@@ -146,22 +147,19 @@ public abstract class Operation {
         status = OperationStatus.DEPLOYING;
         startTime = currentTime;
         
-        // Disembark miners
-        for (MiningEntity miner : miners) {
-            spacecraft.disembarkEntity(miner);
-            miner.setState(MiningEntity.EntityState.MINING);
-            miner.setCurrentLocation(target.getId());
+        // Disembark crew
+        for (Automaton miner : crew) {
+            crew.add(spacecraft.disembarkCrew(miner));
         }
     }
 
     /**
      * Begin return journey to platform
      */
-    private void beginReturn(OrbitalPlatform platform) {
-        // Re-board miners
-        for (MiningEntity miner : miners) {
-            spacecraft.boardEntity(miner);
-            miner.setCurrentLocation(null);
+    private void beginReturn(CentralMind platform) {
+        // Re-board crew
+        for (Automaton automaton : crew) {
+            spacecraft.boardAutomaton(automaton);
         }
 
         // Consume fuel for return
@@ -205,8 +203,8 @@ public abstract class Operation {
 //     * Begin return journey to platform
 //     */
 //    private void beginReturn() {
-//        // Re-board miners
-//        for (MiningEntity miner : miners) {
+//        // Re-board crew
+//        for (MiningEntity miner : crew) {
 //            spacecraft.boardEntity(miner);
 //            miner.setCurrentLocation(null);
 //        }

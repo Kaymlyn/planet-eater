@@ -8,6 +8,7 @@ import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Materials;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.LayerProfile;
+import lombok.Getter;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -22,6 +23,7 @@ import java.util.Random;
 
 public class CelestialBodyFactory {
 
+    @Getter
     private final OrbitalSystem system;
 
     private final HashMap<String,LayerProfile> profiles;
@@ -137,8 +139,7 @@ public class CelestialBodyFactory {
             throw new IllegalArgumentException("internalRadius is larger than externalRadius");
         }
 
-        return ((4.0 / 3.0) * Math.PI * Math.pow(externalRadius, 3))
-                - (internalRadius < 0.00 ? (4.0 / 3.0) * Math.PI * Math.pow(internalRadius, 3) : 0);
+        return ((4.0 / 3.0) * Math.PI * Math.pow(externalRadius, 3)) - ((4.0 / 3.0) * Math.PI * Math.pow(internalRadius, 3));
     }
 
     /**
@@ -194,11 +195,6 @@ public class CelestialBodyFactory {
                             null, 0,
                             getRandomAsteroidType(asteroids), asteroids.nextDouble(minimumRadius,maximumRadius),
                             null, 0)
-//                    createAsteroidByType(getRandomAsteroidType(random),
-//                    beltID + "-BeltAsteroid-"+i,
-//                    Vector3D.ZERO,
-//                    Vector3D.ZERO, random.nextDouble(minimumRadius,maximumRadius)
-//                    )
             );
         }
         return asteroidBelt;

@@ -4,11 +4,9 @@ import com.kaymlyn.planeteater.simulation.entities.MiningEntity;
 import com.kaymlyn.planeteater.simulation.operations.Operation;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
-import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import lombok.Getter;
 import lombok.Setter;
-import java.util.ArrayList;
-import java.util.List;
+
 import java.util.Map;
 
 /**
@@ -20,7 +18,7 @@ import java.util.Map;
  */
 @Getter
 @Setter
-public class Spacecraft {
+public class Spacecraft extends Vehicle {
     
     public enum SpacecraftState {
         DOCKED,         // At platform
@@ -30,21 +28,10 @@ public class Spacecraft {
     }
     
     private String id;
-    private double dryMass;              // Mass of spacecraft without fuel/cargo (kg)
-    private double fuelMass;             // Current fuel mass (kg)
-    private double maxFuelCapacity;      // Maximum fuel that can be carried (kg)
-    private double cargoCapacity;        // Maximum cargo mass (kg)
-    private double exhaustVelocity;      // Effective exhaust velocity (m/s)
-    private boolean hasLifeSupport;      // Whether it can carry humans
-    private int maxCrewCapacity;         // Maximum number of entities
-    
+
     private Composition construction;    // Materials used to build the spacecraft
-    private Composition cargo;           // Current cargo
-    private List<MiningEntity> crew;     // Entities aboard
-    
+
     private SpacecraftState state;
-    private Vector3D position;
-    private Vector3D velocity;
     private String destination;          // ID of destination body
     private double travelStartTime;
     private double travelDuration;
@@ -52,21 +39,11 @@ public class Spacecraft {
     public Spacecraft(String id, double dryMass, double maxFuelCapacity, 
                      double cargoCapacity, double exhaustVelocity, 
                      boolean hasLifeSupport, int maxCrewCapacity) {
+        super(dryMass, maxFuelCapacity, cargoCapacity, exhaustVelocity, hasLifeSupport, maxCrewCapacity);
         this.id = id;
-        this.dryMass = dryMass;
-        this.maxFuelCapacity = maxFuelCapacity;
-        this.fuelMass = maxFuelCapacity; // Start fully fueled
-        this.cargoCapacity = cargoCapacity;
-        this.exhaustVelocity = exhaustVelocity;
-        this.hasLifeSupport = hasLifeSupport;
-        this.maxCrewCapacity = maxCrewCapacity;
-        
+
         this.construction = new Composition();
-        this.cargo = new Composition();
-        this.crew = new ArrayList<>();
         this.state = SpacecraftState.DOCKED;
-        this.position = Vector3D.ZERO;
-        this.velocity = Vector3D.ZERO;
     }
 
     public void commenceOperation(Operation operation) {
@@ -86,122 +63,7 @@ public class Spacecraft {
         
         return ship;
     }
-    
-    /**
-     * Calculate total current mass (dry + fuel + cargo + crew)
-     */
-    public double getTotalMass() {
-        double crewMass = crew.stream().mapToDouble(MiningEntity::getMass).sum();
-        return dryMass + fuelMass + cargo.getTotalMass() + crewMass;
-    }
-    
-    /**
-     * Calculate available cargo space
-     */
-    public double getAvailableCargoSpace() {
-        return cargoCapacity - cargo.getTotalMass();
-    }
-    
-    /**
-     * Calculate available crew slots
-     */
-    public int getAvailableCrewSlots() {
-        return maxCrewCapacity - crew.size();
-    }
-    
-    /**
-     * Add fuel to the spacecraft
-     * Returns actual amount added
-     */
-    public double addFuel(double amount) {
-        double space = maxFuelCapacity - fuelMass;
-        double toAdd = Math.min(amount, space);
-        fuelMass += toAdd;
-        return toAdd;
-    }
-    
-    /**
-     * Consume fuel (for propulsion)
-     * Returns actual amount consumed
-     */
-    public double consumeFuel(double amount) {
-        double toConsume = Math.min(amount, fuelMass);
-        fuelMass -= toConsume;
-        return toConsume;
-    }
-    
-    /**
-     * Load cargo onto the spacecraft
-     * Returns actual amount loaded
-     */
-    public double loadCargo(Material material, double mass) {
-        double available = getAvailableCargoSpace();
-        double toLoad = Math.min(mass, available);
-        if (toLoad > 0) {
-            cargo.addMaterialAsVolume(material, toLoad);
-        }
-        return toLoad;
-    }
-    
-    /**
-     * Unload cargo from the spacecraft
-     * Returns actual amount unloaded
-     */
-    public double unloadCargo(Material material, double mass) {
-        return cargo.removeMaterial(material, mass);
-    }
-    
-    /**
-     * Board a mining entity
-     */
-    public boolean boardEntity(MiningEntity entity) {
-        if (crew.size() >= maxCrewCapacity) {
-            return false;
-        }
-        if (entity.requiresLifeSupport() && !hasLifeSupport) {
-            return false;
-        }
-        crew.add(entity);
-        entity.setState(MiningEntity.EntityState.TRAVELING);
-        return true;
-    }
-    
-    /**
-     * Disembark a mining entity
-     */
-    public boolean disembarkEntity(MiningEntity entity) {
-        if (crew.remove(entity)) {
-            entity.setState(MiningEntity.EntityState.IDLE);
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * Calculate delta-v available with current fuel
-     * Uses Tsiolkovsky rocket equation: Δv = v_e * ln(m_initial / m_final)
-     */
-    public double getAvailableDeltaV() {
-        double initialMass = getTotalMass();
-        double finalMass = initialMass - fuelMass;
-        
-        if (finalMass <= 0 || initialMass <= 0) {
-            return 0.0;
-        }
-        
-        return exhaustVelocity * Math.log(initialMass / finalMass);
-    }
-    
-    /**
-     * Calculate fuel required for a given delta-v
-     * m_fuel = m_dry * (e^(Δv/v_e) - 1)
-     */
-    public double getFuelRequiredForDeltaV(double deltaV) {
-        double payloadMass = dryMass + cargo.getTotalMass() + 
-            crew.stream().mapToDouble(MiningEntity::getMass).sum();
-        return payloadMass * (Math.exp(deltaV / exhaustVelocity) - 1.0);
-    }
-    
+
     /**
      * Recycle the spacecraft, returning all construction materials
      */
@@ -217,16 +79,6 @@ public class Spacecraft {
         // In practice, fuel might be hydrogen or similar
         
         return materials;
-    }
-    
-    /**
-     * Check if spacecraft can support its current crew
-     */
-    public boolean canSupportCrew() {
-        if (!hasLifeSupport) {
-            return crew.stream().noneMatch(MiningEntity::requiresLifeSupport);
-        }
-        return crew.size() <= maxCrewCapacity;
     }
     
     @Override

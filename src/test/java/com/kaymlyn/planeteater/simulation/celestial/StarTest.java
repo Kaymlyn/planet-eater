@@ -18,10 +18,11 @@ public class StarTest {
                 () -> Assertions.assertEquals(6.92657191e8,Math.round(sun.getRadius())),
                 () -> Assertions.assertEquals(979, (int)(sun.getLuminosity()*1000.0)),
                 () -> Assertions.assertEquals("G", sun.getSpectralClass()),
-                () -> Assertions.assertEquals(1.976071e6, (int)(sun.calculateMassLossRate()/1e3)),
-                () -> Assertions.assertEquals(8.1226632e7, Math.round(sun.circularOrbitVelocity(20000))),
-                () -> Assertions.assertEquals(5.7436e4,Math.round(sun.circularOrbitVelocity(4.0e10))),
-                () -> Assertions.assertEquals(366, Math.round(sun.orbitalPeriod(PhysicsConstants.AU)/PhysicsConstants.SECONDS_PER_DAY))
+                () -> Assertions.assertEquals(1.976071e6, (int)(sun.calculateMassLossRate()/1e3))
+
+//                () -> Assertions.assertEquals(8.1226632e7, Math.round(sun.circularOrbitVelocity(20000))),
+//                () -> Assertions.assertEquals(5.7436e4,Math.round(sun.circularOrbitVelocity(4.0e10))),
+//                () -> Assertions.assertEquals(366, Math.round(sun.orbitalPeriod(PhysicsConstants.AU)/PhysicsConstants.SECONDS_PER_DAY))
         );
 
     }

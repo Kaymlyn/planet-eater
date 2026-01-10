@@ -1,6 +1,7 @@
 package com.kaymlyn.planeteater.simulation.celestial.planetoid;
 
 import com.kaymlyn.planeteater.simulation.celestial.BodyType;
+import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.celestial.Star;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.LayerProfile;
@@ -52,7 +53,7 @@ public class PlanetTest {
                 profiles.get("HABITABLE_CRUST"),  coreRadius + mantleThickness + crustThickness,
                 profiles.get("HABITABLE_ATMOSPHERE"), coreRadius + mantleThickness + crustThickness + atmosphereThickness);
 
-        weirdPlanet = factory.createArbitraryPlanet("WeirdPlanet", defaultPlanet, smallOrbit,
+        weirdPlanet = factory.createArbitraryPlanet("WeirdPlanet", (CelestialBody) defaultPlanet, smallOrbit,
                 core, SMALL_RADIUS,
                 null, 0,
                 null, 0,
@@ -63,7 +64,7 @@ public class PlanetTest {
     public void validateVectorExpectations() {
         Vector3D initialPosition = defaultPlanet.getPosition();
 
-        defaultPlanet.getParentBody().getSystem().advance(3600);
+        factory.getSystem().advance(3600);
 
         Assertions.assertAll(
                 () -> Assertions.assertEquals( new Vector3D(1.496e11,0.0,0.0), initialPosition),
@@ -94,8 +95,8 @@ public class PlanetTest {
     public void validateComplicatedCreation() {
         //Truncating to make output easier to check
         Assertions.assertAll(
-                () -> Assertions.assertEquals(98056, (int)(defaultPlanet.getMass()/1e20)),
-                () -> Assertions.assertEquals(74023, (int)(defaultPlanet.getSurfaceGravity()*1e4))
+                () -> Assertions.assertEquals(48804, (int)(defaultPlanet.getMass()/1e20)),
+                () -> Assertions.assertEquals(78638, (int)(defaultPlanet.getSurfaceGravity()*1e4))
         );
     }
 
@@ -112,8 +113,8 @@ public class PlanetTest {
     @Test
     public void validateSatellites() {
         Assertions.assertAll(
-                () -> Assertions.assertEquals(1.768927265e9, Math.round(defaultPlanet.calculateHillSphereRadius())),
-                () -> Assertions.assertEquals(1.2453556e7, Math.round(weirdPlanet.calculateHillSphereRadius())),
+                () -> Assertions.assertEquals(1.401858882e9, Math.round(defaultPlanet.calculateHillSphereRadius())),
+                () -> Assertions.assertEquals(1.5714445e7, Math.round(weirdPlanet.calculateHillSphereRadius())),
                 () -> Assertions.assertTrue(weirdPlanet.canHaveSubSatellites(), "Weird Planet is to close to the sun to have satellites"),
                 () -> Assertions.assertTrue(defaultPlanet.canHaveSubSatellites(), "Default Planet is far enough away from Default Planet to have satellites"),
                 () -> Assertions.assertFalse(weirdPlanet.isTidallyLocked(), "Weird Planet is not tidally locked"),
@@ -158,11 +159,11 @@ public class PlanetTest {
         Assertions.assertAll(
                 () -> Assertions.assertTrue(defaultPlanet.canMineCrust(), "Crust is Minable"),
                 () -> Assertions.assertTrue(defaultPlanet.canHarvestAtmosphere(), "Atmosphere is Harvestable"),
-                () -> Assertions.assertEquals(98056, (int)(startingMass/1e20), "Starting Mass is as expected based on composition"),
-                () -> Assertions.assertEquals(74023, (int)(startingGravity*1e4), "Starting Gravity is as expected based on composition"),
+                () -> Assertions.assertEquals(48804, (int)(startingMass/1e20), "Starting Mass is as expected based on composition"),
+                () -> Assertions.assertEquals(78638, (int)(startingGravity*1e4), "Starting Gravity is as expected based on composition"),
                 () -> Assertions.assertEquals((int)(qtySiO2*1e22), (int)(postMinedSiO2*1e22), "Silica is not mined"),
-                () -> Assertions.assertEquals(98046, (int)(postMinedMass/1e20), "Mass has decreased by 1e20kg"),
-                () -> Assertions.assertEquals(74018, (int)(postMinedGravity*1e4), "Gravity has decreased by .0005 m*s-2"),
+                () -> Assertions.assertEquals(48794, (int)(postMinedMass/1e20), "Mass has decreased by 1e20kg"),
+                () -> Assertions.assertEquals(78631, (int)(postMinedGravity*1e4), "Gravity has decreased by .0007 m*s-2"),
                 () -> Assertions.assertEquals(qtyFeO - minedFeO, postMinedFeO, "Mined material was removed from crust composition"),
                 () -> Assertions.assertEquals(qtyO2,postMinedO2, "Oxygen was not mined"),
                 () -> Assertions.assertEquals(qtyN2 - minedN2, postMinedN2, "Harvested material was removed from atmosphere composition"),

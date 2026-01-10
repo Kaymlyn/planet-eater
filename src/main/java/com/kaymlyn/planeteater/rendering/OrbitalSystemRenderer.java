@@ -1,6 +1,6 @@
 package com.kaymlyn.planeteater.rendering;
 
-import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
+import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import org.jcodec.api.SequenceEncoder;
@@ -80,7 +80,7 @@ public class OrbitalSystemRenderer {
         Graphics2D canvas = image.createGraphics();
         canvas.setBackground(Color.BLACK);
 
-        for(CelestialBody body : system.getOrbitingBodies()) {
+        for(OrbitingBody body : system.getOrbitingBodies()) {
             canvas.setColor(Color.WHITE);
 
             if(body.getId().contains("00"))

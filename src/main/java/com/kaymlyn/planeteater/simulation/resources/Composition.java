@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Collections;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Represents the type composition of a celestial body
@@ -41,10 +43,9 @@ public class Composition {
      * @param mass The mass in kg
      */
     public Composition addMaterialAsRawMass(Material material, double mass) {
-        if (mass < 0) {
-            throw new IllegalArgumentException("Mass cannot be negative");
+        if (mass > 0 && material != null) {
+            materials.merge(material, mass, Double::sum);
         }
-        materials.merge(material, mass, Double::sum);
         return this;
     }
     
@@ -53,8 +54,8 @@ public class Composition {
      * Returns the actual amount removed (amount may be less if insufficient quantity)
      */
     public double removeMaterial(Material material, double mass) {
-        if (mass < 0) {
-            throw new IllegalArgumentException("Mass cannot be negative");
+        if (mass < 0 || material == null) {
+            return 0.0;
         }
 
         double currentMass = materials.getOrDefault(material, 0.0);
@@ -99,8 +100,9 @@ public class Composition {
      *                            Efficiency of .5 would mean that the ratio would be halved e.g. 1 : 10 -> 1 : 20
      *                            (4.76%). Efficiency of 5.0 would result in 1 : 10 -> 5 : 10. (33.3%) etc.
      *                            Efficiency is applied equally to all the targets so that an efficiency of 2 for two
-     *                            of 3 equally available resources (ratio 1 : 1 : 1) would end up with a ratio of 2 : 2 : 1. In other
-     *                            words 33% for each resource will go to 40% each for the targets and 20% for the last
+     *                            of 3 equally available resources (ratio 1 : 1 : 1) would end up with a ratio of 2 : 2
+     *                            : 1. In other words 33% for each resource will go to 40% each for the targets and 20%
+     *                            for the last.
      * @param targets a list of materials to target. Materials not on the list will be auto dumped at a rate of 95% of
      *                the total mass extracted. Dumped resources will be removed from the materials returned and be left
      *                in the layer from which they originated from.
@@ -109,7 +111,6 @@ public class Composition {
     public Composition extract(double extractionMass, double targetingEfficiency, Material... targets) {
         Composition extracted = new Composition();
         List<Material> targetList = Arrays.asList(targets);
-
         if(targets.length == 0) {
             getFractions().forEach((m,f) -> extracted.addMaterialAsRawMass(m,removeMaterial(m,extractionMass*f)));
         } else {
@@ -121,7 +122,6 @@ public class Composition {
                     updatedFractions.put(m, getFractions().get(m));
                 }
             });
-
             double totalOfAllFractions = updatedFractions.values().stream().reduce(0.0,Double::sum);
             updatedFractions.forEach((m,f) -> {
                 if(targetList.contains(m)) {
@@ -131,7 +131,6 @@ public class Composition {
                 }
             });
         }
-
         return extracted;
     }
     
@@ -213,9 +212,10 @@ public class Composition {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("Composition[");
-        materials.forEach((mat, mass) -> 
+        TreeMap<Material, Double> sorted = new TreeMap<>(materials);
+        sorted.forEach((mat, mass) ->
             sb.append(String.format("%s: %.2e kg, ", mat.getSymbol(), mass)));
-        if (!materials.isEmpty()) {
+        if (!sorted.isEmpty()) {
             sb.setLength(sb.length() - 2); // Remove trailing ", "
         }
         sb.append("]");

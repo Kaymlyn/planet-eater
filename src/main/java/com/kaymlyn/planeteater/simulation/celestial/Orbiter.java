@@ -2,16 +2,14 @@ package com.kaymlyn.planeteater.simulation.celestial;
 
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 
-public interface CelestialBody {
+public interface Orbiter {
     String getId();
     Vector3D getPosition();
+    Vector3D getVelocity();
 
-    Vector3D gravitationalForceOn(Orbiter other);
+    void setPosition(Vector3D position);
+    void setVelocity(Vector3D velocity);
 
-    double getRadius();
-    double getDensity();
-    double getVolume();
     double getMass();
-    double getAggregatedMass();
-
+    void update(Vector3D vector3D, double timeStep);
 }

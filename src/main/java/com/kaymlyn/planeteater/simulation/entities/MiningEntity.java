@@ -11,25 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class MiningEntity {
-    
-    public enum EntityType {
-        ORGANIC,
-        INORGANIC,
-        SEMIORGANIC
-    }
-    public enum EntityLocomotion {
-        BIPEDAL,
-        QUADRUPEDAL,
-        SERPENTINE,
-        WHEELED,
-        TRACKED,
-        BUOYANCY,
-        FLAPPING,
-        PROPELLER,
-        JET,
-        ROCKET
-    }
-    
+
     private String id;
     private EntityType type;
     private EntityLocomotion motion;

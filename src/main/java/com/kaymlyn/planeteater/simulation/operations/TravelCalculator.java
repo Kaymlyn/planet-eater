@@ -1,6 +1,6 @@
 package com.kaymlyn.planeteater.simulation.operations;
 
-import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
+import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
@@ -261,7 +261,7 @@ public class TravelCalculator {
      * This predicts where the target will be when the spacecraft arrives
      */
     public static Trajectory calculateRendezvous(Vector3D startPos, Vector3D startVel,
-                                                 CelestialBody target,
+                                                 OrbitingBody target,
                                                  double currentTime,
                                                  Spacecraft spacecraft,
                                                  OrbitalSystem system) {
