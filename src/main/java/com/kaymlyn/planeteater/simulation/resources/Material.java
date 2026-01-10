@@ -56,7 +56,10 @@ public enum Material {
     SODIUM(971.0, "Na"),
     POTASSIUM(862.0, "K"),
     CHROMIUM(7190.0, "Cr"),
-    PHOSPHORUS(1820.0, "P");
+    PHOSPHORUS(1820.0, "P"),
+
+    //Bucket for every other element not outlined above (Precious Metals, Rare metals and gases)
+    TRACE_ELEMENTS(19300.0, "TE");
     
     private final double density; // kg/m³
     private final String symbol;
