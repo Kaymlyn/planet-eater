@@ -198,7 +198,7 @@ public class OrbitalSystem {
      * @param angle Angle in radians (0 = +X axis)
      * @param inclination Inclination in radians (0 = +Z axis)
      */
-    public void placeInCircularOrbit(OrbitingBody body, double radius, double angle, double inclination) {
+    public void placeInCircularOrbit(Orbiter body, double radius, double angle, double inclination) {
         placeInEllipticalOrbit(
                 body,
                 getCentralStar(),
@@ -228,7 +228,7 @@ public class OrbitalSystem {
      * @param maxInclination Maximum angle of inclination measured in radians
      * @param maximumEccentricity Maximum eccentricity
      */
-    public void placeAllInEllipticalOrbits(List<? extends OrbitingBody> bodies,
+    public void placeAllInEllipticalOrbits(List<? extends Orbiter> bodies,
                                            double minimumAURadius,
                                            double maximumAURadius,
                                            double maxInclination,
@@ -616,110 +616,4 @@ public class OrbitalSystem {
                 random.nextDouble()*2*Math.PI
         );
     }
-//
-//    /**
-//     * Get all satellites in the system
-//     */
-//    public List<NaturalSatellite> getSatellites() {
-//        List<NaturalSatellite> naturalSatellites = new ArrayList<>();
-//        for (CelestialBody body : bodies) {
-//            if (body instanceof NaturalSatellite) {
-//                naturalSatellites.add((NaturalSatellite) body);
-//            }
-//        }
-//        return naturalSatellites;
-//    }
-
-//    /**
-//     * Get satellites orbiting a specific body
-//     */
-//    public List<NaturalSatellite> getSatellitesOf(String parentBodyId) {
-//        List<NaturalSatellite> naturalSatellites = new ArrayList<>();
-//        for (CelestialBody body : bodies) {
-//            if (body instanceof NaturalSatellite) {
-//                NaturalSatellite sat = (NaturalSatellite) body;
-//                if (sat.getParentBodyId().equals(parentBodyId)) {
-//                    naturalSatellites.add(sat);
-//                }
-//            }
-//        }
-//        return naturalSatellites;
-//    }
-//
-//    /**
-//     * Place a satellite in circular orbit around a parent body
-//     */
-//    public void placeSatelliteInOrbit(NaturalSatellite naturalSatellite, CelestialBody parent,
-//                                      double orbitRadius, double angle) {
-//        placeSatelliteInOrbit(naturalSatellite, parent, orbitRadius, angle, 0.0);
-//    }
-
-//    /**
-//     * Place a satellite in circular orbit with inclination
-//     */
-//    public void placeSatelliteInOrbit(NaturalSatellite naturalSatellite, CelestialBody parent,
-//                                      double orbitRadius, double angle, double inclination) {
-//        // Calculate orbital velocity around the parent
-//        double mu = PhysicsConstants.G * parent.getMass();
-//        double orbitalVelocity = Math.sqrt(mu / orbitRadius);
-//
-//        // Position relative to parent
-//        double x = orbitRadius * Math.cos(angle);
-//        double y = orbitRadius * Math.sin(angle);
-//        double z = 0.0;
-//
-//        // Apply inclination
-//        if (inclination != 0.0) {
-//            double xRot = x;
-//            double yRot = y * Math.cos(inclination);
-//            double zRot = y * Math.sin(inclination);
-//            x = xRot;
-//            y = yRot;
-//            z = zRot;
-//        }
-//
-//        // Velocity perpendicular to position
-//        double vx = -orbitalVelocity * Math.sin(angle);
-//        double vy = orbitalVelocity * Math.cos(angle);
-//        double vz = 0.0;
-//
-//        // Apply inclination to velocity
-//        if (inclination != 0.0) {
-//            double vyRot = vy * Math.cos(inclination);
-//            double vzRot = vy * Math.sin(inclination);
-//            vy = vyRot;
-//            vz = vzRot;
-//        }
-//
-//        // Add parent's position and velocity
-//        Vector3D absolutePosition = parent.getPosition().add(new Vector3D(x, y, z));
-//        Vector3D absoluteVelocity = parent.getVelocity().add(new Vector3D(vx, vy, vz));
-//
-//        naturalSatellite.setPosition(absolutePosition);
-//        naturalSatellite.setVelocity(absoluteVelocity);
-//        naturalSatellite.setOrbitalRadius(orbitRadius);
-//
-//        addBody(naturalSatellite);
-//    }
-
-//    /**
-//     * Place a satellite at a Lagrange point
-//     */
-//    public void placeSatelliteAtLagrangePoint(NaturalSatellite naturalSatellite, CelestialBody parent,
-//                                              String lagrangePoint) {
-//        Map<String, Vector3D> points = calculateLagrangePoints(parent);
-//        Vector3D position = points.get(lagrangePoint);
-//
-//        if (position == null) {
-//            throw new IllegalArgumentException("Invalid Lagrange point: " + lagrangePoint);
-//        }
-//
-//        // Velocity should match the parent's orbital velocity
-//        // (Lagrange points are in the rotating frame with the parent)
-//        naturalSatellite.setPosition(position);
-//        naturalSatellite.setVelocity(parent.getVelocity());
-//
-//        addBody(naturalSatellite);
-//    }
-
 }

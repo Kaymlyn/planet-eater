@@ -29,6 +29,10 @@ public class Vehicle { // Entities aboard
     protected List<Environment> environments;// Current cargo
     protected List<Automaton> crew;
 
+    public Vehicle() {
+
+    }
+
     public Vehicle(double dryMass, double maxFuelCapacity, double cargoCapacity, double exhaustVelocity, boolean hasLifeSupport, int maxCrewCapacity) {
         this.dryMass = dryMass;
         this.fuelMass = maxFuelCapacity; // Start fully fueled

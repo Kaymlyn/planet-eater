@@ -8,6 +8,7 @@ import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Materials;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.LayerProfile;
+import com.kaymlyn.planeteater.simulation.vehicles.CentralMind;
 import lombok.Getter;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -52,6 +53,12 @@ public class CelestialBodyFactory {
 
     public Map<String,LayerProfile> getProfiles() {
         return profiles;
+    }
+
+    public CentralMind createCentralMind(double orbitalRadius) {
+        CentralMind centralMind = new CentralMind("Central Mind");
+        system.placeInCircularOrbit(centralMind,orbitalRadius,0);
+        return centralMind;
     }
 
     public Planet createArbitraryPlanet(String id,
