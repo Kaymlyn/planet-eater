@@ -1,7 +1,6 @@
 package com.kaymlyn.planeteater.simulation.celestial.planetoid;
 
 import com.kaymlyn.planeteater.simulation.celestial.BodyType;
-import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.celestial.Star;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.LayerProfile;
@@ -29,7 +28,7 @@ public class PlanetTest {
     private final OrbitInitializer smallOrbit = new OrbitInitializer(SMALL_ORBIT,0,0,0,0,0);
     private final Materials solidIron = new Materials(Material.IRON,100);
     private final Materials solidNickel = new Materials(Material.NICKEL,50);
-    private final LayerProfile core = new LayerProfile(BodyType.ABERRANT,Zone.CORE,List.of(solidIron,solidNickel));
+    private final LayerProfile core = new LayerProfile("NICKLE_IRON",Zone.CORE,List.of(solidIron,solidNickel));
 
     private CelestialBodyFactory factory;
     private Planet defaultPlanet;
@@ -47,13 +46,13 @@ public class PlanetTest {
         double mantleThickness = 2.885e6;
         double crustThickness = 6.5e4;
         double atmosphereThickness = 1.0e4;
-        defaultPlanet = factory.createArbitraryPlanet("TestPlanet", oneAUCircularOrbit,
-                profiles.get("HABITABLE_CORE"), coreRadius,
-                profiles.get("HABITABLE_MANTLE"), coreRadius + mantleThickness,
-                profiles.get("HABITABLE_CRUST"),  coreRadius + mantleThickness + crustThickness,
-                profiles.get("HABITABLE_ATMOSPHERE"), coreRadius + mantleThickness + crustThickness + atmosphereThickness);
+        defaultPlanet = factory.createArbitraryPlanet("", oneAUCircularOrbit,
+                profiles.get("NICKEL_IRON_CORE"), coreRadius,
+                profiles.get("MG_FE_SILICATE_MANTLE"), coreRadius + mantleThickness,
+                profiles.get("ALUMINA_SILICA_CRUST"),  coreRadius + mantleThickness + crustThickness,
+                profiles.get("NITROGEN_OXYGEN_ATMOSPHERE"), coreRadius + mantleThickness + crustThickness + atmosphereThickness);
 
-        weirdPlanet = factory.createArbitraryPlanet("WeirdPlanet", (CelestialBody) defaultPlanet, smallOrbit,
+        weirdPlanet = factory.createArbitraryPlanet(null, defaultPlanet, smallOrbit,
                 core, SMALL_RADIUS,
                 null, 0,
                 null, 0,

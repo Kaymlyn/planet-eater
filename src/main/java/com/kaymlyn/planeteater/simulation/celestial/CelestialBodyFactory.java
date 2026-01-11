@@ -1,6 +1,7 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.PlanetPattern;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
@@ -16,20 +17,24 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Scanner;
 
 public class CelestialBodyFactory {
 
     @Getter
     private final OrbitalSystem system;
-
     private final HashMap<String,LayerProfile> profiles;
-
     private final ObjectMapper mapper;
+
+    private final static List<String> bodyNames = initBodyNames();
+    private final static Random random = new Random(0L);
 
     public CelestialBodyFactory(Star star, double timeStep) {
         mapper = JsonMapper.builder().build();
@@ -42,8 +47,9 @@ public class CelestialBodyFactory {
                     }
             );
             profileList.forEach((layerProfile -> profiles.put(layerProfile.bodyType() + "_" + layerProfile.zone(),layerProfile)));
-        } catch (JacksonException je) {
-            je.printStackTrace();
+
+        } catch (JacksonException exception) {
+            exception.printStackTrace();
         }
     }
 
@@ -59,6 +65,18 @@ public class CelestialBodyFactory {
         CentralMind centralMind = new CentralMind("Central Mind");
         system.placeInCircularOrbit(centralMind,orbitalRadius,0);
         return centralMind;
+    }
+    public Planet createPlanetFromPattern(String id,
+                                          CelestialBody parent,
+                                          OrbitInitializer init,
+                                          PlanetPattern pattern,
+                                          double scale) {
+        return createArbitraryPlanet(id, parent, init,
+                profiles.get(pattern.coreType),pattern.coreRadius*scale,
+                profiles.get(pattern.mantleType),pattern.mantleRadius*scale,
+                profiles.get(pattern.crustType),pattern.crustRadius*scale,
+                profiles.get(pattern.atmosphereType), pattern.atmosphereRadius*scale);
+
     }
 
     public Planet createArbitraryPlanet(String id,
@@ -78,7 +96,8 @@ public class CelestialBodyFactory {
                                         LayerProfile crust, double crustRadius,
                                         LayerProfile atmosphere, double atmosphereRadius) {
 
-        Planet planet = new Planet(id, parentBody, system, Vector3D.ZERO, Vector3D.ZERO, BodyType.ABERRANT);
+
+        Planet planet = new Planet(id == null || id.isEmpty() ? bodyNames.get(random.nextInt(bodyNames.size())) : id, parentBody, system, Vector3D.ZERO, Vector3D.ZERO, BodyType.ABERRANT);
 
         if(core != null)
             planet.getCoreComposition().addBulkMaterial(
@@ -153,7 +172,7 @@ public class CelestialBodyFactory {
      * Create a star with specific mass (in solar masses)
      */
     public static Star createMainSequenceStar(String id, double solarMasses) {
-        Star star = new Star(id,Vector3D.ZERO, Vector3D.ZERO);
+        Star star = new Star(id == null || id.isEmpty() ? bodyNames.get(random.nextInt(bodyNames.size())) : id,Vector3D.ZERO, Vector3D.ZERO);
 
         double totalMass = solarMasses * PhysicsConstants.SOLAR_MASS;
 
@@ -174,7 +193,7 @@ public class CelestialBodyFactory {
      * @param population    number of asteroids to put in the belt
      * @param minimumRadius minimum radius of an asteroid
      * @param maximumRadius maximum radius of an asteroid
-     * @return  list of Asteroids of random compositions and sizes
+     * @return list of Asteroids of random compositions and sizes
      */
     public List<Planet> createRandomAsteroidBelt(
             String beltID,
@@ -213,6 +232,21 @@ public class CelestialBodyFactory {
             case 1 -> { return profiles.get("M_TYPE_CRUST"); }
             default -> { return profiles.get("S_TYPE_CRUST"); }
         }
+    }
+
+    private static List<String> initBodyNames() {
+
+        List<String> bodyNames = new ArrayList<>();
+        try {
+            Scanner scanner = new Scanner(new File("src/main/resources/bodynames.txt"));
+            while (scanner.hasNextLine()) bodyNames.add(scanner.nextLine());
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        if(bodyNames.isEmpty()) {
+            bodyNames.add("Planet");
+        }
+        return Collections.unmodifiableList(bodyNames);
     }
 
 }

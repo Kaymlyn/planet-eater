@@ -98,7 +98,7 @@
     ]
   },
   {
-    "bodyType": "HABITABLE",
+    "bodyType": "NICKEL_IRON",
     "zone": "CORE",
     "materials": [
       {
@@ -116,7 +116,7 @@
     ]
   },
   {
-    "bodyType": "HABITABLE",
+    "bodyType": "MG_FE_SILICATE",
     "zone": "MANTLE",
     "materials": [
       {
@@ -138,7 +138,7 @@
     ]
   },
   {
-    "bodyType": "HABITABLE",
+    "bodyType": "ALUMINA_SILICA",
     "zone": "CRUST",
     "materials": [
       {
@@ -168,7 +168,7 @@
     ]
   },
   {
-    "bodyType": "HABITABLE",
+    "bodyType": "NITROGEN_OXYGEN",
     "zone": "ATMOSPHERE",
     "materials": [
       {
@@ -190,7 +190,7 @@
     ]
   },
   {
-    "bodyType": "GAS_GIANT",
+    "bodyType": "WET_SILICA_IRON",
     "zone": "CORE",
     "materials": [
       {
@@ -212,7 +212,7 @@
     ]
   },
   {
-    "bodyType": "GAS_GIANT",
+    "bodyType": "LOW_HYDROGEN_HELIUM",
     "zone": "ATMOSPHERE",
     "materials": [
       {
@@ -234,7 +234,7 @@
     ]
   },
   {
-    "bodyType": "ICE_GIANT",
+    "bodyType": "DRY_SILICA_IRON",
     "zone": "CORE",
     "materials": [
       {
@@ -252,7 +252,7 @@
     ]
   },
   {
-    "bodyType": "ICE_GIANT",
+    "bodyType": "WET_AMMONIA_METHANE",
     "zone": "MANTLE",
     "materials": [
       {
@@ -270,7 +270,7 @@
     ]
   },
   {
-    "bodyType": "ICE_GIANT",
+    "bodyType": "HIGH_HYDROGEN_HELIUM",
     "zone": "ATMOSPHERE",
     "materials": [
       {
@@ -284,6 +284,42 @@
       {
         "type": "METHANE_ICE",
         "ratio": 5
+      }
+    ]
+  },
+  {
+    "bodyType": "GREENHOUSE",
+    "zone": "ATMOSPHERE",
+    "materials": [
+      {
+        "type": "CO2_ICE",
+        "ratio": 95
+      },
+      {
+        "type": "NITROGEN_GAS",
+        "ratio": 4
+      },
+      {
+        "type": "WATER_ICE",
+        "ratio": 1
+      }
+    ]
+  },
+  {
+    "bodyType": "OCEAN",
+    "zone": "ATMOSPHERE",
+    "materials": [
+      {
+        "type": "WATER_ICE",
+        "ratio": 96
+      },
+      {
+        "type": "SODIUM_SALT",
+        "ratio": 3
+      },
+      {
+        "type": "ORGANIC_COMPOUNDS",
+        "ratio": 1
       }
     ]
   }

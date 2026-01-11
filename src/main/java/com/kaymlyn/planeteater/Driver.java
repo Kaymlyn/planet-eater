@@ -10,13 +10,12 @@ public class Driver {
 
     public static void main(String... args) throws FileNotFoundException {
 
-        CelestialBodyFactory factory = new CelestialBodyFactory(CelestialBodyFactory.createMainSequenceStar("Sol2", 1),28800);
+        CelestialBodyFactory factory = new CelestialBodyFactory(CelestialBodyFactory.createMainSequenceStar("Sol2", 1), 28800);
         OrbitInitializer init = new OrbitInitializer(1,0,0,0,0,0);
         Planet planet = factory.createArbitraryPlanet("Earth2", init,
                 factory.getProfiles().get("HABITABLE_CORE"),120000
                 ,null,0,null,0,null,0);
 
-        System.out.println(planet.getMass());
 
 
 

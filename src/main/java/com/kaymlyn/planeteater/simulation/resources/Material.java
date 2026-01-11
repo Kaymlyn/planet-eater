@@ -54,9 +54,11 @@ public enum Material {
     // Other significant elements
     CALCIUM(1550.0, "Ca"),
     SODIUM(971.0, "Na"),
+    CHLORINE_GAS(3214.0, "Cl"),
     POTASSIUM(862.0, "K"),
     CHROMIUM(7190.0, "Cr"),
     PHOSPHORUS(1820.0, "P"),
+    SODIUM_SALT(2170,"NaCl"),
 
     //Bucket for every other element not outlined above (Precious Metals, Rare metals and gases)
     TRACE_ELEMENTS(19300.0, "TE");
