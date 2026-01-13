@@ -2,7 +2,6 @@ package com.kaymlyn.planeteater.simulation.operations;
 
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
-import com.kaymlyn.planeteater.simulation.entities.MiningEntity;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import com.kaymlyn.planeteater.simulation.vehicles.CentralMind;
@@ -10,7 +9,9 @@ import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.operations.TravelCalculator.Trajectory;
 import lombok.Getter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Manages a mining operation at an asteroid
@@ -33,26 +34,26 @@ public abstract class Operation {
 
     private final String id;
     private final OrbitalSystem system;
-    private final Spacecraft spacecraft;
     private final Composition supplies;
     private final Composition inventory;
     private final Planet target;
-    private final List<Automaton> crew;       // Amount mined so far (kg)
+    private final List<Automaton> crew;
+    private final Map<String, Spacecraft> dockedSpaceCraft;    // Amount mined so far (kg)
     private OperationStatus status;
 
     private final double deploymentTime;
     private double startTime;           // When mining started (simulation time)
     private Trajectory outboundTrajectory;
     
-    public Operation(String id, OrbitalSystem system, Spacecraft spacecraft, Planet target,
+    public Operation(String id, OrbitalSystem system, Planet target,
                      Composition supplies, double deploymentTime) {
         this.id = id;
         this.system = system;
-        this.spacecraft = spacecraft;
         this.target = target;
         this.supplies = supplies;
         this.inventory = supplies;
         this.crew = new ArrayList<>();
+        this.dockedSpaceCraft = new HashMap<>();
         this.status = OperationStatus.PLANNING;
         this.deploymentTime = deploymentTime;
     }
@@ -60,7 +61,7 @@ public abstract class Operation {
     /**
      * Plan the operation - calculate trajectories and check feasibility
      */
-    public boolean planOperation(CentralMind platform, OrbitalSystem system) {
+    public boolean planOperation(CentralMind platform, Spacecraft spacecraft, OrbitalSystem system) {
         if (status != OperationStatus.PLANNING) {
             return false;
         }
@@ -68,11 +69,8 @@ public abstract class Operation {
         // Calculate outbound trajectory
         outboundTrajectory = TravelCalculator.calculateRendezvous(
             platform.getPosition(),
-            platform.getVelocity(),
-            target,
-            system.getCurrentTime(),
-            spacecraft,
-            system
+                target,
+                spacecraft
         );
 
         // Round Trips aren't needed for operations as they will maintain permanent (semi permanent) activity
@@ -96,21 +94,26 @@ public abstract class Operation {
         // Consume fuel for outbound journey
         spacecraft.consumeFuel(outboundTrajectory.fuelRequired);
         spacecraft.setState(Spacecraft.SpacecraftState.TRAVELING);
-        status = OperationStatus.TRAVELING;
+        dockedSpaceCraft.remove(spacecraft.getId());
         startTime = currentTime;
         
         return true;
     }
 
+    public void land(Spacecraft spacecraft) {
+        dockedSpaceCraft.put(spacecraft.getId(), spacecraft);
+        spacecraft.setState(Spacecraft.SpacecraftState.DOCKED);
+        spacecraft.setLocation(this.getTarget());
+    }
+
     public void deploy() {
         status = OperationStatus.DEPLOYING;
-
     }
     
     /**
      * Update the operation - progress mining, handle travel, etc.
      */
-    public void update(double currentTime, double dt) {
+    public void update(double currentTime, double dt, Spacecraft spacecraft) {
         switch (status) {
             case PLANNING, COMPLETED -> {
             }
@@ -118,7 +121,8 @@ public abstract class Operation {
                 // Check if arrived at asteroid
                 double travelElapsed = currentTime - startTime;
                 if (travelElapsed >= outboundTrajectory.travelTime) {
-                    arriveAtDestination(currentTime);
+                    land(spacecraft);
+//                    arriveAtDestination(currentTime);
                 }
             }
             case ACTIVE ->
@@ -138,44 +142,41 @@ public abstract class Operation {
             }
         }
     }
-    
-    /**
-     * Arrive at the asteroid and begin mining
-     */
-    private void arriveAtDestination(double currentTime) {
-        spacecraft.setState(Spacecraft.SpacecraftState.DOCKED);
-        status = OperationStatus.DEPLOYING;
-        startTime = currentTime;
-        
-        // Disembark crew
-        for (Automaton miner : crew) {
-            crew.add(spacecraft.disembarkCrew(miner));
-        }
-    }
+//
+//    /**
+//     * Arrive at the asteroid and begin mining
+//     */
+//    private void arriveAtDestination(double currentTime) {
+//        spacecraft.setState(Spacecraft.SpacecraftState.DOCKED);
+//        status = OperationStatus.DEPLOYING;
+//        startTime = currentTime;
+//
+//        // Disembark crew
+//        for (Automaton miner : crew) {
+//            crew.add(spacecraft.disembarkCrew(miner));
+//        }
+//    }
 
     /**
      * Begin return journey to platform
      */
-    private void beginReturn(CentralMind platform) {
-        // Re-board crew
-        for (Automaton automaton : crew) {
-            spacecraft.boardAutomaton(automaton);
-        }
-
-        // Consume fuel for return
-        outboundTrajectory = TravelCalculator.calculateRendezvous(
-                platform.getPosition(),
-                platform.getVelocity(),
-                target,
-                system.getCurrentTime(),
-                spacecraft,
-                system
-        );
-
-        spacecraft.consumeFuel(outboundTrajectory.fuelRequired);
-        spacecraft.setState(Spacecraft.SpacecraftState.TRAVELING);
-        startTime = System.currentTimeMillis() / 1000.0; // Use real time for simplicity
-    }
+//    private void beginReturn(CentralMind platform) {
+//        // Re-board crew
+//        for (Automaton automaton : crew) {
+//            spacecraft.boardAutomaton(automaton);
+//        }
+//
+//        // Consume fuel for return
+//        outboundTrajectory = TravelCalculator.calculateRendezvous(
+//                platform.getPosition(),
+//                target,
+//                spacecraft
+//        );
+//
+//        spacecraft.consumeFuel(outboundTrajectory.fuelRequired);
+//        spacecraft.setState(Spacecraft.SpacecraftState.TRAVELING);
+//        startTime = System.currentTimeMillis() / 1000.0; // Use real time for simplicity
+//    }
 
     public abstract void performTask(double dt);
 //    /**

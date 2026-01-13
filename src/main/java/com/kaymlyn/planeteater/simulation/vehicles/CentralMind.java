@@ -20,12 +20,12 @@ public class CentralMind extends Vehicle implements Orbiter {
     private CelestialBody parentBody; // Orbital velocity
 
     public CentralMind(String id) {
-        super(id, 1e6, 1e4, 1e3, 2, true, 12);
+        super(id, 1e6, 1e4, 1e3, 2, true, 12,0);
         this.crew = new ArrayList<>();
     }
 
     public CentralMind(String id, List<Automaton> initialCrew, Composition initialInventory) {
-        super(id, 1e6, 1e4, 1e3, 2, true, 12);
+        super(id, 1e6, 1e4, 1e3, 2, true, 12,0);
         this.crew = new ArrayList<>(initialCrew);
     }
 

@@ -13,5 +13,6 @@ public interface CelestialBody {
     double getVolume();
     double getMass();
     double getAggregatedMass();
+    double getCircularOrbitVelocity(double radius);
 
 }

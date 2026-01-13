@@ -1,13 +1,14 @@
 package com.kaymlyn.planeteater.simulation.operations;
 
-import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
-import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
+import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
+import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Handles trajectory planning and fuel calculations for spacecraft travel
@@ -16,6 +17,7 @@ import java.util.Map;
  */
 public class TravelCalculator {
 
+    private static final Random random = new Random(0);
     /**
      * Represents a planned trajectory between two positions
      */
@@ -27,6 +29,7 @@ public class TravelCalculator {
         public double deltaV;           // Required delta-v (m/s)
         public double travelTime;       // Travel duration (seconds)
         public double fuelRequired;     // Fuel needed (kg)
+        public double endVelocity;
 
         @Override
         public String toString() {
@@ -64,7 +67,7 @@ public class TravelCalculator {
         // Calculate fuel required using Tsiolkovsky equation
         double fuelRequired = spacecraft.getFuelRequiredForDeltaV(deltaV);
 
-        return new Trajectory(start, end, deltaV, travelTime, fuelRequired);
+        return new Trajectory(start, end, deltaV, travelTime, fuelRequired, 0.0);
     }
 
     /**
@@ -102,7 +105,7 @@ public class TravelCalculator {
         Vector3D start = new Vector3D(r1, 0, 0);
         Vector3D end = new Vector3D(r2, 0, 0);
 
-        return new Trajectory(start, end, totalDeltaV, transferTime, fuelRequired);
+        return new Trajectory(start, end, totalDeltaV, transferTime, fuelRequired, v2);
     }
 
     /**
@@ -137,18 +140,14 @@ public class TravelCalculator {
         // For small inclination changes, we can combine with Hohmann-like transfer
         // For large changes, we need dedicated plane change maneuvers
 
-        // Approximate semi-major axes (use mean radius for elliptical orbits)
-        double r1 = a1; // For circular, a = r. For elliptical, this is an approximation
-        double r2 = a2;
-
         // Calculate base Hohmann transfer delta-v
-        double aTransfer = (r1 + r2) / 2.0;
+        double aTransfer = (a1 + a2) / 2.0;
 
         // Velocities (approximating circular for elliptical)
-        double v1 = Math.sqrt(mu / r1);
-        double v2 = Math.sqrt(mu / r2);
-        double vp = Math.sqrt(mu * (2.0/r1 - 1.0/aTransfer));
-        double va = Math.sqrt(mu * (2.0/r2 - 1.0/aTransfer));
+        double v1 = Math.sqrt(mu / a1);
+        double v2 = Math.sqrt(mu / a2);
+        double vp = Math.sqrt(mu * (2.0/ a1 - 1.0/aTransfer));
+        double va = Math.sqrt(mu * (2.0/ a2 - 1.0/aTransfer));
 
         double deltaV1 = Math.abs(vp - v1);
         double deltaV2 = Math.abs(v2 - va);
@@ -160,8 +159,7 @@ public class TravelCalculator {
 
         if (deltaI > 0.001) { // More than ~0.06 degrees
             // Do plane change at apoapsis of transfer orbit (lowest velocity)
-            double vAtPlaneChange = va;
-            planeChangeDeltaV = 2.0 * vAtPlaneChange * Math.sin(deltaI / 2.0);
+            planeChangeDeltaV = 2.0 * va * Math.sin(deltaI / 2.0);
         }
 
         // Account for eccentricity differences
@@ -177,7 +175,7 @@ public class TravelCalculator {
         // If plane change is significant, add wait time for proper alignment
         if (deltaI > Math.toRadians(15.0)) {
             // Rough approximation: may need to wait for nodal alignment
-            double waitTime = Math.PI * Math.sqrt(Math.pow(r1, 3) / mu); // Half orbit
+            double waitTime = Math.PI * Math.sqrt(Math.pow(a1, 3) / mu); // Half orbit
             transferTime += waitTime;
         }
 
@@ -185,10 +183,10 @@ public class TravelCalculator {
         double fuelRequired = spacecraft.getFuelRequiredForDeltaV(totalDeltaV);
 
         // Position vectors (simplified - actual positions depend on true anomaly)
-        Vector3D start = new Vector3D(r1, 0, 0);
-        Vector3D end = new Vector3D(r2, 0, 0);
+        Vector3D start = new Vector3D(a1, 0, 0);
+        Vector3D end = new Vector3D(a2, 0, 0);
 
-        return new Trajectory(start, end, totalDeltaV, transferTime, fuelRequired);
+        return new Trajectory(start, end, totalDeltaV, transferTime, fuelRequired, totalDeltaV);
     }
 
     /**
@@ -244,27 +242,18 @@ public class TravelCalculator {
      */
     public static boolean canCompleteTrajectory(Spacecraft spacecraft, Trajectory trajectory) {
         // Check fuel availability
-        if (spacecraft.getFuelMass() < trajectory.fuelRequired) {
-            return false;
-        }
+        return !(spacecraft.getFuelMass() < trajectory.fuelRequired) && !(spacecraft.getAvailableDeltaV() < trajectory.deltaV);
 
         // Check if deltaV is achievable
-        if (spacecraft.getAvailableDeltaV() < trajectory.deltaV) {
-            return false;
-        }
-
-        return true;
     }
 
     /**
      * Calculate rendezvous trajectory accounting for orbital motion
      * This predicts where the target will be when the spacecraft arrives
      */
-    public static Trajectory calculateRendezvous(Vector3D startPos, Vector3D startVel,
-                                                 OrbitingBody target,
-                                                 double currentTime,
-                                                 Spacecraft spacecraft,
-                                                 OrbitalSystem system) {
+    public static Trajectory calculateRendezvous(Vector3D startPos,
+                                                 Orbiter target,
+                                                 Spacecraft spacecraft) {
         // First estimate: how long will it take to get there?
         Vector3D currentTargetPos = target.getPosition();
         double distance = startPos.distanceTo(currentTargetPos);
@@ -296,5 +285,201 @@ public class TravelCalculator {
      */
     public static double calculateMatchVelocity(Vector3D currentVel, Vector3D targetVel) {
         return currentVel.subtract(targetVel).magnitude();
+    }
+
+    /**
+     * Calculate delta-v required to enter orbit around a body from an approach trajectory
+     *
+     * @param approachVelocity Velocity relative to the body when entering SOI (m/s)
+     * @param bodyMass Mass of the body to orbit (kg)
+     * @param bodyRadius Radius of the body (m)
+     * @param targetOrbitAltitude Desired altitude above surface (m)
+     * @return Delta-v required for orbital insertion (m/s)
+     */
+    public static double calculateOrbitalInsertionDeltaV(double approachVelocity,
+                                                         double bodyMass,
+                                                         double bodyRadius,
+                                                         double targetOrbitAltitude) {
+        double mu = PhysicsConstants.G * bodyMass;
+        double r = bodyRadius + targetOrbitAltitude; // Orbital radius
+
+        // Velocity needed for circular orbit at target altitude
+        double orbitalVelocity = Math.sqrt(mu / r);
+
+        // Periapsis velocity when approaching (conservation of energy)
+        // v_periapsis^2 = v_infinity^2 + v_circular^2
+        // where v_infinity is the approach velocity at infinity (SOI edge)
+        double vPeriapsis = Math.sqrt(approachVelocity * approachVelocity +
+                2 * mu / r);
+
+        // Delta-v is the difference between periapsis velocity and orbital velocity
+        return Math.abs(vPeriapsis - orbitalVelocity);
+    }
+
+    /**
+     * Calculate delta-v to escape from orbit around a body
+     *
+     * @param orbitRadius Current orbital radius (m)
+     * @param bodyMass Mass of the body (kg)
+     * @return Delta-v required to escape (m/s)
+     */
+    public static double calculateEscapeDeltaV(double orbitRadius, double bodyMass) {
+        double mu = PhysicsConstants.G * bodyMass;
+
+        // Circular orbit velocity
+        double vOrbit = Math.sqrt(mu / orbitRadius);
+
+        // Escape velocity from this radius
+        double vEscape = Math.sqrt(2 * mu / orbitRadius);
+
+        // Delta-v is the difference
+        return vEscape - vOrbit;
+    }
+
+    /**
+     * Calculate gravity assist delta-v from a flyby
+     * The Oberth effect allows more efficient burns deep in a gravity well
+     *
+     * @param bodyMass Mass of the body for flyby (kg)
+     * @param periapsisRadius Closest approach distance (m)
+     * @param incomingVelocity Velocity relative to body at infinity (m/s)
+     * @param burnDeltaV Delta-v applied at periapsis (m/s)
+     * @return Change in velocity at infinity after the maneuver (m/s)
+     */
+    public static double calculateOberthEffect(double bodyMass,
+                                               double periapsisRadius,
+                                               double incomingVelocity,
+                                               double burnDeltaV) {
+        double mu = PhysicsConstants.G * bodyMass;
+
+        // Velocity at periapsis before burn
+        double vPeriapsisBefore = Math.sqrt(incomingVelocity * incomingVelocity +
+                2 * mu / periapsisRadius);
+
+        // Velocity at periapsis after burn (assuming prograde burn)
+        double vPeriapsisAfter = vPeriapsisBefore + burnDeltaV;
+
+        // Velocity at infinity after burn
+        double vInfinityAfter = Math.sqrt(vPeriapsisAfter * vPeriapsisAfter -
+                2 * mu / periapsisRadius);
+
+        // Change in v-infinity
+        return vInfinityAfter - incomingVelocity;
+    }
+
+    /**
+     * Calculate landing delta-v (simplified)
+     * Assumes vertical descent with no atmosphere
+     *
+     * @param orbitAltitude Starting orbit altitude (m)
+     * @param bodyMass Mass of the body (kg)
+     * @param bodyRadius Radius of the body (m)
+     * @return Approximate delta-v for landing (m/s)
+     */
+    public static double calculateLanding(double orbitAltitude,
+                                          double bodyMass,
+                                          double bodyRadius,
+                                          Spacecraft spacecraft) {
+        double mu = PhysicsConstants.G * bodyMass;
+        double rOrbit = bodyRadius + orbitAltitude;
+
+        // Orbital velocity
+        double vOrbit = Math.sqrt(mu / rOrbit);
+
+        // Surface velocity (if rotating, would subtract rotation speed)
+        // For simplification, assume no rotation
+        double vSurface = 0.0;
+
+        // Velocity needed to deorbit and descend (Hohmann-like descent)
+        // This is a simplification - real landing is more complex
+        double vLanding = Math.sqrt(mu / bodyRadius);
+
+        // Delta-v budget: deorbit + descent
+        // Approximate as orbital velocity + landing velocity
+        return spacecraft.getFuelRequiredForDeltaV(vOrbit + vLanding - vSurface);
+    }
+
+    /**
+     * Calculate takeoff delta-v from a surface
+     *
+     * @param bodyMass Mass of the body (kg)
+     * @param bodyRadius Radius of the body (m)
+     * @param targetOrbitAltitude Desired orbit altitude (m)
+     * @return Delta-v required for takeoff to orbit (m/s)
+     */
+    public static double calculateTakeoffDeltaV(double bodyMass,
+                                                double bodyRadius,
+                                                double targetOrbitAltitude,
+                                                Spacecraft spacecraft) {
+        double mu = PhysicsConstants.G * bodyMass;
+        double rOrbit = bodyRadius + targetOrbitAltitude;
+
+        // Velocity needed at surface to reach orbit (ignoring rotation)
+        double vSurface = Math.sqrt(2 * mu * (1.0/bodyRadius - 1.0/(2*rOrbit)));
+
+        // Orbital velocity at target altitude
+        double vOrbit = Math.sqrt(mu / rOrbit);
+
+        // Total delta-v is approximately these combined
+        // (This is simplified - real rockets lose efficiency to gravity)
+        return spacecraft.getFuelRequiredForDeltaV(vSurface + (vOrbit - Math.sqrt(mu / rOrbit)));
+    }
+
+    /**
+     * Calculate sphere of influence (SOI) radius for a body
+     * Region where the body's gravity dominates over the primary
+     *
+     * @param bodyMass Mass of the orbiting body (kg)
+     * @param primaryMass Mass of the primary body (kg)
+     * @param semiMajorAxis Distance between the bodies (m)
+     * @return SOI radius (m)
+     */
+    public static double calculateSphereOfInfluence(double bodyMass,
+                                                    double primaryMass,
+                                                    double semiMajorAxis) {
+        // SOI radius: r_SOI = a * (m/M)^(2/5)
+        return semiMajorAxis * Math.pow(bodyMass / primaryMass, 0.4);
+    }
+
+    /**
+     * Calculate complete orbital insertion trajectory
+     * From approach to circular orbit
+     *
+     * @param spacecraft Spacecraft performing insertion
+     * @param targetBody Body to orbit
+     * @param approachVelocity Velocity relative to body at SOI (m/s)
+     * @param orbitAltitude Desired orbit altitude above surface (m)
+     * @return Trajectory with delta-v and fuel requirements
+     */
+    public static Trajectory calculateOrbitalInsertion(Spacecraft spacecraft,
+                                                       CelestialBody targetBody,
+                                                       double approachVelocity,
+                                                       double orbitAltitude) {
+        double insertionDeltaV = calculateOrbitalInsertionDeltaV(
+                approachVelocity,
+                targetBody.getMass(),
+                targetBody.getRadius(),
+                orbitAltitude
+        );
+
+        double fuelRequired = spacecraft.getFuelRequiredForDeltaV(insertionDeltaV);
+
+        // Time for insertion burn (assume short impulsive burn)
+        double burnTime = 60.0; // 1 minute typical
+
+        Vector3D start = targetBody.getPosition();
+        Vector3D end = targetBody.getPosition().add(
+                new Vector3D(targetBody.getRadius() + orbitAltitude, 0, 0)
+        );
+
+        return new Trajectory(start, end, insertionDeltaV, burnTime, fuelRequired, targetBody.getCircularOrbitVelocity(targetBody.getRadius() + orbitAltitude));
+    }
+
+    public static Vector3D randomUnitVector() {
+        double x = random.nextDouble();
+        double y = random.nextDouble();
+        double z = random.nextDouble();
+        double magnitude = Math.sqrt(Math.pow(x,2) + Math.pow(y,2) + Math.pow(z,2));
+        return new Vector3D(x/magnitude, y/magnitude, z/magnitude);
     }
 }

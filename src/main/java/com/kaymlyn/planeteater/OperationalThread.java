@@ -1,18 +1,18 @@
 package com.kaymlyn.planeteater;
 
+import com.kaymlyn.planeteater.rendering.OrbitalSystemRenderer;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
-import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.PlanetPattern;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.entities.Specialization;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
-import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.vehicles.CentralMind;
 
+import java.io.IOException;
 import java.util.List;
 
 public class OperationalThread implements Runnable {
@@ -20,11 +20,11 @@ public class OperationalThread implements Runnable {
     private final OrbitalSystem spark;
 
     public OperationalThread() {
-        CelestialBodyFactory factory = new CelestialBodyFactory(CelestialBodyFactory.createMainSequenceStar(null, 1),36000);
+        CelestialBodyFactory factory = new CelestialBodyFactory(CelestialBodyFactory.createMainSequenceStar(null, 1),3600);
         this.spark = factory.getSystem();
         factory.createRandomAsteroidBelt(
                 "Main-Belt",
-                1,
+                108,
                 1e5,
                 1e6,
                 2,
@@ -62,20 +62,24 @@ public class OperationalThread implements Runnable {
                 .addMaterialAsRawMass(Material.ALUMINUM, 200)
                 .addMaterialAsRawMass(Material.CARBON, 100)
                 .addMaterialAsRawMass(Material.SILICA, 1000)
-                .addMaterialAsRawMass(Material.TITANIUM_OXIDE, 200)
-                ;
-        CentralMind mind = new CentralMind("KHI Central Mind",crew,composition);
+                .addMaterialAsRawMass(Material.TITANIUM_OXIDE, 200);
 
-        spark.placeInEllipticalOrbit(mind,
+        spark.placeInEllipticalOrbit(new CentralMind("KHI Central Mind",crew,composition),
                 spark.getCentralStar(),
                 new OrbitInitializer(PhysicsConstants.AU*.25, 0, Math.PI/2,
                         Math.PI/3, Math.PI/2, Math.PI/7));
+
 
     }
 
     @Override
     public void run() {
-        new RenderingThread(spark, 24, 1).run();
+        try {
+            new OrbitalSystemRenderer(spark).renderVideoFromImages(1);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+//        new RenderingThread(spark, 110000, 11).run();
 
     }
 }

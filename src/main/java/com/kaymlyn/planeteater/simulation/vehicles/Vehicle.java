@@ -26,6 +26,7 @@ public class Vehicle {
     protected double exhaustVelocity;      // Effective exhaust velocity (m/s)
     protected boolean hasLifeSupport;      // Whether it can carry humans
     protected int maxCrewCapacity;         // Maximum number of entities
+    protected int minCrewRequirement;
     protected Composition cargo;
     protected List<Environment> environments;// Current cargo
     protected List<Automaton> crew;
@@ -34,7 +35,7 @@ public class Vehicle {
 
     }
 
-    public Vehicle(String id, double dryMass, double maxFuelCapacity, double cargoCapacity, double exhaustVelocity, boolean hasLifeSupport, int maxCrewCapacity) {
+    public Vehicle(String id, double dryMass, double maxFuelCapacity, double cargoCapacity, double exhaustVelocity, boolean hasLifeSupport, int maxCrewCapacity, int minCrewRequirement) {
 
         this.id = id;
         this.position = Vector3D.ZERO;
@@ -47,6 +48,7 @@ public class Vehicle {
         this.exhaustVelocity = exhaustVelocity;
         this.hasLifeSupport = hasLifeSupport;
         this.maxCrewCapacity = maxCrewCapacity;
+        this.minCrewRequirement = minCrewRequirement;
         this.cargo = new Composition();
         this.crew = new ArrayList<>();
     }

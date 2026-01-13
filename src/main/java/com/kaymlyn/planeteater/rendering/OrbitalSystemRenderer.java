@@ -14,12 +14,9 @@ import org.jcodec.scale.AWTUtil;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
@@ -31,14 +28,12 @@ public class OrbitalSystemRenderer {
     private final OrbitalSystem system;
     private int i;
     private final int scalar;
-    private final LinkedHashMap<String,BufferedImage> frames;
 
     private static final int imageType = TYPE_INT_RGB;
     public OrbitalSystemRenderer(OrbitalSystem system) {
         scalar = 80;
         i = 0;
         this.system = system;
-        frames = new LinkedHashMap<>();
         File directory = new File("orbits");
         if(!directory.exists()) {
             directory.mkdir();
@@ -49,12 +44,12 @@ public class OrbitalSystemRenderer {
     }
 
     public void render(boolean saveImage, int maxAUVisible) throws IOException {
-        frames.put("Frame-" + i, render(system, scalar, maxAUVisible));
-        renderInfo(getCurrentFrame().createGraphics(),"Day " + (int)(system.getCurrentTime()/PhysicsConstants.SECONDS_PER_DAY)
+        BufferedImage frame = render(system, scalar, maxAUVisible);
+        renderInfo(frame.createGraphics(),"Day " + (int)(system.getCurrentTime()/PhysicsConstants.SECONDS_PER_DAY)
                 + " Hour " + (int)((system.getCurrentTime()%PhysicsConstants.SECONDS_PER_DAY)/3600),0,16);
 
         if(saveImage) {
-            saveImage("Frame-" + i);
+            saveImage("Frame-" + i, frame);
         }
         i++;
     }
@@ -79,7 +74,7 @@ public class OrbitalSystemRenderer {
         Graphics2D canvas = image.createGraphics();
         canvas.setBackground(Color.BLACK);
 
-        for(Orbiter orbiter : system.getOrbitingBodies()) {
+        for(Orbiter orbiter : system.getOrbiters().values()) {
             canvas.setColor(Color.WHITE);
 
             if(!orbiter.getId().contains("Belt")) {
@@ -125,19 +120,15 @@ public class OrbitalSystemRenderer {
         return image;
     }
 
-    public BufferedImage getCurrentFrame() {
-        return frames.lastEntry().getValue();
-    }
-
     private double scaleAUToCanvas(int height, int width) {
         int min = Math.min(height,width);
         return scalar * (min/4.0);
     }
 
-    private void saveImage(String name) throws IOException {
+    private void saveImage(String name, BufferedImage currentFrame) throws IOException {
 
         File output = new File("orbits/" + name + ".png");
-        ImageIO.write(getCurrentFrame(), "PNG", output);
+        ImageIO.write(currentFrame, "PNG", output);
     }
 
     public void renderVideoFromImages(double scalar) throws IOException {
@@ -147,7 +138,6 @@ public class OrbitalSystemRenderer {
         int scaleWidth = (int)Math.round(reference.getWidth()*scalar);
         int scaleHeight = (int)Math.round(reference.getHeight()*scalar);
         scale.scale(scaleWidth,scaleHeight);
-        AffineTransformOp scaleOp = new AffineTransformOp(scale, AffineTransformOp.TYPE_BILINEAR);
         SequenceEncoder enc = SequenceEncoder.createWithFps(NIOUtils.writableChannel(output), Rational.R(30,1));
         int i=0;
         File inputFrame = new File("orbits/Frame-" + i + ".png");
@@ -174,13 +164,18 @@ public class OrbitalSystemRenderer {
     public void renderVideo() throws IOException {
         File output = new File("orbits/test.mp4");
         SequenceEncoder enc = SequenceEncoder.createWithFps(NIOUtils.writableChannel(output), Rational.R(30,1));
-        frames.sequencedValues().forEach(image -> {
+        int i = 0;
+        File input = new File("orbits/Frame-" + i + ".png");
+        while(input.exists()) {
+            BufferedImage image = ImageIO.read(input);
             try {
                 enc.encodeNativeFrame(AWTUtil.fromBufferedImage(image, ColorSpace.RGB));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        });
+            i++;
+            input = new File("orbits/Frame-" + i + ".png");
+        }
         enc.finish();
 
     }

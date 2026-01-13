@@ -4,6 +4,7 @@ import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitialize
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.vehicles.Vehicle;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;
@@ -12,7 +13,6 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 /**
  * Manages all celestial bodies and handles orbital mechanics simulation
@@ -22,11 +22,11 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 public class OrbitalSystem {
-    private final HashMap<String, Orbiter> orbiterMap;
+    private final HashMap<String, Orbiter> orbiters;
     private Star centralStar;
     private List<CelestialBody> bodies;
-    private List<Orbiter> orbiters;
     private Map<String, CelestialBody> bodyMap;
+    private Map<String, Vehicle> vehiclesInTransit;
     private double currentTime; // seconds since epoch
     private double timeStep; // simulation time step in seconds
     private CelestialBodyFactory factory;
@@ -41,8 +41,7 @@ public class OrbitalSystem {
         this.currentTime = 0.0;
         this.timeStep = timeStep;
         this.globalRandom = new Random(0L);
-        this.orbiters = new ArrayList<>();
-        this.orbiterMap = new HashMap<>();
+        this.orbiters = new HashMap<>();
 
         // Add the star to the system
         addBody(this.centralStar);
@@ -52,7 +51,6 @@ public class OrbitalSystem {
      * Add a celestial body to the system
      */
     protected void addBody(CelestialBody body) {
-        bodies.add(body);
         bodyMap.put(body.getId(), body);
         if(body instanceof Orbiter) {
             addOrbiter((Orbiter) body);
@@ -62,33 +60,22 @@ public class OrbitalSystem {
     /**
      * Remove a celestial body from the system
      */
-    protected boolean removeBody(String id) {
-        CelestialBody body = bodyMap.remove(id);
-        if (body != null) {
-            bodies.remove(body);
-            return true;
-        }
-        return false;
+    protected CelestialBody removeBody(String id) {
+        return bodyMap.remove(id);
     }
 
     /**
      * Add a simple orbiter  to the system
      */
     protected void addOrbiter(Orbiter orbiter) {
-        orbiters.add(orbiter);
-        orbiterMap.put(orbiter.getId(), orbiter);
+        orbiters.put(orbiter.getId(), orbiter);
     }
 
     /**
      * Remove a orbiter from the system
      */
-    protected boolean removeOrbiter(String id) {
-        Orbiter body = orbiterMap.remove(id);
-        if (body != null) {
-            orbiters.remove(body);
-            return true;
-        }
-        return false;
+    protected Orbiter removeOrbiter(String id) {
+        return orbiters.remove(id);
     }
     
     /**
@@ -104,15 +91,7 @@ public class OrbitalSystem {
      * @return Orbiter identified by id
      */
     public Orbiter getOrbiter(String id) {
-        return orbiterMap.get(id);
-    }
-    
-    /**
-     * Get all bodies except the star
-     * @return List containing all the non-star bodies in the System
-     */
-    public List<Orbiter> getOrbitingBodies() {
-        return orbiters;
+        return orbiters.get(id);
     }
 
     /**
@@ -131,12 +110,12 @@ public class OrbitalSystem {
     public void stepEuler() {
         // Calculate accelerations for all bodies
         Map<Orbiter, Vector3D> accelerations = new HashMap<>();
-        for (Orbiter body : orbiters) {
+        for (Orbiter body : orbiters.values()) {
             accelerations.put(body, calculateAcceleration(body));
         }
         
         // Update all bodies
-        for (Orbiter body : orbiters) {
+        for (Orbiter body : orbiters.values()) {
             body.update(accelerations.get(body), timeStep);
         }
         
@@ -152,12 +131,12 @@ public class OrbitalSystem {
         Date start = new Date();
         // Calculate current accelerations
         Map<Orbiter, Vector3D> accelerations = new HashMap<>();
-        for (Orbiter body : getOrbitingBodies()) {
+        for (Orbiter body : orbiters.values()) {
             accelerations.put(body, calculateAcceleration(body));
         }
 
         // Update positions
-        for (Orbiter body : getOrbitingBodies()) {
+        for (Orbiter body : orbiters.values()) {
             Vector3D accel = accelerations.get(body);
             Vector3D newPos = body.getPosition()
                 .add(body.getVelocity().multiply(timeStep))
@@ -167,12 +146,12 @@ public class OrbitalSystem {
 
         // Calculate new accelerations at new positions
         Map<Orbiter, Vector3D> newAccelerations = new HashMap<>();
-        for (Orbiter body : getOrbitingBodies()) {
+        for (Orbiter body : orbiters.values()) {
             newAccelerations.put(body, calculateAcceleration(body));
         }
         
         // Update velocities using average of old and new accelerations
-        for (Orbiter body : getOrbitingBodies()) {
+        for (Orbiter body : orbiters.values()) {
             Vector3D oldAccel = accelerations.get(body);
             Vector3D newAccel = newAccelerations.get(body);
             Vector3D avgAccel = oldAccel.add(newAccel).multiply(0.5);
@@ -371,9 +350,6 @@ public class OrbitalSystem {
 
         body.setPosition(absolutePosition);
         body.setVelocity(absoluteVelocity);
-
-        body.setPosition(new Vector3D(x, y, z));
-        body.setVelocity(new Vector3D(vx, vy, vz));
 
         if(body instanceof CelestialBody) {
             addBody((CelestialBody) body);

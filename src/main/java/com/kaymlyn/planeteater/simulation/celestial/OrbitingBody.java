@@ -63,7 +63,7 @@ public abstract class OrbitingBody implements Orbiter {
      * Calculate orbital velocity for a circular orbit at given radius
      * v = sqrt(G * M / r)
      */
-    public double circularOrbitVelocity(double radius) {
+    public double getCircularOrbitVelocity(double radius) {
         return Math.sqrt(PhysicsConstants.G * this.getMass() / radius);
     }
 
