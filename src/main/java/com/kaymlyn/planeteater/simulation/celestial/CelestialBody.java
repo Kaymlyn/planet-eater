@@ -6,7 +6,7 @@ public interface CelestialBody {
     String getId();
     Vector3D getPosition();
 
-    Vector3D gravitationalForceOn(Orbiter other);
+//    Vector3D gravitationalForceOn(Orbiter other);
 
     double getRadius();
     double getDensity();

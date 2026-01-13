@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 /**
  * Manages all celestial bodies and handles orbital mechanics simulation
@@ -21,6 +22,7 @@ import java.util.Random;
 @Getter
 @Setter
 public class OrbitalSystem {
+    private final HashMap<String, Orbiter> orbiterMap;
     private Star centralStar;
     private List<CelestialBody> bodies;
     private List<Orbiter> orbiters;
@@ -40,6 +42,7 @@ public class OrbitalSystem {
         this.timeStep = timeStep;
         this.globalRandom = new Random(0L);
         this.orbiters = new ArrayList<>();
+        this.orbiterMap = new HashMap<>();
 
         // Add the star to the system
         addBody(this.centralStar);
@@ -51,15 +54,11 @@ public class OrbitalSystem {
     protected void addBody(CelestialBody body) {
         bodies.add(body);
         bodyMap.put(body.getId(), body);
+        if(body instanceof Orbiter) {
+            addOrbiter((Orbiter) body);
+        }
     }
 
-    /**
-     * Add a simple orbiter  to the system
-     */
-    protected void addOrbiter(Orbiter orbiter) {
-        orbiters.add(orbiter);
-    }
-    
     /**
      * Remove a celestial body from the system
      */
@@ -67,6 +66,26 @@ public class OrbitalSystem {
         CelestialBody body = bodyMap.remove(id);
         if (body != null) {
             bodies.remove(body);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Add a simple orbiter  to the system
+     */
+    protected void addOrbiter(Orbiter orbiter) {
+        orbiters.add(orbiter);
+        orbiterMap.put(orbiter.getId(), orbiter);
+    }
+
+    /**
+     * Remove a orbiter from the system
+     */
+    protected boolean removeOrbiter(String id) {
+        Orbiter body = orbiterMap.remove(id);
+        if (body != null) {
+            orbiters.remove(body);
             return true;
         }
         return false;
@@ -79,16 +98,21 @@ public class OrbitalSystem {
     public CelestialBody getBody(String id) {
         return bodyMap.get(id);
     }
+
+    /**
+     * Get an orbiter by ID
+     * @return Orbiter identified by id
+     */
+    public Orbiter getOrbiter(String id) {
+        return orbiterMap.get(id);
+    }
     
     /**
      * Get all bodies except the star
      * @return List containing all the non-star bodies in the System
      */
-    public List<OrbitingBody> getOrbitingBodies() {
-        List<OrbitingBody> orbiting = new ArrayList<>();
-        bodies.forEach(body -> {if(body instanceof OrbitingBody) orbiting.add((OrbitingBody) body); }
-    );
-        return orbiting;
+    public List<Orbiter> getOrbitingBodies() {
+        return orbiters;
     }
 
     /**
@@ -131,33 +155,33 @@ public class OrbitalSystem {
         for (Orbiter body : getOrbitingBodies()) {
             accelerations.put(body, calculateAcceleration(body));
         }
-        
+
         // Update positions
-        for (OrbitingBody body : getOrbitingBodies()) {
+        for (Orbiter body : getOrbitingBodies()) {
             Vector3D accel = accelerations.get(body);
             Vector3D newPos = body.getPosition()
                 .add(body.getVelocity().multiply(timeStep))
                 .add(accel.multiply(0.5 * timeStep * timeStep));
             body.setPosition(newPos);
         }
-        
+
         // Calculate new accelerations at new positions
-        Map<OrbitingBody, Vector3D> newAccelerations = new HashMap<>();
-        for (OrbitingBody body : getOrbitingBodies()) {
+        Map<Orbiter, Vector3D> newAccelerations = new HashMap<>();
+        for (Orbiter body : getOrbitingBodies()) {
             newAccelerations.put(body, calculateAcceleration(body));
         }
         
         // Update velocities using average of old and new accelerations
-        for (OrbitingBody body : getOrbitingBodies()) {
+        for (Orbiter body : getOrbitingBodies()) {
             Vector3D oldAccel = accelerations.get(body);
             Vector3D newAccel = newAccelerations.get(body);
             Vector3D avgAccel = oldAccel.add(newAccel).multiply(0.5);
             Vector3D newVel = body.getVelocity().add(avgAccel.multiply(timeStep));
+
             body.setVelocity(newVel);
         }
         
         currentTime += timeStep;
-        System.out.println("Verlet simulation took " + (new Date().getTime() - start.getTime()) + " milliseconds");
         return currentTime;
     }
     
@@ -242,6 +266,21 @@ public class OrbitalSystem {
                 random.nextDouble()*2*Math.PI,
                 random.nextDouble()*2*Math.PI,
                 random.nextDouble()*2*Math.PI));
+    }
+
+    public void placeInEllipticalOrbit(Orbiter body,
+                                       CelestialBody parentBody,
+                                       OrbitInitializer initializer) {
+        placeInEllipticalOrbit(
+                body,
+                parentBody,
+                initializer.semiMajorAxis(),
+                initializer.eccentricity(),
+                initializer.inclination(),
+                initializer.ascendingNode(),
+                initializer.periapsis(),
+                initializer.trueAnomaly()
+        );
     }
 
     /**
@@ -338,7 +377,6 @@ public class OrbitalSystem {
 
         if(body instanceof CelestialBody) {
             addBody((CelestialBody) body);
-            addOrbiter(body);
         } else {
             addOrbiter(body);
         }
@@ -446,19 +484,28 @@ public class OrbitalSystem {
      */
     private Vector3D calculateAcceleration(Orbiter body) {
         Vector3D totalAcceleration = Vector3D.ZERO;
+        for (CelestialBody other : getBodies()) {
 
-        for (Orbiter other : getOrbitingBodies()) {
-            if (other == body || other.getMass() == 0.0 || !(other instanceof CelestialBody)) continue;
+            if (other.getId().equalsIgnoreCase(body.getId()) || other.getMass() == 0.0) continue;
+            Vector3D force;
+            Vector3D displacement = other.getPosition().subtract(body.getPosition());
+            double distanceSquared = displacement.magnitudeSquared();
 
-            Vector3D force = ((CelestialBody)other).gravitationalForceOn(body);
+            if (distanceSquared < 1e-10) {
+                continue;
+            } else {
+                force = displacement.normalize().multiply(
+                        PhysicsConstants.G * other.getMass() * body.getMass() / distanceSquared);
+            }
+            if(body.getMass() > 0.0) {
+                totalAcceleration = totalAcceleration.add(force.divide(body.getMass()));
+            } else {
+                totalAcceleration = totalAcceleration.add(Vector3D.ZERO);
+            }
 
-            if(force == Vector3D.ZERO || force == null) return totalAcceleration; //No force t
-
-            // a = F / m
-            Vector3D acceleration = force.divide(body.getMass());
-            totalAcceleration = totalAcceleration.add(acceleration);
         }
-
+        if(totalAcceleration == null)
+            System.out.println(body + " total Acceleration " + totalAcceleration);
         return totalAcceleration;
 
     }    /**
@@ -598,15 +645,15 @@ public class OrbitalSystem {
                                                                   double maximumEccentricity,
                                                                   double maxInclination,
                                                                   boolean prograde,
-                                                                  long seed) {
-        Random random = new Random(seed);
+                                                                  Random random) {
         double inclinationMax = maxInclination;
         while (maxInclination > Math.PI/2){
             inclinationMax -= (Math.PI/2);
         }
 
         return new OrbitInitializer(
-                random.nextDouble(Double.min(Math.abs(minimumAURadius),Math.abs(maximumAURadius))*PhysicsConstants.AU,
+                random.nextDouble(
+                        Double.min(Math.abs(minimumAURadius),Math.abs(maximumAURadius))*PhysicsConstants.AU,
                         Double.max(Math.abs(minimumAURadius),Math.abs(maximumAURadius))*PhysicsConstants.AU),
                 random.nextDouble(0, maximumEccentricity - (int)maximumEccentricity),
                 prograde ? random.nextDouble(0,inclinationMax)

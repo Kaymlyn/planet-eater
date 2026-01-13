@@ -60,24 +60,23 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
                crustComposition.getTotalMass() +
                atmosphereComposition.getTotalMass();
     }
-
-    /**
-     * Calculate gravitational force this body exerts on another body
-     * F = G * m1 * m2 / r²
-     * Returns force vector pointing from other body toward this body
-     */
-    @Override
-    public Vector3D gravitationalForceOn(Orbiter other) {
-        Vector3D displacement = this.position.subtract(other.getPosition());
-        double distanceSquared = displacement.magnitudeSquared();
-
-        if (distanceSquared < 1e-10) {
-            return Vector3D.ZERO;
-        }
-
-        double forceMagnitude = PhysicsConstants.G * this.getMass() * other.getMass() / distanceSquared;
-        return displacement.normalize().multiply(forceMagnitude);
-    }
+//
+//    /**
+//     * Calculate gravitational force this body exerts on another body
+//     * F = G * m1 * m2 / r²
+//     * Returns force vector pointing from other body toward this body
+//     */
+//    public Vector3D gravitationalForceOn(Orbiter other) {
+//        Vector3D displacement = this.position.subtract(other.getPosition());
+//        double distanceSquared = displacement.magnitudeSquared();
+//
+//        if (distanceSquared < 1e-10) {
+//            return Vector3D.ZERO;
+//        }
+//
+//        double forceMagnitude = PhysicsConstants.G * this.getMass() * other.getMass() / distanceSquared;
+//        return displacement.normalize().multiply(forceMagnitude);
+//    }
 
     /**
      * For planets, radius should be set explicitly based on layer volumes

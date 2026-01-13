@@ -1,12 +1,14 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
-import com.kaymlyn.planeteater.simulation.entities.MiningEntity;
+import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.operations.Operation;
+import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,23 +25,19 @@ public class Spacecraft extends Vehicle {
     public enum SpacecraftState {
         DOCKED,         // At platform
         TRAVELING,      // In transit
-        AT_ASTEROID,    // Arrived at destination
-        RETURNING       // Returning to platform
+        STRANDED
     }
-    
-    private String id;
-
-    private Composition construction;    // Materials used to build the spacecraft
+    private Composition construction;   // Materials used to build the spacecraft
+    private Composition cargo;
+    private List<Automaton> crew;
 
     private SpacecraftState state;
     private String destination;          // ID of destination body
-    private double travelStartTime;
-    private double travelDuration;
     
     public Spacecraft(String id, double dryMass, double maxFuelCapacity, 
                      double cargoCapacity, double exhaustVelocity, 
                      boolean hasLifeSupport, int maxCrewCapacity) {
-        super(dryMass, maxFuelCapacity, cargoCapacity, exhaustVelocity, hasLifeSupport, maxCrewCapacity);
+        super(id, dryMass, maxFuelCapacity, cargoCapacity, exhaustVelocity, hasLifeSupport, maxCrewCapacity);
         this.id = id;
 
         this.construction = new Composition();
@@ -77,7 +75,6 @@ public class Spacecraft extends Vehicle {
         
         // Return any remaining fuel (assuming it's a recyclable type)
         // In practice, fuel might be hydrogen or similar
-        
         return materials;
     }
     

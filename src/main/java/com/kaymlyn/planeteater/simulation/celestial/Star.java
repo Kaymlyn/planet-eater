@@ -17,6 +17,7 @@ import lombok.Getter;
 public class Star implements CelestialBody {
 
     protected String id;
+    protected OrbitalSystem system;
     protected Vector3D position; // meters
     protected Vector3D velocity;
     private final Composition atmosphereComposition;  // Extractable materials from corona/photosphere
@@ -28,7 +29,10 @@ public class Star implements CelestialBody {
     }
 
     protected  Star(String id, OrbitalSystem system, Vector3D position, Vector3D velocity) {
-//        super(id, system, position, velocity);
+        this.id = id;
+        this.system = system;
+        this.position = position;
+        this.velocity = velocity;
         this.totalComposition = new Composition();
         this.atmosphereComposition = new Composition();
         initialized = false;
@@ -227,22 +231,6 @@ public class Star implements CelestialBody {
         replenishAtmosphere(dt);
     }
 
-    /**
-     * Calculate gravitational force this body exerts on another body
-     * F = G * m1 * m2 / r²
-     * Returns force vector pointing from other body toward this body
-     */
-    public Vector3D gravitationalForceOn(Orbiter other) {
-        Vector3D displacement = this.position.subtract(other.getPosition());
-        double distanceSquared = displacement.magnitudeSquared();
-
-        if (distanceSquared < 1e-10) {
-            return Vector3D.ZERO;
-        }
-
-        double forceMagnitude = PhysicsConstants.G * this.getMass() * other.getMass() / distanceSquared;
-        return displacement.normalize().multiply(forceMagnitude);
-    }
 
     @Override
     public String toString() {

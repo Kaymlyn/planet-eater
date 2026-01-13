@@ -45,30 +45,6 @@ public class MiningEntity {
     }
     
     /**
-     * Create a standard human miner
-     */
-    public static MiningEntity createHuman(String id) {
-        // Average human: 80kg, basic mining rate
-        return new MiningEntity(id, EntityType.ORGANIC, EntityLocomotion.BIPEDAL, .30,80.0, 0.5);
-    }
-    
-    /**
-     * Create a basic mining robot
-     */
-    public static MiningEntity createBasicRobot(String id) {
-        // Basic robot: heavier but more efficient
-        return new MiningEntity(id, EntityType.INORGANIC, EntityLocomotion.QUADRUPEDAL, .80, 150.0, 1.0);
-    }
-    
-    /**
-     * Create an advanced mining robot
-     */
-    public static MiningEntity createAdvancedRobot(String id) {
-        // Advanced robot: lighter and much more efficient
-        return new MiningEntity(id, EntityType.INORGANIC, EntityLocomotion.BIPEDAL, .65, 120.0, 5.0);
-    }
-    
-    /**
      * Calculate amount of type this entity can mine in given time
      */
     public double calculateMiningYield(double timeSeconds) {

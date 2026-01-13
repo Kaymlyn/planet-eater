@@ -1,5 +1,6 @@
 package com.kaymlyn.planeteater.rendering;
 
+import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
@@ -49,8 +50,8 @@ public class OrbitalSystemRenderer {
 
     public void render(boolean saveImage, int maxAUVisible) throws IOException {
         frames.put("Frame-" + i, render(system, scalar, maxAUVisible));
-        renderInfo("Day " + (int)(system.getCurrentTime()/PhysicsConstants.SECONDS_PER_DAY)
-                + " Hour " + (int)((system.getCurrentTime()%PhysicsConstants.SECONDS_PER_DAY)/3600));
+        renderInfo(getCurrentFrame().createGraphics(),"Day " + (int)(system.getCurrentTime()/PhysicsConstants.SECONDS_PER_DAY)
+                + " Hour " + (int)((system.getCurrentTime()%PhysicsConstants.SECONDS_PER_DAY)/3600),0,16);
 
         if(saveImage) {
             saveImage("Frame-" + i);
@@ -58,11 +59,9 @@ public class OrbitalSystemRenderer {
         i++;
     }
 
-    public void renderInfo(String info) {
-        Map.Entry<String, BufferedImage> frame = frames.lastEntry();
-        Graphics2D canvas = frame.getValue().createGraphics();
+    public void renderInfo(Graphics2D canvas, String info, int x, int y) {
         canvas.setColor(Color.WHITE);
-        canvas.drawString(info,0,16);
+        canvas.drawString(info, x, y);
     }
 
     private BufferedImage render(OrbitalSystem system, int scalar, int maxAUVisible) {
@@ -80,11 +79,10 @@ public class OrbitalSystemRenderer {
         Graphics2D canvas = image.createGraphics();
         canvas.setBackground(Color.BLACK);
 
-        for(OrbitingBody body : system.getOrbitingBodies()) {
+        for(Orbiter orbiter : system.getOrbitingBodies()) {
             canvas.setColor(Color.WHITE);
 
-            if(body.getId().contains("00"))
-            {
+            if(!orbiter.getId().contains("Belt")) {
                 canvas.setColor(
                         new Color(
                                 random.nextInt(0,256),
@@ -93,8 +91,7 @@ public class OrbitalSystemRenderer {
                         )
                 );
             }
-            if(body.getId().contains("50"))
-            {
+            if(orbiter.getId().contains("KHI")) {
                 canvas.setColor(
                         new Color(
                                 random.nextInt(0,256),
@@ -105,15 +102,21 @@ public class OrbitalSystemRenderer {
             }
             Rectangle rectangle = new Rectangle();
             int size;
-            if(body.getRadius() > 50000) {
+            if(orbiter instanceof OrbitingBody && ((OrbitingBody)orbiter).getRadius() > 50000) {
                 size = 3;
             } else {
                 size = 2;
             }
-            double xRaw = body.getPosition().getX()/(PhysicsConstants.AU*((double) (maxAUVisible * 3) /4));
-            double yRaw = body.getPosition().getY()/(PhysicsConstants.AU*((double) (maxAUVisible * 3) /4));
+            double xRaw = orbiter.getPosition().getX()/(PhysicsConstants.AU*((double) (maxAUVisible * 3) /4));
+            double yRaw = orbiter.getPosition().getY()/(PhysicsConstants.AU*((double) (maxAUVisible * 3) /4));
             rectangle.setRect(xRaw * adjustedAU + ((double) (width * scalar) /2),yRaw * adjustedAU + ((double)(height*scalar)/2),size, size);
             canvas.fill(rectangle);
+            if(!orbiter.getId().contains("Belt")) {
+                renderInfo(canvas,
+                        orbiter.getId(),
+                        (int) (xRaw * adjustedAU + ((double) (width * scalar) / 2) + 3),
+                        (int) (yRaw * adjustedAU + ((double) (height * scalar) / 2)));
+            }
         }
         canvas.setColor(Color.YELLOW);
 
@@ -152,7 +155,6 @@ public class OrbitalSystemRenderer {
             try {
                 enc.encodeNativeFrame(scaleImage(inputFrame, scaleWidth, scaleHeight));
             } catch (IOException e) {
-                System.out.println("exception");
                 throw new RuntimeException(e);
             }
             inputFrame = new File("orbits/Frame-" + (i++) + ".png");
@@ -176,7 +178,6 @@ public class OrbitalSystemRenderer {
             try {
                 enc.encodeNativeFrame(AWTUtil.fromBufferedImage(image, ColorSpace.RGB));
             } catch (IOException e) {
-                System.out.println("exception");
                 throw new RuntimeException(e);
             }
         });

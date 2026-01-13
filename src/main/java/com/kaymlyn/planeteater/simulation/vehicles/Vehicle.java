@@ -2,20 +2,21 @@ package com.kaymlyn.planeteater.simulation.vehicles;
 
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.entities.Environment;
-import com.kaymlyn.planeteater.simulation.entities.MiningEntity;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+@EqualsAndHashCode
 @Data
-public class Vehicle { // Entities aboard
+public class Vehicle {
+
+    protected String id;
     protected Vector3D position;
     protected Vector3D velocity;
     protected double dryMass;              // Mass of spacecraft without fuel/cargo (kg)
@@ -33,7 +34,12 @@ public class Vehicle { // Entities aboard
 
     }
 
-    public Vehicle(double dryMass, double maxFuelCapacity, double cargoCapacity, double exhaustVelocity, boolean hasLifeSupport, int maxCrewCapacity) {
+    public Vehicle(String id, double dryMass, double maxFuelCapacity, double cargoCapacity, double exhaustVelocity, boolean hasLifeSupport, int maxCrewCapacity) {
+
+        this.id = id;
+        this.position = Vector3D.ZERO;
+        this.velocity = Vector3D.ZERO;
+
         this.dryMass = dryMass;
         this.fuelMass = maxFuelCapacity; // Start fully fueled
         this.maxFuelCapacity = maxFuelCapacity;
@@ -43,8 +49,6 @@ public class Vehicle { // Entities aboard
         this.maxCrewCapacity = maxCrewCapacity;
         this.cargo = new Composition();
         this.crew = new ArrayList<>();
-        this.position = Vector3D.ZERO;
-        this.velocity = Vector3D.ZERO;
     }
 
     /**

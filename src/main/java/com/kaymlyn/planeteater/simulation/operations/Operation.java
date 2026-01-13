@@ -143,7 +143,7 @@ public abstract class Operation {
      * Arrive at the asteroid and begin mining
      */
     private void arriveAtDestination(double currentTime) {
-        spacecraft.setState(Spacecraft.SpacecraftState.AT_ASTEROID);
+        spacecraft.setState(Spacecraft.SpacecraftState.DOCKED);
         status = OperationStatus.DEPLOYING;
         startTime = currentTime;
         
@@ -173,7 +173,7 @@ public abstract class Operation {
         );
 
         spacecraft.consumeFuel(outboundTrajectory.fuelRequired);
-        spacecraft.setState(Spacecraft.SpacecraftState.RETURNING);
+        spacecraft.setState(Spacecraft.SpacecraftState.TRAVELING);
         startTime = System.currentTimeMillis() / 1000.0; // Use real time for simplicity
     }
 

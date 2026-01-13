@@ -172,7 +172,9 @@ public class CelestialBodyFactory {
      * Create a star with specific mass (in solar masses)
      */
     public static Star createMainSequenceStar(String id, double solarMasses) {
-        Star star = new Star(id == null || id.isEmpty() ? bodyNames.get(random.nextInt(bodyNames.size())) : id,Vector3D.ZERO, Vector3D.ZERO);
+
+        String name = id != null && !id.isEmpty() ? id : bodyNames.get(random.nextInt(bodyNames.size()));
+        Star star = new Star(name,Vector3D.ZERO, Vector3D.ZERO);
 
         double totalMass = solarMasses * PhysicsConstants.SOLAR_MASS;
 
@@ -206,14 +208,14 @@ public class CelestialBodyFactory {
         List<Planet> asteroidBelt = new ArrayList<>();
 
         Random asteroids = new Random(seed);
-        OrbitInitializer init = OrbitalSystem.generateRandomOrbitInitializer(
-                minimumOrbitalRadius,
-                maximumOrbitalRadius,
-                0.01,
-                Math.PI/4,
-                true,
-                seed);
         for(int i=0; i < population; i++) {
+            OrbitInitializer init = OrbitalSystem.generateRandomOrbitInitializer(
+                    minimumOrbitalRadius,
+                    maximumOrbitalRadius,
+                    0.01,
+                    Math.PI/4,
+                    true,
+                    asteroids);
             asteroidBelt.add(
                     createArbitraryPlanet(beltID + "-BeltAsteroid-"+i,
                             init,

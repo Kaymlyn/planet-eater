@@ -3,87 +3,69 @@ package com.kaymlyn.planeteater.simulation.vehicles;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
-import com.kaymlyn.planeteater.simulation.resources.Composition;
-import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.resources.Composition;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents the player's orbital platform/base of operations
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
 public class CentralMind extends Vehicle implements Orbiter {
-    private final String id;
-    private Vector3D position; // Position in the system
-    private Vector3D velocity;
+
     private CelestialBody parentBody; // Orbital velocity
 
-    private final List<Automaton> crew;
-    private final Composition inventory;
-
     public CentralMind(String id) {
-        super(1e6, 1e4, 1e3, 2, true, 12);
-        this.id = id;
-        this.inventory = new Composition();
-        this.position = Vector3D.ZERO;
-        this.velocity = Vector3D.ZERO;
+        super(id, 1e6, 1e4, 1e3, 2, true, 12);
         this.crew = new ArrayList<>();
     }
 
-    public CentralMind(String id, List<Automaton> initialCrew, Composition initialInventory ) {
-        super(1e6, 1e4, 1e3, 2, true, 12);
-        this.id = id;
-        this.position = Vector3D.ZERO;
-        this.velocity = Vector3D.ZERO;
+    public CentralMind(String id, List<Automaton> initialCrew, Composition initialInventory) {
+        super(id, 1e6, 1e4, 1e3, 2, true, 12);
         this.crew = new ArrayList<>(initialCrew);
-        this.inventory = initialInventory;
-    }
-    
-    /**
-     * Calculate total inventory mass
-     */
-    public double getTotalInventoryMass() {
-        return inventory.getTotalMass();
     }
 
     @Override
     public String toString() {
-        return String.format("OrbitalPlatform[id=%s, inventory=%s, crew=%s",
-            id, inventory, crew);
-    }
-    
-    /**
-     * Get a detailed inventory report
-     */
-    public String getInventoryReport() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== Platform Inventory ===\n");
-        sb.append(String.format("Total Mass: %.3e kg\n", getTotalInventoryMass()));
-        sb.append("\nResources:\n");
-        
-        for (Map.Entry<Material, Double> entry : inventory.getMaterials().entrySet()) {
-            Material mat = entry.getKey();
-            double mass = entry.getValue();
-            sb.append(String.format("  %s (%s): %.3e kg\n", 
-                mat.name(), mat.getSymbol(), mass));
-        }
-        
-        return sb.toString();
+        return String.format("OrbitalPlatform[id=%s, crew=%s",
+                id, crew);
     }
 
     @Override
     public double getMass() {
-        return 0;
+        return getTotalMass();
     }
 
-    @Override
-    public void update(Vector3D vector3D, double timeStep) {
+    /**
+     * Update position and velocity based on acceleration over time step
+     * Uses simple Euler integration for now
+     */
+    public void update(Vector3D acceleration, double dt) {
+        // v = v + a * dt
+        velocity = velocity.add(acceleration.multiply(dt));
+        // p = p + v * dt
+        position = position.add(velocity.multiply(dt));
+    }
 
+    public boolean equals(final Object o) {
+        return o == this
+                || o instanceof CentralMind other
+                && other.canEqual(this)
+                && Objects.equals(this.getParentBody(), other.getParentBody());
+    }
+
+    protected boolean canEqual(final Object other) {
+        return other instanceof CentralMind;
+    }
+
+    public int hashCode() {
+        int result = 1;
+        result = result * 59 + (this.getParentBody() == null ? 43 : this.getParentBody().hashCode());
+        result = result * 59 + (this.getId() == null ? 43 : this.getId().hashCode());
+        return result;
     }
 }
