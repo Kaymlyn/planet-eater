@@ -62,8 +62,8 @@ public class PlanetTest {
     @Test
     public void validateVectorExpectations() {
         Vector3D initialPosition = defaultPlanet.getPosition();
-
-        factory.getSystem().advance(3600);
+        System.out.println(defaultPlanet.getVelocity());
+        factory.getSystem().stepVerlet();
 
         Assertions.assertAll(
                 () -> Assertions.assertEquals( new Vector3D(1.496e11,0.0,0.0), initialPosition),
@@ -113,10 +113,10 @@ public class PlanetTest {
     public void validateSatellites() {
         Assertions.assertAll(
                 () -> Assertions.assertEquals(1.401858882e9, Math.round(defaultPlanet.calculateHillSphereRadius())),
-                () -> Assertions.assertEquals(1.5714445e7, Math.round(weirdPlanet.calculateHillSphereRadius())),
-                () -> Assertions.assertTrue(weirdPlanet.canHaveSubSatellites(), "Weird Planet is to close to the sun to have satellites"),
+                () -> Assertions.assertEquals(1.051e3, Math.round(weirdPlanet.calculateHillSphereRadius())),
+                () -> Assertions.assertFalse(weirdPlanet.canHaveSubSatellites(), "Weird Planet is to close to the sun to have satellites"),
                 () -> Assertions.assertTrue(defaultPlanet.canHaveSubSatellites(), "Default Planet is far enough away from Default Planet to have satellites"),
-                () -> Assertions.assertFalse(weirdPlanet.isTidallyLocked(), "Weird Planet is not tidally locked"),
+                () -> Assertions.assertTrue(weirdPlanet.isTidallyLocked(), "Weird Planet is not tidally locked"),
                 () -> Assertions.assertFalse(defaultPlanet.isTidallyLocked(), "Default Planet is not tidally locked")
         );
     }

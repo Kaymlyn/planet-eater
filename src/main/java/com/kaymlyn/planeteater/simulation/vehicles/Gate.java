@@ -1,5 +1,6 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
+import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import lombok.Data;
@@ -9,6 +10,7 @@ public class Gate implements Orbiter {
 
     private Vector3D position;
     private Vector3D velocity;
+    private OrbitalSystem system;
 
     public Gate() {
 
@@ -32,6 +34,11 @@ public class Gate implements Orbiter {
     @Override
     public void update(Vector3D vector3D, double timeStep) {
 
+    }
+
+    @Override
+    public OrbitalSystem getSystem() {
+        return null;
     }
 
     public void setPosition(Vector3D position) {

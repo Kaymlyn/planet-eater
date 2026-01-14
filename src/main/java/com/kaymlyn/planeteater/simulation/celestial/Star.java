@@ -47,7 +47,7 @@ public class Star implements CelestialBody {
 
     @Override
     public String getId() {
-        return "";
+        return id;
     }
 
     @Override

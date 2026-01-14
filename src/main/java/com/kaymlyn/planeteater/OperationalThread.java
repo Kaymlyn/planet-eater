@@ -20,7 +20,7 @@ public class OperationalThread implements Runnable {
     private final OrbitalSystem spark;
 
     public OperationalThread() {
-        CelestialBodyFactory factory = new CelestialBodyFactory(CelestialBodyFactory.createMainSequenceStar(null, 1),3600);
+        CelestialBodyFactory factory = new CelestialBodyFactory(CelestialBodyFactory.createMainSequenceStar(null, 1),36000);
         this.spark = factory.getSystem();
         factory.createRandomAsteroidBelt(
                 "Main-Belt",
@@ -74,12 +74,12 @@ public class OperationalThread implements Runnable {
 
     @Override
     public void run() {
-        try {
-            new OrbitalSystemRenderer(spark).renderVideoFromImages(1);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-//        new RenderingThread(spark, 110000, 11).run();
+//        try {
+//            new OrbitalSystemRenderer(spark).renderVideoFromImages(1);
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+        new RenderingThread(spark, 400, 1).run();
 
     }
 }

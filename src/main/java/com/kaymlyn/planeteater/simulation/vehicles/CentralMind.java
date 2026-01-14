@@ -1,6 +1,7 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
+import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
@@ -17,7 +18,8 @@ import java.util.Objects;
 @Data
 public class CentralMind extends Vehicle implements Orbiter {
 
-    private CelestialBody parentBody; // Orbital velocity
+    private CelestialBody parentBody;
+    private OrbitalSystem system;
 
     public CentralMind(String id) {
         super(id, 1e6, 1e4, 1e3, 2, true, 12,0);
@@ -26,6 +28,7 @@ public class CentralMind extends Vehicle implements Orbiter {
 
     public CentralMind(String id, List<Automaton> initialCrew, Composition initialInventory) {
         super(id, 1e6, 1e4, 1e3, 2, true, 12,0);
+        this.cargo = initialInventory;
         this.crew = new ArrayList<>(initialCrew);
     }
 
@@ -49,6 +52,11 @@ public class CentralMind extends Vehicle implements Orbiter {
         velocity = velocity.add(acceleration.multiply(dt));
         // p = p + v * dt
         position = position.add(velocity.multiply(dt));
+    }
+
+    @Override
+    public OrbitalSystem getSystem() {
+        return system;
     }
 
     public boolean equals(final Object o) {
