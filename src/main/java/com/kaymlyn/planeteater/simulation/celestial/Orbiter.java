@@ -12,4 +12,5 @@ public interface Orbiter {
 
     double getMass();
     void update(Vector3D vector3D, double timeStep);
+    OrbitalSystem getSystem();
 }

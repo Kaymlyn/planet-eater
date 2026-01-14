@@ -26,10 +26,22 @@ public class TravelCalculator {
     public static class Trajectory {
         public Vector3D startPosition;
         public Vector3D endPosition;
+        public Orbiter destination;
         public double deltaV;           // Required delta-v (m/s)
         public double travelTime;       // Travel duration (seconds)
         public double fuelRequired;     // Fuel needed (kg)
         public double endVelocity;
+        public Spacecraft.SpacecraftState finalState;
+
+        public Trajectory(
+                Vector3D startPosition,
+                Vector3D endPosition,
+                double deltaV,
+                double travelTime,
+                double fuelRequired,
+                double endVelocity) {
+            this(startPosition,endPosition,null,deltaV,travelTime,fuelRequired,endVelocity, null);
+        }
 
         @Override
         public String toString() {

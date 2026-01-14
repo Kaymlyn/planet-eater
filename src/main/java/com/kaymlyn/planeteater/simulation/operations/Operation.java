@@ -9,9 +9,7 @@ import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.operations.TravelCalculator.Trajectory;
 import lombok.Getter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Manages a mining operation at an asteroid
@@ -21,7 +19,6 @@ import java.util.Map;
  */
 @Getter
 public abstract class Operation {
-
 
     public enum OperationStatus {
         PLANNING,       // Operation being set up
@@ -38,7 +35,6 @@ public abstract class Operation {
     private final Composition inventory;
     private final Planet target;
     private final List<Automaton> crew;
-    private final Map<String, Spacecraft> dockedSpaceCraft;    // Amount mined so far (kg)
     private OperationStatus status;
 
     private final double deploymentTime;
@@ -53,7 +49,6 @@ public abstract class Operation {
         this.supplies = supplies;
         this.inventory = supplies;
         this.crew = new ArrayList<>();
-        this.dockedSpaceCraft = new HashMap<>();
         this.status = OperationStatus.PLANNING;
         this.deploymentTime = deploymentTime;
     }
@@ -82,29 +77,6 @@ public abstract class Operation {
         // Check crew capacity
         return crew.size() <= spacecraft.getMaxCrewCapacity();
     }
-    
-    /**
-     * Start the operation (launch from platform)
-     */
-    public boolean launch(Spacecraft spacecraft, double currentTime) {
-        if (status != OperationStatus.PLANNING) {
-            return false;
-        }
-        
-        // Consume fuel for outbound journey
-        spacecraft.consumeFuel(outboundTrajectory.fuelRequired);
-        spacecraft.setState(Spacecraft.SpacecraftState.TRAVELING);
-        dockedSpaceCraft.remove(spacecraft.getId());
-        startTime = currentTime;
-        
-        return true;
-    }
-
-    public void land(Spacecraft spacecraft) {
-        dockedSpaceCraft.put(spacecraft.getId(), spacecraft);
-        spacecraft.setState(Spacecraft.SpacecraftState.DOCKED);
-        spacecraft.setLocation(this.getTarget());
-    }
 
     public void deploy() {
         status = OperationStatus.DEPLOYING;
@@ -120,10 +92,6 @@ public abstract class Operation {
             case TRAVELING -> {
                 // Check if arrived at asteroid
                 double travelElapsed = currentTime - startTime;
-                if (travelElapsed >= outboundTrajectory.travelTime) {
-                    land(spacecraft);
-//                    arriveAtDestination(currentTime);
-                }
             }
             case ACTIVE ->
                     performTask(dt);

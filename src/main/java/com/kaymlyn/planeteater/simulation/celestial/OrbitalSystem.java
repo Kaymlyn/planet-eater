@@ -4,6 +4,7 @@ import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitialize
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import com.kaymlyn.planeteater.simulation.vehicles.Vehicle;
 import lombok.Getter;
 import lombok.Setter;
@@ -357,6 +358,20 @@ public class OrbitalSystem {
             addOrbiter(body);
         }
     }
+
+    public Vector3D getCircularOrbitVector(Gravitational parentBody) {
+        return getCircularOrbitVector(parentBody, parentBody.getRadius() * .1);
+    }
+
+    public Vector3D getCircularOrbitVector(Gravitational parentBody, double altitude) {
+
+        return parentBody.getVelocity().add(
+                    new Vector3D(
+                            0,
+                            Math.sqrt(PhysicsConstants.G * parentBody.getMass() * (1/ (parentBody.getRadius() + altitude)))
+                    )
+            );
+    }
     
     /**
      * Get all planets in the system
@@ -638,5 +653,15 @@ public class OrbitalSystem {
                 random.nextDouble()*2*Math.PI,
                 random.nextDouble()*2*Math.PI
         );
+    }
+
+    public void register(Spacecraft spacecraft) {
+        if(!vehiclesInTransit.containsValue(spacecraft.getId()))
+            vehiclesInTransit.put(spacecraft.getId(), spacecraft);
+    }
+
+    public void unregister(Spacecraft spacecraft) {
+        if(vehiclesInTransit.containsValue(spacecraft.getId()))
+            vehiclesInTransit.remove(spacecraft.getId());
     }
 }

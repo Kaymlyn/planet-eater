@@ -1,9 +1,13 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
+import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
+import com.kaymlyn.planeteater.simulation.celestial.Star;
+import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.operations.TravelCalculator;
+import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import lombok.Data;
@@ -26,14 +30,20 @@ public class Spacecraft extends Vehicle {
     public enum SpacecraftState {
         DOCKED,         // At platform
         TRAVELING,      // In transit
+        ORBITING,
         STRANDED
     }
+
     private Composition construction;   // Materials used to build the spacecraft
     private Composition cargo;
     private List<Automaton> crew;
 
     private SpacecraftState state;
     private Orbiter location;
+    private TravelCalculator.Trajectory itinerary;
+    private long transitTime;
+
+    private OrbitalSystem system;
     
     public Spacecraft(String id,
                       double dryMass,
@@ -42,40 +52,151 @@ public class Spacecraft extends Vehicle {
                       double exhaustVelocity,
                       boolean hasLifeSupport,
                       int maxCrewCapacity,
-                      int minCrewRequirement) {
+                      int minCrewRequirement,
+                      Orbiter shipyard) {
         super(id, dryMass, maxFuelCapacity, cargoCapacity, exhaustVelocity, hasLifeSupport, maxCrewCapacity, minCrewRequirement);
         this.id = id;
 
         this.construction = new Composition();
         this.state = SpacecraftState.DOCKED;
+        itinerary = null;
+        transitTime = 0L;
+        location = shipyard;
+        system = location.getSystem();
     }
 
-    public double planRoute(Orbiter destination, boolean dock) {
-        double fuelRequired = 0.0;
-        if(location != null) {
+    //perform travel
+    public void simulateTravel(long timestep) {
+        if(itinerary != null) {
+            system.register(this);
+            this.velocity = position.normalize().multiply(
+                    position.distanceTo(itinerary.destination.getPosition())/(itinerary.travelTime - transitTime) * timestep
+                    );
+            if(this.velocity.magnitude() > position.distanceTo(itinerary.destination.getPosition()) ) {
 
+                this.location = itinerary.destination;
+
+                if(itinerary.finalState == SpacecraftState.DOCKED) {            //planets and orbiters can be docked at
+                    this.position = itinerary.destination.getPosition();
+                    this.state = SpacecraftState.DOCKED;
+                    system.unregister(this);
+                } else if(itinerary.finalState == SpacecraftState.ORBITING) {   //planets and stars can be orbited
+                    this.position = itinerary.endPosition;
+                    if(itinerary.destination instanceof Gravitational) {
+                        this.velocity = system.getCircularOrbitVector((Gravitational)itinerary.destination);
+                    } else {                                                    //some mistake was made, dock with the destination.
+                        this.position = itinerary.destination.getPosition();
+                        this.state = SpacecraftState.DOCKED;
+                        system.unregister(this);
+                    }
+                }
+            } else {
+                this.position = position.add(velocity);
+                this.consumeFuel(itinerary.fuelRequired/itinerary.travelTime * timestep);
+                this.state = SpacecraftState.TRAVELING;
+                this.location = null;
+                this.transitTime += timestep;
+            }
+        }
+    }
+
+    //Calculate a dry run of the route
+    public TravelCalculator.Trajectory planRoute(Orbiter destination, boolean land) {
+        double fuelRequired = 0.0;
+        double travelTime = 0.0;
+        TravelCalculator.Trajectory rendezvous;
+        Vector3D finalCoordinates;
+        double finalVelocity = 0.0;
+        SpacecraftState finalState;
+
+        if(location != null) {
             if(location instanceof Planet) {
                 double originRadius = ((Planet) location).getRadius();
                 fuelRequired += TravelCalculator.calculateTakeoffDeltaV(location.getMass(),originRadius,originRadius*1.1, this);
-                fuelRequired += TravelCalculator.calculateRendezvous(TravelCalculator.randomUnitVector().multiply(originRadius*1.1).add(location.getPosition()),destination,this).fuelRequired;
+                rendezvous = TravelCalculator.calculateRendezvous(TravelCalculator.randomUnitVector().multiply(originRadius*1.1).add(location.getPosition()),destination,this);
+            } else {
+                rendezvous = TravelCalculator.calculateRendezvous(location.getPosition(),destination,this);
             }
-            else {
-                fuelRequired += TravelCalculator.calculateRendezvous(location.getPosition(),destination,this).fuelRequired;
-            }
+
+            fuelRequired += rendezvous.fuelRequired;
+            travelTime += rendezvous.travelTime;
+        } else {
+            return new TravelCalculator.Trajectory(
+                    getPosition(),
+                    getPosition(),
+                    0.0,
+                    0.0,
+                    0.0,
+                    getVelocity().magnitude());
         }
 
-        if(dock) {
-            if(destination instanceof Planet) {
+        if(destination instanceof Planet) {
+            if(land) {
                 fuelRequired += TravelCalculator.calculateLanding(
                         ((Planet) destination).getRadius() * 1.1,
                         destination.getMass(),
                         ((Planet) destination).getRadius(),
                         this);
+                finalCoordinates = destination.getPosition();
+                travelTime += (((Planet) destination).getRadius() * 0.1 / 50 )*3600;
+                finalState = SpacecraftState.DOCKED;
             } else {
-                fuelRequired += TravelCalculator.calculateLanding(500, destination.getMass(), 0, this);
+                //insert into orbit
+                fuelRequired += TravelCalculator.calculateOrbitalInsertion(
+                        this,
+                        (Planet) destination,
+                        rendezvous.endVelocity,
+                        ((Planet) destination).getRadius() * 1.1
+                ).fuelRequired;
+                finalCoordinates = TravelCalculator.randomUnitVector().multiply(((Planet) destination).getRadius() * 1.1);
+                finalVelocity = rendezvous.endVelocity;
+                finalState = SpacecraftState.ORBITING;
             }
+        } else {
+            //assume coming in from the correct angle of travel just faster/slower than target destination.
+            fuelRequired += TravelCalculator.calculateMatchVelocity(
+                    destination.getVelocity().normalize().multiply(rendezvous.endVelocity),destination.getVelocity());
+            finalCoordinates = destination.getPosition();
+            finalVelocity = destination.getVelocity().magnitude();
+            finalState = SpacecraftState.DOCKED;
         }
-        return fuelRequired;
+
+        return new TravelCalculator.Trajectory(
+                getPosition(),
+                finalCoordinates,
+                destination,
+                0.0,
+                travelTime,
+                fuelRequired,
+                finalVelocity,
+                finalState);
+    }
+
+    //All or nothing execution of travel. eventually figure out a way to do piecewise travel.
+    public boolean executeRoute(Orbiter destination, boolean dock) {
+        if(destination == null) {
+            return false;
+        }
+        TravelCalculator.Trajectory route =  planRoute(destination, dock);
+        if(route.fuelRequired > maxFuelCapacity || route.fuelRequired > fuelMass) {
+            return false;
+        } else {
+            system.register(this);
+            consumeFuel(route.fuelRequired);
+            location = destination;
+            if(destination instanceof Planet) {
+                if (dock) {
+                    state = SpacecraftState.DOCKED;
+                } else {
+                    state = SpacecraftState.ORBITING;
+                }
+            } else if (destination instanceof Star) {
+                state = SpacecraftState.ORBITING;
+            } else {
+                state = SpacecraftState.DOCKED;
+            }
+            return true;
+        }
     }
 
     /**
@@ -91,6 +212,7 @@ public class Spacecraft extends Vehicle {
         
         // Return any remaining fuel (assuming it's a recyclable type)
         // In practice, fuel might be hydrogen or similar
+        system.unregister(this);
         return materials;
     }
     
