@@ -2,11 +2,12 @@ package com.kaymlyn.planeteater.simulation.operations;
 
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
+import com.kaymlyn.planeteater.simulation.physics.Trajectory;
+import com.kaymlyn.planeteater.simulation.physics.TravelCalculator;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import com.kaymlyn.planeteater.simulation.vehicles.CentralMind;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
-import com.kaymlyn.planeteater.simulation.operations.TravelCalculator.Trajectory;
 import lombok.Getter;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,10 +63,12 @@ public abstract class Operation {
         }
         
         // Calculate outbound trajectory
-        outboundTrajectory = TravelCalculator.calculateRendezvous(
+        outboundTrajectory = TravelCalculator.calculateRendezvousV1(
             platform.getPosition(),
+                platform.getVelocity(),
                 target,
-                spacecraft
+                spacecraft,
+                system
         );
 
         // Round Trips aren't needed for operations as they will maintain permanent (semi permanent) activity

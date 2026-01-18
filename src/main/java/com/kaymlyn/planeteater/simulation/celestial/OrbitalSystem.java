@@ -5,11 +5,9 @@ import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
-import com.kaymlyn.planeteater.simulation.vehicles.Vehicle;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +24,7 @@ public class OrbitalSystem {
     private final HashMap<String, Orbiter> orbiters;
     private Star centralStar;
     private Map<String, CelestialBody> bodyMap;
-    private Map<String, Vehicle> vehiclesInTransit;
+    private Map<String, Spacecraft> spacecraftInTransit;
     private double currentTime; // seconds since epoch
     private double timeStep; // simulation time step in seconds
     private CelestialBodyFactory factory;
@@ -41,6 +39,7 @@ public class OrbitalSystem {
         this.timeStep = timeStep;
         this.globalRandom = new Random(0L);
         this.orbiters = new HashMap<>();
+        this.spacecraftInTransit = new HashMap<>();
 
         // Add the star to the system
         addBody(this.centralStar);
@@ -102,24 +101,6 @@ public class OrbitalSystem {
         centralStars.add(centralStar);
         return centralStars;
     }
-//
-//    /**
-//     * Step the simulation forward by one time step using simple Euler integration
-//     */
-//    public void stepEuler() {
-//        // Calculate accelerations for all bodies
-//        Map<Orbiter, Vector3D> accelerations = new HashMap<>();
-//        for (Orbiter body : orbiters.values()) {
-//            accelerations.put(body, calculateAcceleration(body));
-//        }
-//
-//        // Update all bodies
-//        for (Orbiter body : orbiters.values()) {
-//            body.update(accelerations.get(body), timeStep);
-//        }
-//
-//        currentTime += timeStep;
-//    }
     
     /**
      * Step the simulation forward using Velocity Verlet integration (more accurate)
@@ -131,7 +112,7 @@ public class OrbitalSystem {
         // Calculate current accelerations
         Map<Orbiter, Vector3D> accelerations = new HashMap<>();
         for (Orbiter body : orbiters.values()) {
-            accelerations.put(body, calculateAcceleration(body));
+            accelerations.put(body, calculateAccelerationFromAllKnownBodies(body));
         }
 
         // Update positions
@@ -146,7 +127,7 @@ public class OrbitalSystem {
         // Calculate new accelerations at new positions
         Map<Orbiter, Vector3D> newAccelerations = new HashMap<>();
         for (Orbiter body : orbiters.values()) {
-            newAccelerations.put(body, calculateAcceleration(body));
+            newAccelerations.put(body, calculateAccelerationFromAllKnownBodies(body));
         }
         
         // Update velocities using average of old and new accelerations
@@ -157,6 +138,10 @@ public class OrbitalSystem {
             Vector3D newVel = body.getVelocity().add(avgAccel.multiply(timeStep));
 
             body.setVelocity(newVel);
+        }
+
+        for(Spacecraft spacecraft : spacecraftInTransit.values()) {
+            spacecraft.simulateTravel();
         }
         
         currentTime += timeStep;
@@ -357,20 +342,6 @@ public class OrbitalSystem {
         }
     }
 
-    public Vector3D getCircularOrbitVector(Gravitational parentBody) {
-        return getCircularOrbitVector(parentBody, parentBody.getRadius() * .1);
-    }
-
-    public Vector3D getCircularOrbitVector(Gravitational parentBody, double altitude) {
-
-        return parentBody.getVelocity().add(
-                    new Vector3D(
-                            0,
-                            Math.sqrt(PhysicsConstants.G * parentBody.getMass() * (1/ (parentBody.getRadius() + altitude)))
-                    )
-            );
-    }
-    
     /**
      * Get all planets in the system
      */
@@ -383,84 +354,6 @@ public class OrbitalSystem {
         }
         return planets;
     }
-
-    /**
-     * Calculate orbital elements from current position and velocity
-     * Useful for analyzing orbits
-     *
-     * @return Map containing: "a" (semi-major axis), "e" (eccentricity),
-     *         "i" (inclination), "Ω" (longitude of ascending node),
-     *         "ω" (argument of periapsis), "ν" (true anomaly)
-     */
-    public static Map<String, Double> calculateOrbitalElements(Star centralStar, OrbitingBody body) {
-        Map<String, Double> elements = new HashMap<>();
-
-        Vector3D r = body.getPosition();
-        Vector3D v = body.getVelocity();
-        double mu = PhysicsConstants.G * centralStar.getMass();
-
-        // Specific orbital energy
-        double energy = v.magnitudeSquared() / 2.0 - mu / r.magnitude();
-
-        // Semi-major axis
-        double a = -mu / (2.0 * energy);
-        elements.put("a", a);
-
-        // Angular momentum vector
-        Vector3D h = r.cross(v);
-        double hMag = h.magnitude();
-
-        // Eccentricity vector
-        Vector3D eVec = v.cross(h).divide(mu).subtract(r.normalize());
-        double e = eVec.magnitude();
-        elements.put("e", e);
-
-        // Inclination
-        double i = Math.acos(h.getZ() / hMag);
-        elements.put("i", i);
-
-        // Node vector (points to ascending node)
-        Vector3D n = Vector3D.UNIT_Z.cross(h);
-        double nMag = n.magnitude();
-
-        // Longitude of ascending node
-        double omega;
-        if (nMag > 1e-10) {
-            omega = Math.acos(n.getX() / nMag);
-            if (n.getY() < 0) omega = 2 * Math.PI - omega;
-        } else {
-            omega = 0.0; // Undefined for non-inclined orbits
-        }
-        elements.put("Omega", omega);
-
-        // Argument of periapsis
-        double w;
-        if (nMag > 1e-10 && e > 1e-10) {
-            w = Math.acos(n.dot(eVec) / (nMag * e));
-            if (eVec.getZ() < 0) w = 2 * Math.PI - w;
-        } else {
-            w = 0.0; // Undefined for circular or non-inclined orbits
-        }
-        elements.put("omega", w);
-
-        // True anomaly
-        double nu;
-        if (e > 1e-10) {
-            nu = Math.acos(eVec.dot(r) / (e * r.magnitude()));
-            if (r.dot(v) < 0) nu = 2 * Math.PI - nu;
-        } else {
-            // For circular orbits, measure from ascending node
-            if (nMag > 1e-10) {
-                nu = Math.acos(n.dot(r) / (nMag * r.magnitude()));
-                if (r.getZ() < 0) nu = 2 * Math.PI - nu;
-            } else {
-                nu = Math.atan2(r.getY(), r.getX());
-            }
-        }
-        elements.put("nu", nu);
-
-        return elements;
-    }
     
     @Override
     public String toString() {
@@ -471,7 +364,7 @@ public class OrbitalSystem {
     /**
      * Calculate gravitational acceleration on a body from all other bodies
      */
-    private Vector3D calculateAcceleration(Orbiter body) {
+    private Vector3D calculateAccelerationFromAllKnownBodies(Orbiter body) {
         Vector3D totalAcceleration = Vector3D.ZERO;
         for (CelestialBody other : bodyMap.values()) {
             if (other.getId().equalsIgnoreCase(body.getId()) || other.getMass() == 0.0) continue;
@@ -494,7 +387,8 @@ public class OrbitalSystem {
         }
         return totalAcceleration;
 
-    }    /**
+    }
+    /**
      * Check if a body's mass is significant enough to affect the star's position
      * Uses barycenter calculation to determine if center of mass is outside star's radius
      *
@@ -651,12 +545,13 @@ public class OrbitalSystem {
     }
 
     public void register(Spacecraft spacecraft) {
-        if(!vehiclesInTransit.containsValue(spacecraft.getId()))
-            vehiclesInTransit.put(spacecraft.getId(), spacecraft);
+            spacecraftInTransit.put(spacecraft.getId(), spacecraft);
     }
 
     public void unregister(Spacecraft spacecraft) {
-        if(vehiclesInTransit.containsValue(spacecraft.getId()))
-            vehiclesInTransit.remove(spacecraft.getId());
+            spacecraftInTransit.remove(spacecraft.getId());
+    }
+
+    public OrbitInitializer calculateOrbitalElements(CelestialBody target) {
     }
 }

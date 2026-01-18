@@ -86,7 +86,7 @@ Right-click on `com.kaymlyn.planeteater.SimulationDemo.java` → Run
 - **Spacecraft**: Vehicles with fuel, cargo, and crew capacity
 - **MiningEntity**: Human and robot miners
 - **MiningOperation**: Complete mining mission management
-- **TravelCalculator**: Trajectory planning and fuel calculations
+- **TravelCalcClaude**: Trajectory planning and fuel calculations
 - **OrbitalPlatform**: Home base for operations
 
 ## Future Development

@@ -31,17 +31,17 @@ public class CelestialBodyFactory {
     @Getter
     private final OrbitalSystem system;
     private final HashMap<String,LayerProfile> profiles;
-    private final ObjectMapper mapper;
+    private final static ObjectMapper MAPPER = JsonMapper.builder().build();
 
     private final static List<String> bodyNames = initBodyNames();
     private final static Random random = new Random(0L);
 
     public CelestialBodyFactory(Star star, double timeStep) {
-        mapper = JsonMapper.builder().build();
+
         profiles = new HashMap<>();
         system = new OrbitalSystem(star,timeStep);
         try {
-            List<LayerProfile> profileList = mapper.readValue(
+            List<LayerProfile> profileList = MAPPER.readValue(
                     new File("src/main/resources/bodyprofiles.json"),
                     new TypeReference<>() {
                     }

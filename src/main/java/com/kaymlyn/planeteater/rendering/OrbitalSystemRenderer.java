@@ -4,6 +4,7 @@ import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import org.jcodec.api.SequenceEncoder;
 import org.jcodec.common.io.NIOUtils;
 import org.jcodec.common.model.ColorSpace;
@@ -28,12 +29,14 @@ public class OrbitalSystemRenderer {
     private final OrbitalSystem system;
     private int i;
     private final int scalar;
+    private final double visibleAU;
 
     private static final int imageType = TYPE_INT_RGB;
-    public OrbitalSystemRenderer(OrbitalSystem system) {
+    public OrbitalSystemRenderer(OrbitalSystem system, double visibleAU) {
         scalar = 80;
         i = 0;
         this.system = system;
+        this.visibleAU = visibleAU;
         File directory = new File("orbits");
         if(!directory.exists()) {
             directory.mkdir();
@@ -43,7 +46,7 @@ public class OrbitalSystemRenderer {
         }
     }
 
-    public void render(boolean saveImage, int maxAUVisible) throws IOException {
+    public void render(boolean saveImage, double maxAUVisible) throws IOException {
         BufferedImage frame = render(system, scalar, maxAUVisible);
         renderInfo(frame.createGraphics(),"Day " + (int)(system.getCurrentTime()/PhysicsConstants.SECONDS_PER_DAY)
                 + " Hour " + (int)((system.getCurrentTime()%PhysicsConstants.SECONDS_PER_DAY)/3600),0,16);
@@ -59,7 +62,7 @@ public class OrbitalSystemRenderer {
         canvas.drawString(info, x, y);
     }
 
-    private BufferedImage render(OrbitalSystem system, int scalar, int maxAUVisible) {
+    private BufferedImage render(OrbitalSystem system, int scalar, double maxAUVisible) {
         int height = 9;
         int width = 16;
 
@@ -73,6 +76,11 @@ public class OrbitalSystemRenderer {
         );
         Graphics2D canvas = image.createGraphics();
         canvas.setBackground(Color.BLACK);
+
+        canvas.setColor(Color.YELLOW);
+        canvas.fillOval(width*scalar/2, height*scalar/2, 8,8);
+
+        double canvasScale = PhysicsConstants.AU*(maxAUVisible * 3 /4);
 
         for(Orbiter orbiter : system.getOrbiters().values()) {
             canvas.setColor(Color.WHITE);
@@ -102,8 +110,8 @@ public class OrbitalSystemRenderer {
             } else {
                 size = 2;
             }
-            double xRaw = orbiter.getPosition().getX()/(PhysicsConstants.AU*((double) (maxAUVisible * 3) /4));
-            double yRaw = orbiter.getPosition().getY()/(PhysicsConstants.AU*((double) (maxAUVisible * 3) /4));
+            double xRaw = orbiter.getPosition().getX()/canvasScale;
+            double yRaw = orbiter.getPosition().getY()/canvasScale;
             rectangle.setRect(xRaw * adjustedAU + ((double) (width * scalar) /2),yRaw * adjustedAU + ((double)(height*scalar)/2),size, size);
             canvas.fill(rectangle);
             if(!orbiter.getId().contains("Belt")) {
@@ -112,10 +120,29 @@ public class OrbitalSystemRenderer {
                         (int) (xRaw * adjustedAU + ((double) (width * scalar) / 2) + 3),
                         (int) (yRaw * adjustedAU + ((double) (height * scalar) / 2)));
             }
-        }
-        canvas.setColor(Color.YELLOW);
 
-        canvas.fillOval(width*scalar/2, height*scalar/2, 8,8);
+        }
+        for(Spacecraft ship : system.getSpacecraftInTransit().values()) {
+            if(ship.getState() != Spacecraft.SpacecraftState.DOCKED) {
+                canvas.setColor(
+                        new Color(
+                                255,
+                                0,
+                                0
+                        )
+                );
+                Rectangle rectangle = new Rectangle();
+                int size = 1;
+                double xRaw = ship.getPosition().getX() / canvasScale;
+                double yRaw = ship.getPosition().getY() / canvasScale;
+                rectangle.setRect(xRaw * adjustedAU + ((double) (width * scalar) / 2), yRaw * adjustedAU + ((double) (height * scalar) / 2), size, size);
+                canvas.fill(rectangle);
+                renderInfo(canvas,
+                        ship.getId() + " " + ship.getState(),
+                        (int) (xRaw * adjustedAU + ((double) (width * scalar) / 2) + 3),
+                        (int) (yRaw * adjustedAU + ((double) (height * scalar) / 2)));
+            }
+        }
 
         return image;
     }

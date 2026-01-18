@@ -49,6 +49,6 @@ public class Gate implements Orbiter {
 
     @Override
     public void setVelocity(Vector3D velocity) {
-
+        this.velocity = velocity;
     }
 }

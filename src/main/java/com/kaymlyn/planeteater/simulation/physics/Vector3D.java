@@ -2,6 +2,8 @@ package com.kaymlyn.planeteater.simulation.physics;
 
 import lombok.Getter;
 
+import java.util.Random;
+
 /**
  * Represents a 3D vector with x, y, z components.
  * Immutable class for position, velocity, and force calculations.
@@ -10,6 +12,9 @@ import lombok.Getter;
  */
 @Getter
 public class Vector3D {
+
+    private static final Random random = new Random(0);
+
     private final double x;
     private final double y;
     private final double z;
@@ -23,7 +28,15 @@ public class Vector3D {
     public Vector3D(double x, double y) {
         this(x, y, 0.0);
     }
-    
+
+    public static Vector3D randomUnitVector() {
+        double x = random.nextDouble();
+        double y = random.nextDouble();
+        double z = random.nextDouble();
+        double magnitude = Math.sqrt(Math.pow(x,2) + Math.pow(y,2) + Math.pow(z,2));
+        return new Vector3D(x/magnitude, y/magnitude, z/magnitude);
+    }
+
     /**
      * Add another vector to this vector
      */

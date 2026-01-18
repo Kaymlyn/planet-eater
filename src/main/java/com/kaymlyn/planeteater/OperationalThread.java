@@ -1,18 +1,21 @@
 package com.kaymlyn.planeteater;
 
-import com.kaymlyn.planeteater.rendering.OrbitalSystemRenderer;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.PlanetPattern;
+import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.entities.Specialization;
+import com.kaymlyn.planeteater.simulation.physics.Itinerary;
+import com.kaymlyn.planeteater.simulation.physics.Trajectory;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.vehicles.CentralMind;
+import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
+import com.kaymlyn.planeteater.simulation.vehicles.VehicleFactory;
 
-import java.io.IOException;
 import java.util.List;
 
 public class OperationalThread implements Runnable {
@@ -30,14 +33,14 @@ public class OperationalThread implements Runnable {
                 2,
                 5,23L
         );
-        factory.createPlanetFromPattern(
+        Planet planet_1 = factory.createPlanetFromPattern(
                 null,
                 spark.getCentralStar(),
                 new OrbitInitializer(PhysicsConstants.AU, 0.02, .05, 0, 2, 3),
                 PlanetPattern.EARTH,
                 1.0
         );
-        factory.createPlanetFromPattern(null,
+        Planet planet_2 = factory.createPlanetFromPattern(null,
                 spark.getCentralStar(),
                 new OrbitInitializer(PhysicsConstants.AU*5, 0.6, 1.3, 0, 2, 3),
                 PlanetPattern.VENUS,
@@ -64,11 +67,25 @@ public class OperationalThread implements Runnable {
                 .addMaterialAsRawMass(Material.SILICA, 1000)
                 .addMaterialAsRawMass(Material.TITANIUM_OXIDE, 200);
 
-        spark.placeInEllipticalOrbit(new CentralMind("KHI Central Mind",crew,composition),
+        CentralMind mind =  new CentralMind("KHI Central Mind",crew,composition);
+        spark.placeInEllipticalOrbit(mind,
                 spark.getCentralStar(),
-                new OrbitInitializer(PhysicsConstants.AU*.25, 0, Math.PI/2,
-                        Math.PI/3, Math.PI/2, Math.PI/7));
+                new OrbitInitializer(PhysicsConstants.AU, 0, 0.03,
+                        Math.PI/3, 2, 3));
 
+        Spacecraft vehicle = VehicleFactory.createCargoShuttle("Shuttle-1",mind);
+        vehicle.setLocation(mind);
+        Itinerary route = vehicle.planRoute(planet_1, true);
+//        System.out.println(route);
+//        System.out.println(route.getTotalFuelRequirement());
+//        System.out.println(vehicle.getFuelMass());
+//        System.out.println(route.getTotalFuelRequirement() < vehicle.getFuelMass());
+        vehicle.setSystem(spark);
+        vehicle.setItinerary(route);
+        vehicle.launch(route);
+        System.out.println("Travel Time : " + route.getTotalFlightTime());
+        System.out.println("Total Fuel : " + vehicle.getFuelMass());
+        System.out.println("Travel Fuel : " + route.getTotalFuelRequirement());
 
     }
 
@@ -79,7 +96,7 @@ public class OperationalThread implements Runnable {
 //        } catch (IOException e) {
 //            throw new RuntimeException(e);
 //        }
-        new RenderingThread(spark, 400, 1).run();
+        new RenderingThread(spark, 300, 10, 1).run();
 
     }
 }
