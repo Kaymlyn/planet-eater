@@ -123,6 +123,8 @@ public class OrbitalSystemRenderer {
 
         }
         for(Spacecraft ship : system.getSpacecraftInTransit().values()) {
+            if(ship.getTelemetry() != null)
+                System.out.println(ship.getTelemetry().get(ship.getCurrentTravelCycle()));
             if(ship.getState() != Spacecraft.SpacecraftState.DOCKED) {
                 canvas.setColor(
                         new Color(

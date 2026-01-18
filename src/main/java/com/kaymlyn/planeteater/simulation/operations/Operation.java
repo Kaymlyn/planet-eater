@@ -63,7 +63,7 @@ public abstract class Operation {
         }
         
         // Calculate outbound trajectory
-        outboundTrajectory = TravelCalculator.calculateRendezvousV1(
+        outboundTrajectory = TravelCalculator.calculateRendezvousFromSpace(
             platform.getPosition(),
                 platform.getVelocity(),
                 target,

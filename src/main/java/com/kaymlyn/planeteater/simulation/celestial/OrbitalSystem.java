@@ -552,6 +552,4 @@ public class OrbitalSystem {
             spacecraftInTransit.remove(spacecraft.getId());
     }
 
-    public OrbitInitializer calculateOrbitalElements(CelestialBody target) {
-    }
 }

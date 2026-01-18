@@ -2,6 +2,7 @@ package com.kaymlyn.planeteater.simulation.physics;
 
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import lombok.Getter;
 import lombok.Setter;
@@ -49,23 +50,35 @@ public class Itinerary {
         }
     }
 
-    public List<PiecewiseState> generateTelemetry(double timeStep) {
+    public List<PiecewiseState> generateTelemetry(double timeStep, Spacecraft spacecraft) {
         if (telemetry.isEmpty()) {
+            OrbitInitializer orbit = OrbitInitializer.calculateOrbitalInitializer(system.getCentralStar(),
+                    spacecraft.getPosition(), spacecraft.getVelocity());
             for (Trajectory trajectory : trajectories) {
+                Vector3D travelVector = trajectory.launchPosition.subtract(trajectory.endPosition);
+                double travelDivisor = (trajectory.travelTime - trajectory.waitTime)/timeStep;
+                int j = 0;
                 for (int i = 0; i < (trajectory.travelTime / timeStep); i++) {
-                    System.out.println("Generating Telemetry : " + TravelCalculator.calculateTrajectoryState(
-                            trajectory,
-                            i * timeStep,
-                            system.getCentralStar().getMass()
-                    ));
-                    System.out.println("Travel Time : " + trajectory.travelTime);
-                    System.out.println("Time Step : " + timeStep);
-                    telemetry.add(TravelCalculator.calculateTrajectoryState(
-                            trajectory,
-                            i * timeStep,
-                            system.getCentralStar().getMass()
-                            )
-                    );
+                    System.out.println("Time: W=" + i * timeStep + " of " + " Wait Time " + trajectory.waitTime + " | tick : " + i + " Total process : " + trajectory.travelTime / timeStep);
+                    if(i * timeStep < trajectory.waitTime) {
+
+                        telemetry.add(new PiecewiseState(
+                                TravelCalculator.predictOrbitalPosition(orbit,i*timeStep, system),
+                                Vector3D.ZERO,
+                                0.0,
+                                0.0
+                                ));
+                    } else {
+                        System.out.println("Time: T=" + j * timeStep);
+                        double flightTime = j*timeStep + trajectory.waitTime;
+                        telemetry.add(new PiecewiseState(
+                                trajectory.launchPosition.add(travelVector.multiply(j)),
+                                travelVector.divide(travelDivisor),
+                                flightTime,
+                                j/travelDivisor
+                                ));
+                        j++;
+                    }
                 }
             }
         }

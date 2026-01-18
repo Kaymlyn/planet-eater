@@ -23,7 +23,7 @@ public class OperationalThread implements Runnable {
     private final OrbitalSystem spark;
 
     public OperationalThread() {
-        CelestialBodyFactory factory = new CelestialBodyFactory(CelestialBodyFactory.createMainSequenceStar(null, 1),36000);
+        CelestialBodyFactory factory = new CelestialBodyFactory(CelestialBodyFactory.createMainSequenceStar(null, 1),3600);
         this.spark = factory.getSystem();
         factory.createRandomAsteroidBelt(
                 "Main-Belt",
@@ -83,7 +83,7 @@ public class OperationalThread implements Runnable {
         vehicle.setSystem(spark);
         vehicle.setItinerary(route);
         vehicle.launch(route);
-        System.out.println("Travel Time : " + route.getTotalFlightTime());
+        System.out.println("Travel Time : " + route.getTotalFlightTime()/PhysicsConstants.SECONDS_PER_DAY);
         System.out.println("Total Fuel : " + vehicle.getFuelMass());
         System.out.println("Travel Fuel : " + route.getTotalFuelRequirement());
 
@@ -96,7 +96,7 @@ public class OperationalThread implements Runnable {
 //        } catch (IOException e) {
 //            throw new RuntimeException(e);
 //        }
-        new RenderingThread(spark, 300, 10, 1).run();
+        new RenderingThread(spark, 2400, 10, 1).run();
 
     }
 }

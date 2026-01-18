@@ -79,8 +79,9 @@ public class Spacecraft extends Vehicle {
         this.location = null;
         system.register(this);
         consumeFuel(itinerary.getLaunchFuel());
+        this.state = SpacecraftState.ORBITING;
         itinerary.setStartTime(system.getCurrentTime());
-        telemetry = itinerary.generateTelemetry(system.getTimeStep());
+        telemetry = itinerary.generateTelemetry(system.getTimeStep(),this);
         currentTravelCycle = 0;
     }
 
@@ -117,14 +118,18 @@ public class Spacecraft extends Vehicle {
     public Vector3D simulateTravel() {
         if(itinerary != null) {
             if(telemetry == null) {
-                telemetry = itinerary.generateTelemetry(system.getTimeStep());
+                telemetry = itinerary.generateTelemetry(system.getTimeStep(),this);
             }
             if(telemetry == null) {
                 return null;
             }
-            System.out.println("Telemetry : " + telemetry);
+
+
             if(telemetry.size() > currentTravelCycle) {
                 Vector3D location = telemetry.get(currentTravelCycle).position;
+                if(!Double.isNaN(location.getZ())) {
+                    this.state = SpacecraftState.TRAVELING;
+                }
                 currentTravelCycle++;
                 return location;
             } else {
@@ -158,7 +163,7 @@ public class Spacecraft extends Vehicle {
             if(location instanceof Planet) {
                 double originRadius = ((Planet) location).getRadius();
                 route.setLaunchFuel(TravelCalculator.calculateTakeoffDeltaV(location.getMass(),originRadius,originRadius*STANDARD_ORBIT_MULTIPLIER, this));
-                Trajectory rendezvous = TravelCalculator.calculateRendezvousV1(
+                Trajectory rendezvous = TravelCalculator.calculateRendezvousFromSpace(
                         Vector3D.randomUnitVector().multiply(originRadius*STANDARD_ORBIT_MULTIPLIER).add(location.getPosition()), //Some random point above the surface
                         location.getVelocity(), destination,this,system);
                 rendezvousVelocity = rendezvous.endVelocity;
@@ -168,8 +173,7 @@ public class Spacecraft extends Vehicle {
                 System.out.println("Loc : " + location.getPosition());
                 System.out.println("Vel : " + location.getVelocity());
                 System.out.println("Des : " + destination);
-                Trajectory rendezvous = TravelCalculator.calculateRendezvousV1(location.getPosition(), location.getVelocity(),destination,this, destination.getSystem());
-                System.out.println("Ren : " + rendezvous);
+                Trajectory rendezvous = TravelCalculator.calculateRendezvousFromSpace(location.getPosition(), location.getVelocity(),destination,this, destination.getSystem());
                 rendezvousVelocity = rendezvous.endVelocity;
                 route.addFlightPlan(rendezvous);
             }
