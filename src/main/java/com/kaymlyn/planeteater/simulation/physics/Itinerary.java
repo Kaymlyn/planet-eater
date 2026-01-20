@@ -2,19 +2,17 @@ package com.kaymlyn.planeteater.simulation.physics;
 
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 
 
 public class Itinerary {
-    private final Deque<Trajectory> trajectories;
+    private Trajectory trajectory;
     private final List<PiecewiseState> telemetry;
     @Setter
     @Getter
@@ -33,33 +31,25 @@ public class Itinerary {
     private OrbitalSystem system;
 
     public Itinerary(OrbitalSystem system) {
-        this.trajectories = new LinkedList<>();
+        this.trajectory = null;
         this.telemetry = new ArrayList<>();
         this.system = system;
     }
 
-    public boolean addFlightPlan(Trajectory trajectory) {
-        if (!trajectories.isEmpty() && trajectories.getLast().endPosition != trajectory.startPosition) {
-            System.out.println("Hit");
-            return false;
-        } else {
-            trajectories.add(trajectory);
-            finalDestination = trajectory.destination;
-            System.out.println("Addint Trajectory" + trajectories);
-            return true;
+    public void addFlightPlan(Trajectory trajectory) {
+        if (trajectory != null && this.trajectory == null) {
+            this.trajectory = trajectory;
+            this.finalDestination = trajectory.destination;
         }
     }
 
     public List<PiecewiseState> generateTelemetry(double timeStep, Spacecraft spacecraft) {
         if (telemetry.isEmpty()) {
-            OrbitInitializer orbit = OrbitInitializer.calculateOrbitalInitializer(system.getCentralStar(),
+            Orbit orbit = Orbit.calculateOrbit(system.getCentralStar(),
                     spacecraft.getPosition(), spacecraft.getVelocity());
+
             for (Trajectory trajectory : trajectories) {
-                Vector3D travelVector = trajectory.launchPosition.subtract(trajectory.endPosition);
-                double travelDivisor = (trajectory.travelTime - trajectory.waitTime)/timeStep;
-                int j = 0;
-                for (int i = 0; i < (trajectory.travelTime / timeStep); i++) {
-                    System.out.println("Time: W=" + i * timeStep + " of " + " Wait Time " + trajectory.waitTime + " | tick : " + i + " Total process : " + trajectory.travelTime / timeStep);
+                for (int i = 0; i < ((trajectory.travelTime + trajectory.waitTime) / timeStep); i++) {
                     if(i * timeStep < trajectory.waitTime) {
 
                         telemetry.add(new PiecewiseState(
@@ -69,15 +59,10 @@ public class Itinerary {
                                 0.0
                                 ));
                     } else {
-                        System.out.println("Time: T=" + j * timeStep);
-                        double flightTime = j*timeStep + trajectory.waitTime;
-                        telemetry.add(new PiecewiseState(
-                                trajectory.launchPosition.add(travelVector.multiply(j)),
-                                travelVector.divide(travelDivisor),
-                                flightTime,
-                                j/travelDivisor
-                                ));
-                        j++;
+                        telemetry.add(
+                                TravelCalculator.calculateTrajectoryState(trajectory,
+                                        i*timeStep,
+                                        system.getCentralStar().getMass()));
                     }
                 }
             }

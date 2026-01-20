@@ -1,6 +1,6 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.PlanetPattern;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
@@ -68,7 +68,7 @@ public class CelestialBodyFactory {
     }
     public Planet createPlanetFromPattern(String id,
                                           CelestialBody parent,
-                                          OrbitInitializer init,
+                                          Orbit init,
                                           PlanetPattern pattern,
                                           double scale) {
         return createArbitraryPlanet(id, parent, init,
@@ -80,7 +80,7 @@ public class CelestialBodyFactory {
     }
 
     public Planet createArbitraryPlanet(String id,
-                                        OrbitInitializer init,
+                                        Orbit init,
                                         LayerProfile core, double coreRadius,
                                         LayerProfile mantle, double mantleRadius,
                                         LayerProfile crust, double crustRadius,
@@ -90,7 +90,7 @@ public class CelestialBodyFactory {
 
     public Planet createArbitraryPlanet(String id,
                                         CelestialBody parentBody,
-                                        OrbitInitializer init,
+                                        Orbit init,
                                         LayerProfile core, double coreRadius,
                                         LayerProfile mantle, double mantleRadius,
                                         LayerProfile crust, double crustRadius,
@@ -209,7 +209,7 @@ public class CelestialBodyFactory {
 
         Random asteroids = new Random(seed);
         for(int i=0; i < population; i++) {
-            OrbitInitializer init = OrbitalSystem.generateRandomOrbitInitializer(
+            Orbit init = OrbitalSystem.generateRandomOrbitInitializer(
                     minimumOrbitalRadius,
                     maximumOrbitalRadius,
                     0.01,

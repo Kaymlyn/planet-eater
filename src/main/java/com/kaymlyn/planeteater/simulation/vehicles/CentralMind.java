@@ -3,6 +3,7 @@ package com.kaymlyn.planeteater.simulation.vehicles;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
@@ -20,6 +21,7 @@ public class CentralMind extends Vehicle implements Orbiter {
 
     private CelestialBody parentBody;
     private OrbitalSystem system;
+    private Orbit initialOrbit;
 
     public CentralMind(String id) {
         super(id, 1e6, 1e4, 1e3, 2, true, 12,0);
@@ -33,14 +35,16 @@ public class CentralMind extends Vehicle implements Orbiter {
     }
 
     @Override
-    public String toString() {
-        return String.format("OrbitalPlatform[id=%s, crew=%s",
-                id, crew);
+    public double getMass() {
+        return dryMass
+                + getFuelMass()
+                + crew.stream().mapToDouble(Automaton::getMass).reduce(0.0, Double::sum);
     }
 
     @Override
-    public double getMass() {
-        return getTotalMass();
+    public String toString() {
+        return String.format("OrbitalPlatform[id=%s, position=%s, crew=%s",
+                id, position, crew);
     }
 
     /**

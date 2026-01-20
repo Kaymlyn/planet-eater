@@ -123,8 +123,11 @@ public class OrbitalSystemRenderer {
 
         }
         for(Spacecraft ship : system.getSpacecraftInTransit().values()) {
-            if(ship.getTelemetry() != null)
-                System.out.println(ship.getTelemetry().get(ship.getCurrentTravelCycle()));
+            if(ship.getTelemetry() != null && ship.getCurrentTravelCycle() < ship.getTelemetry().size()) {
+                System.out.println("origin :" + ship.getSystem().getOrbiter("KHI Central Mind").getPosition());
+                System.out.println("positi :" + ship.getTelemetry().get(ship.getCurrentTravelCycle()).getPosition());
+                System.out.println("destin :" + ship.getSystem().getOrbiter("Theseus").getPosition());
+            }
             if(ship.getState() != Spacecraft.SpacecraftState.DOCKED) {
                 canvas.setColor(
                         new Color(
@@ -133,15 +136,27 @@ public class OrbitalSystemRenderer {
                                 0
                         )
                 );
+                double xRaw;
+                double yRaw;
+                if(ship.getTelemetry() != null && ship.getCurrentTravelCycle() < ship.getTelemetry().size()) {
+                    xRaw = ship.getTelemetry().get(ship.getCurrentTravelCycle()).getPosition().getX();
+                    yRaw = ship.getTelemetry().get(ship.getCurrentTravelCycle()).getPosition().getY();
+                } else if (ship.getLocation() != null){
+                    xRaw = ship.getLocation().getPosition().getX()/canvasScale;
+                    yRaw = ship.getLocation().getPosition().getY()/canvasScale;
+                } else {
+                    xRaw = ship.getPosition().getX()/canvasScale;
+                    yRaw = ship.getPosition().getY()/canvasScale;
+                }
                 Rectangle rectangle = new Rectangle();
                 int size = 1;
-                double xRaw = ship.getPosition().getX() / canvasScale;
-                double yRaw = ship.getPosition().getY() / canvasScale;
+
+                System.out.println("Ship coords: " + (xRaw * adjustedAU + ((double) (width * scalar) / 2)) + " : " + (yRaw * adjustedAU + ((double) (height * scalar) / 2)));
                 rectangle.setRect(xRaw * adjustedAU + ((double) (width * scalar) / 2), yRaw * adjustedAU + ((double) (height * scalar) / 2), size, size);
                 canvas.fill(rectangle);
                 renderInfo(canvas,
                         ship.getId() + " " + ship.getState(),
-                        (int) (xRaw * adjustedAU + ((double) (width * scalar) / 2) + 3),
+                        (int) (xRaw * adjustedAU + ((double) (width * scalar) / 2) -10),
                         (int) (yRaw * adjustedAU + ((double) (height * scalar) / 2)));
             }
         }

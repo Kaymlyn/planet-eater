@@ -5,6 +5,7 @@ import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
 import com.kaymlyn.planeteater.simulation.celestial.Dockable;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.operations.Operation;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
@@ -43,6 +44,7 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
     private final Composition mantleComposition;
     private final Composition crustComposition;
     private final Composition atmosphereComposition;
+    private final Orbit initialOrbit;
 
     private final HashMap<String, Spacecraft> hanger;
     private final HashMap<String, Operation> operations;
@@ -57,6 +59,7 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
         this.parentBody = parentBody;
         this.hanger = new HashMap<>();
         this.operations = new HashMap<>();
+        this.initialOrbit = Orbit.calculateOrbitInitializerFor(this);
     }
 
     /**

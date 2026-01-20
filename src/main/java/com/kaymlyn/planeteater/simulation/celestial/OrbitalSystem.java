@@ -1,6 +1,6 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
@@ -233,7 +233,7 @@ public class OrbitalSystem {
 
     public void placeInEllipticalOrbit(Orbiter body,
                                        CelestialBody parentBody,
-                                       OrbitInitializer initializer) {
+                                       Orbit initializer) {
         placeInEllipticalOrbit(
                 body,
                 parentBody,
@@ -520,18 +520,18 @@ public class OrbitalSystem {
         return nearest;
     }
 
-    public static OrbitInitializer generateRandomOrbitInitializer(double minimumAURadius,
-                                                                  double maximumAURadius,
-                                                                  double maximumEccentricity,
-                                                                  double maxInclination,
-                                                                  boolean prograde,
-                                                                  Random random) {
+    public static Orbit generateRandomOrbitInitializer(double minimumAURadius,
+                                                       double maximumAURadius,
+                                                       double maximumEccentricity,
+                                                       double maxInclination,
+                                                       boolean prograde,
+                                                       Random random) {
         double inclinationMax = maxInclination;
         while (maxInclination > Math.PI/2){
             inclinationMax -= (Math.PI/2);
         }
 
-        return new OrbitInitializer(
+        return new Orbit(
                 random.nextDouble(
                         Double.min(Math.abs(minimumAURadius),Math.abs(maximumAURadius))*PhysicsConstants.AU,
                         Double.max(Math.abs(minimumAURadius),Math.abs(maximumAURadius))*PhysicsConstants.AU),

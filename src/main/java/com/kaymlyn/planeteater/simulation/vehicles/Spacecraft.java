@@ -74,22 +74,17 @@ public class Spacecraft extends Vehicle {
 
     }
 
-    public void launch(Itinerary itinerary){
+    public void programItinerary(Itinerary itinerary){
         this.itinerary = itinerary;
-        this.location = null;
-        system.register(this);
-        consumeFuel(itinerary.getLaunchFuel());
-        this.state = SpacecraftState.ORBITING;
-        itinerary.setStartTime(system.getCurrentTime());
         telemetry = itinerary.generateTelemetry(system.getTimeStep(),this);
         currentTravelCycle = 0;
     }
 
     public void completeTravel() {
 
-        location = itinerary.getFinalDestination();
         consumeFuel(itinerary.getLandingFuel());
         telemetry = null;
+        System.out.println("Final Destination : " + location);
         if(itinerary.getFinalSpacecraftState() == SpacecraftState.DOCKED) {
             if(location instanceof Dockable) {
                 setState(SpacecraftState.DOCKED);
@@ -115,42 +110,48 @@ public class Spacecraft extends Vehicle {
         itinerary = null;
     }
 
-    public Vector3D simulateTravel() {
+    public void simulateTravel() {
         if(itinerary != null) {
             if(telemetry == null) {
                 telemetry = itinerary.generateTelemetry(system.getTimeStep(),this);
             }
             if(telemetry == null) {
-                return null;
+                return;
             }
 
+            //Launch to Orbit
+            if(currentTravelCycle == 0) {
+                consumeFuel(itinerary.getLaunchFuel());
+                this.state = SpacecraftState.ORBITING;
+                itinerary.setStartTime(system.getCurrentTime());
+                system.register(this);
+            }
 
+            //Step through Telemetry based on
             if(telemetry.size() > currentTravelCycle) {
-                Vector3D location = telemetry.get(currentTravelCycle).position;
-                if(!Double.isNaN(location.getZ())) {
+                position = telemetry.get(currentTravelCycle).position;
+                if(!Double.isNaN(position.getZ())) {
                     this.state = SpacecraftState.TRAVELING;
                 }
                 currentTravelCycle++;
-                return location;
             } else {
+                //Arrive at destiation
                 Vector3D finalPosition = null;
                 if(itinerary.getFinalDestination() != null) {
-                    finalPosition = itinerary.getFinalDestination().getPosition();
+                    this.location = itinerary.getFinalDestination();
+                    this.position = location.getPosition();
+                    finalPosition = this.position;
                 }
 
                 if(finalPosition == null && !telemetry.isEmpty()) {
                     finalPosition = telemetry.getLast().position;
                 } else {
-                    finalPosition = getPosition();
+                    finalPosition = position;
                 }
+                position = finalPosition;
                 completeTravel();
-                return finalPosition;
             }
         }
-        if(location == null) {
-            return telemetry != null ? telemetry.getLast().position : null;
-        }
-        return location.getPosition();
     }
 
     //Calculate a dry run of the route
@@ -159,13 +160,13 @@ public class Spacecraft extends Vehicle {
 
         Itinerary route = new Itinerary(destination.getSystem());
 
-        if(location != null) {
-            if(location instanceof Planet) {
+        if (location != null) {
+            if (location instanceof Planet) {
                 double originRadius = ((Planet) location).getRadius();
-                route.setLaunchFuel(TravelCalculator.calculateTakeoffDeltaV(location.getMass(),originRadius,originRadius*STANDARD_ORBIT_MULTIPLIER, this));
+                route.setLaunchFuel(TravelCalculator.calculateTakeoffDeltaV(location.getMass(), originRadius, originRadius * STANDARD_ORBIT_MULTIPLIER, this));
                 Trajectory rendezvous = TravelCalculator.calculateRendezvousFromSpace(
-                        Vector3D.randomUnitVector().multiply(originRadius*STANDARD_ORBIT_MULTIPLIER).add(location.getPosition()), //Some random point above the surface
-                        location.getVelocity(), destination,this,system);
+                        Vector3D.randomUnitVector().multiply(originRadius * STANDARD_ORBIT_MULTIPLIER).add(location.getPosition()), //Some random point above the surface
+                        location.getVelocity(), destination, this, system);
                 rendezvousVelocity = rendezvous.endVelocity;
                 System.out.println("Takeoff route : " + rendezvous);
                 route.addFlightPlan(rendezvous);
@@ -173,7 +174,7 @@ public class Spacecraft extends Vehicle {
                 System.out.println("Loc : " + location.getPosition());
                 System.out.println("Vel : " + location.getVelocity());
                 System.out.println("Des : " + destination);
-                Trajectory rendezvous = TravelCalculator.calculateRendezvousFromSpace(location.getPosition(), location.getVelocity(),destination,this, destination.getSystem());
+                Trajectory rendezvous = TravelCalculator.calculateRendezvousFromSpace(location.getPosition(), location.getVelocity(), destination, this, destination.getSystem());
                 rendezvousVelocity = rendezvous.endVelocity;
                 route.addFlightPlan(rendezvous);
             }
@@ -181,8 +182,8 @@ public class Spacecraft extends Vehicle {
             return route;
         }
 
-        if(destination instanceof Planet) {
-            if(land) {
+        if (destination instanceof Planet) {
+            if (land) {
                 route.setLandingFuel(TravelCalculator.calculateLanding(
                         ((Planet) destination).getRadius() * STANDARD_ORBIT_MULTIPLIER,
                         destination.getMass(),
@@ -202,7 +203,7 @@ public class Spacecraft extends Vehicle {
         } else {
             //assume coming in from the correct angle of travel just faster/slower than target destination.
             route.setLandingFuel(TravelCalculator.calculateMatchVelocity(
-                    destination.getVelocity().normalize().multiply(rendezvousVelocity),destination.getVelocity()));
+                    destination.getVelocity().normalize().multiply(rendezvousVelocity), destination.getVelocity()));
             route.setFinalSpacecraftState(SpacecraftState.DOCKED);
         }
 

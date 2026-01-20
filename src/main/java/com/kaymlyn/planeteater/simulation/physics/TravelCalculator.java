@@ -1,10 +1,9 @@
 package com.kaymlyn.planeteater.simulation.physics;
 
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
-import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 
 /**
@@ -82,8 +81,8 @@ public class TravelCalculator {
         return new Trajectory(start, end, totalDeltaV, transferTime, fuelRequired, v2);
     }
 
-    public static boolean canUseHohmannTransfer(OrbitInitializer startOrbit,
-                                                OrbitInitializer endOrbit) {
+    public static boolean canUseHohmannTransfer(Orbit startOrbit,
+                                                Orbit endOrbit) {
         double e1 = startOrbit.eccentricity();
         double e2 = endOrbit.eccentricity();
         double i1 = startOrbit.inclination();
@@ -96,8 +95,8 @@ public class TravelCalculator {
         return circularStart && circularEnd && coplanar;
     }
 
-    public static Trajectory calculateGeneralTransfer(OrbitInitializer startElements,
-                                                      OrbitInitializer endElements,
+    public static Trajectory calculateGeneralTransfer(Orbit startElements,
+                                                      Orbit endElements,
                                                       double centralMass,
                                                       Spacecraft spacecraft) {
 
@@ -403,17 +402,11 @@ public class TravelCalculator {
                                                  Orbiter target,
                                                  Spacecraft spacecraft,
                                                  OrbitalSystem system) {
-        OrbitInitializer targetOrbit = OrbitInitializer.calculateOrbitalInitializer(system.getCentralStar(),
+        Orbit targetOrbit = Orbit.calculateOrbit(system.getCentralStar(),
                 target.getPosition(),
                 target.getVelocity());
 
-        OrbitInitializer originOrbit = OrbitInitializer.calculateOrbitalInitializer(system.getCentralStar(), startPos, startVel);
-
-        // Estimate transfer time
-        Vector3D currentTargetPos = target.getPosition();
-        double distance = startPos.distanceTo(currentTargetPos);
-        double estimatedDeltaV = estimateDeltaVForDistance(distance);
-        double estimatedTime = distance / (estimatedDeltaV / 2.0);
+        Orbit originOrbit = Orbit.calculateOrbit(system.getCentralStar(), startPos, startVel);
 
         double waitTime = calculateNextLaunchWindow(
                 spacecraft.getPosition(),
@@ -422,41 +415,71 @@ public class TravelCalculator {
                 targetOrbit,
                 system
         );
-        // Predict target position
-        double totalTimeElapsed = waitTime + estimatedTime;
-        Vector3D predictedTargetPos = predictOrbitalPosition(targetOrbit,
-                totalTimeElapsed, system);
 
-        Vector3D predictedOriginPos = predictOrbitalPosition(originOrbit, waitTime, system);
+        //position of objects at launch time.
+        Vector3D launchOrigin = predictOrbitalPosition(originOrbit, waitTime, system);
+        Vector3D targetPosition = predictOrbitalPosition(targetOrbit, waitTime, system);
 
-        Trajectory basicTrajectory = calculateDirectTransfer(startPos, predictedTargetPos,
-                spacecraft);
+        double travelDistance = launchOrigin.distanceTo(targetPosition);
+        double travelDeltaV = estimateDeltaVForDistance(travelDistance);
+        double estimatedTravelTime = travelDistance / (travelDeltaV / 2.0);
 
-        // Add plane change delta-v
-        double startInclination = Math.atan2(startVel.getZ(),
+        double missionTime = waitTime + estimatedTravelTime;
+        Trajectory transfer = calculateDirectTransfer(launchOrigin, targetPosition, spacecraft);
+
+
+        // Calculate plane change delta-v
+        double originInclination = Math.atan2(launchOrigin.getZ(),
                 Math.sqrt(startVel.getX() * startVel.getX() +
                         startVel.getY() * startVel.getY()));
-        double deltaInclination = Math.abs(targetOrbit.inclination() - startInclination);
+        double finalInclination = Math.abs(targetOrbit.inclination() - originInclination);
 
-        double planeChangeDV = deltaInclination > 0.001 ?
-                calculatePlaneChangeDeltaV(startVel.magnitude(), deltaInclination) :
+        double planeChangeDV = finalInclination > 0.001 ?
+                calculatePlaneChangeDeltaV(startVel.magnitude(), finalInclination) :
                 0.0;
 
-        double totalMissionTime = waitTime + basicTrajectory.travelTime;
-        System.out.println("Total Mission Time : " + totalMissionTime + " Wait Time : " + waitTime + " travelTime" + basicTrajectory.travelTime);
+//
+//        // Estimate transfer time
+//        Vector3D currentTargetPos = target.getPosition();
+//        double distance = startPos.distanceTo(currentTargetPos);
+//        double estimatedDeltaV = estimateDeltaVForDistance(distance);
+//        double estimatedTime = distance / (estimatedDeltaV / 2.0);
+//
+//        // Predict target position
+//        double totalTimeElapsed = waitTime + estimatedTime;
+//        Vector3D predictedTargetPos = predictOrbitalPosition(targetOrbit,
+//                totalTimeElapsed, system);
+//
+//        Vector3D predictedOriginPos = predictOrbitalPosition(originOrbit, waitTime, system);
+//
+//        Trajectory basicTrajectory = calculateDirectTransfer(startPos, predictedTargetPos,
+//                spacecraft);
+//
+//        // Add plane change delta-v
+//        double startInclination = Math.atan2(startVel.getZ(),
+//                Math.sqrt(startVel.getX() * startVel.getX() +
+//                        startVel.getY() * startVel.getY()));
+//        double deltaInclination = Math.abs(targetOrbit.inclination() - startInclination);
+//
+//        double planeChangeDV = deltaInclination > 0.001 ?
+//                calculatePlaneChangeDeltaV(startVel.magnitude(), deltaInclination) :
+//                0.0;
 
-        return new Trajectory(startPos, predictedTargetPos,
-                predictedOriginPos,
-                basicTrajectory.deltaV + planeChangeDV,
+        double totalMissionTime = waitTime + transfer.travelTime;
+
+        //TODO: validate starPos shouldn't be launchOrigin
+        return new Trajectory(launchOrigin, targetPosition,
+                launchOrigin,
+                transfer.deltaV + planeChangeDV,
                 totalMissionTime,
                 waitTime,
-                spacecraft.getFuelRequiredForDeltaV(basicTrajectory.deltaV + planeChangeDV),
+                spacecraft.getFuelRequiredForDeltaV(transfer.deltaV + planeChangeDV),
                 target.getVelocity().magnitude());
     }
 
     public static double calculateNextLaunchWindow(Vector3D startPos, Vector3D startVel,
                                                    Orbiter target,
-                                                   OrbitInitializer targetOrbit,
+                                                   Orbit targetOrbit,
                                                    OrbitalSystem system) {
         double mu = PhysicsConstants.G * system.getCentralStar().getMass();
 
@@ -495,9 +518,9 @@ public class TravelCalculator {
      * Predict where a body will be after a given time
      * Handles elliptical orbits using Kepler's equation
      */
-    public static Vector3D predictOrbitalPosition(OrbitInitializer orbitStart,
-                                                   double timeElapsed,
-                                                   OrbitalSystem system) {
+    public static Vector3D predictOrbitalPosition(Orbit orbitStart,
+                                                  double timeElapsed,
+                                                  OrbitalSystem system) {
 
         // Calculate mean motion: n = sqrt(μ/a³)
         double meanMotion = Math.sqrt(Math.abs(PhysicsConstants.G * system.getCentralStar().getMass() / Math.pow(orbitStart.semiMajorAxis(), 3)));
@@ -633,6 +656,8 @@ public class TravelCalculator {
         // (Real trajectory would follow ellipse)
         double fraction = nu / Math.PI; // 0 to 1 over half orbit
         Vector3D currentPos = startPos.add(direction.multiply(r * fraction));
+
+        System.out.println("Piecewise Position: " + currentPos);
 
         // Velocity magnitude from vis-viva equation
         double v = Math.sqrt(mu * (2.0/r - 1.0/a));

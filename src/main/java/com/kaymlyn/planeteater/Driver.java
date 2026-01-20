@@ -1,10 +1,7 @@
 package com.kaymlyn.planeteater;
 
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
-import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
-import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
-
 import java.io.FileNotFoundException;
+import com.kaymlyn.planeteater.OperationalThread;
 
 public class Driver {
 

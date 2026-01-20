@@ -34,6 +34,15 @@ public interface Gravitational {
         );
     }
 
+    static Vector3D getStandardCircularOrbitPosition(Gravitational parentBody, Vector3D directionAboveCenter){
+        //TODO: add derivation from rotational axis in the future. Assume random Axial Tilt for now. Thi will make Vector3D argument unnecessary.
+        if(directionAboveCenter == Vector3D.ZERO) {
+            return Vector3D.randomUnitVector().multiply(parentBody.getRadius()*STANDARD_ORBIT_MULTIPLIER);
+        } else {
+            return directionAboveCenter.normalize().multiply(parentBody.getRadius()*STANDARD_ORBIT_MULTIPLIER);
+        }
+    }
+
     double getMass();
     Vector3D getVelocity();
     double getRadius();

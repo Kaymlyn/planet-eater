@@ -12,6 +12,7 @@ public class VehicleFactory {
     public static Spacecraft createCargoShuttle(String id, Orbiter shipyard) {
         Spacecraft ship = new Spacecraft(id, 2000.0, 5.0e10, 10000.0, 3000.0, false, 0,0, shipyard);
 
+        System.out.println("Shipyard : " + ship.getLocation());
         // Construction materials
         ship.getConstruction().addMaterialAsVolume(Material.ALUMINUM, 1200.0);
         ship.getConstruction().addMaterialAsVolume(Material.TITANIUM, 500.0);

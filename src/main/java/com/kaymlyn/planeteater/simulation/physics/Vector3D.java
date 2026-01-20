@@ -88,7 +88,7 @@ public class Vector3D {
     public Vector3D normalize() {
         double mag = magnitude();
         if (mag < 1e-10) {
-            throw new ArithmeticException("Cannot normalize zero vector");
+            return ZERO;
         }
         return divide(mag);
     }

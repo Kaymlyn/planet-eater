@@ -5,7 +5,7 @@ import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.celestial.Star;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.LayerProfile;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Materials;
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.OrbitInitializer;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Material;
@@ -24,8 +24,8 @@ public class PlanetTest {
     final static double SMALL_RADIUS = 790;
     final static double SMALL_ORBIT = 1e7;
 
-    private final OrbitInitializer oneAUCircularOrbit = new OrbitInitializer(PhysicsConstants.AU,0,0,0,0,0);
-    private final OrbitInitializer smallOrbit = new OrbitInitializer(SMALL_ORBIT,0,0,0,0,0);
+    private final Orbit oneAUCircularOrbit = new Orbit(PhysicsConstants.AU,0,0,0,0,0);
+    private final Orbit smallOrbit = new Orbit(SMALL_ORBIT,0,0,0,0,0);
     private final Materials solidIron = new Materials(Material.IRON,100);
     private final Materials solidNickel = new Materials(Material.NICKEL,50);
     private final LayerProfile core = new LayerProfile("NICKLE_IRON",Zone.CORE,List.of(solidIron,solidNickel));
