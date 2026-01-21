@@ -43,6 +43,21 @@ public interface Gravitational {
         }
     }
 
+
+    /**
+     * Calculate sphere of influence (SOI) radius for a body
+     * Region where the body's gravity dominates over the primary
+     *
+     * @param semiMajorAxis Distance between the bodies (m)
+     * @return SOI radius (m)
+     */
+    public static double calculateSphereOfInfluence(Gravitational parent,
+                                                    Orbiter orbiter,
+                                                    double semiMajorAxis) {
+        // SOI radius: r_SOI = a * (m/M)^(2/5)
+        return semiMajorAxis * Math.pow(orbiter.getMass() / parent.getMass(), 0.4);
+    }
+
     double getMass();
     Vector3D getVelocity();
     double getRadius();

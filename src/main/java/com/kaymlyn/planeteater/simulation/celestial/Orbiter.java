@@ -14,6 +14,8 @@ public interface Orbiter {
 
     Orbit getInitialOrbit();
 
+    Orbit calculateCurrentOrbit();
+
     void setPosition(Vector3D position);
 
     void setVelocity(Vector3D velocity);

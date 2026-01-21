@@ -124,6 +124,27 @@ public class Vector3D {
     public double distanceSquaredTo(Vector3D other) {
         return subtract(other).magnitudeSquared();
     }
+
+    public Vector3D rotateIn3Space(double x, double y, double z) {
+
+        double cosx = Math.cos(x);
+        double sinx = Math.sin(x);
+        double cosy = Math.cos(y);
+        double siny = Math.sin(y);
+        double cosz = Math.cos(z);
+        double sinz = Math.sin(z);
+
+        x = this.x * (cosx * cosz - sinx * sinz * cosy) -
+                this.y * (cosx * sinz + sinx * cosz * cosy);
+        y = this.x * (sinx * cosz + cosx * sinz * cosy) -
+                this.y * (sinx * sinz - cosx * cosz * cosy);
+        z = this.x * (sinz * siny) + this.y * (cosz * siny);
+        return new Vector3D(x,y,z);
+    }
+
+    public Vector3D rotateIn3Space(Vector3D rotation) {
+        return rotateIn3Space(rotation.x,rotation.y,rotation.z);
+    }
     
     @Override
     public String toString() {

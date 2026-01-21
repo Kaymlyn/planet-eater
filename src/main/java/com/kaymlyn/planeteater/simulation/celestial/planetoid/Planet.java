@@ -59,7 +59,7 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
         this.parentBody = parentBody;
         this.hanger = new HashMap<>();
         this.operations = new HashMap<>();
-        this.initialOrbit = Orbit.calculateOrbitInitializerFor(this);
+        this.initialOrbit = Orbit.calculateOrbitFor(this);
     }
 
     /**
@@ -100,6 +100,11 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
                 + mantleComposition.getTotalVolume()
                 + crustComposition.getTotalVolume()
                 + atmosphereComposition.getTotalVolume();
+    }
+
+    @Override
+    public Orbit calculateCurrentOrbit() {
+        return Orbit.calculateOrbit(parentBody,position,velocity);
     }
     /**
      * For planets, only the crust and atmosphere are accessible for mining
