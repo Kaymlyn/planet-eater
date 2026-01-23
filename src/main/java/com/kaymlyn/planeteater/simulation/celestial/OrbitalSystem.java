@@ -323,17 +323,9 @@ public class OrbitalSystem {
                 vyOrbital * (sinO * sinw - cosO * cosw * cosi);
         double vz = vxOrbital * (sinw * sini) + vyOrbital * (cosw * sini);
 
-        Vector3D absolutePosition = parentBody.getPosition().add(new Vector3D(x, y, z));
-
-        Vector3D absoluteVelocity;
-        if(parentBody instanceof OrbitingBody) {
-            absoluteVelocity = ((OrbitingBody)parentBody).getVelocity().add(new Vector3D(vx, vy, vz));
-        } else {
-            absoluteVelocity = Vector3D.ZERO;
-        }
-
         body.setPosition(new Vector3D(x,y,z));
         body.setVelocity(new Vector3D(vx,vy,vz));
+        body.setParentBody(parentBody);
 
         if(body instanceof CelestialBody) {
             addBody((CelestialBody) body);
@@ -525,7 +517,8 @@ public class OrbitalSystem {
                                                        double maximumEccentricity,
                                                        double maxInclination,
                                                        boolean prograde,
-                                                       Random random) {
+                                                       Random random,
+                                                       Gravitational centerBody) {
         double inclinationMax = maxInclination;
         while (maxInclination > Math.PI/2){
             inclinationMax -= (Math.PI/2);
@@ -540,7 +533,8 @@ public class OrbitalSystem {
                         : random.nextDouble(inclinationMax + Math.PI/2, Math.PI),
                 random.nextDouble()*2*Math.PI,
                 random.nextDouble()*2*Math.PI,
-                random.nextDouble()*2*Math.PI
+                random.nextDouble()*2*Math.PI,
+                centerBody
         );
     }
 

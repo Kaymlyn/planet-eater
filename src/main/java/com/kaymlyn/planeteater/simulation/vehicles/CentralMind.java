@@ -1,6 +1,7 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
+import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
@@ -19,7 +20,7 @@ import java.util.Objects;
 @Data
 public class CentralMind extends Vehicle implements Orbiter {
 
-    private CelestialBody parentBody;
+    private Gravitational parentBody;
     private OrbitalSystem system;
     private Orbit initialOrbit;
 
@@ -28,10 +29,9 @@ public class CentralMind extends Vehicle implements Orbiter {
         this.crew = new ArrayList<>();
     }
 
-    public CentralMind(String id, List<Automaton> initialCrew, Composition initialInventory) {
-        super(id, 1e6, 1e4, 1e3, 2, true, 12,0);
-        this.cargo = initialInventory;
-        this.crew = new ArrayList<>(initialCrew);
+    @Override
+    public Orbit calculateCurrentOrbit() {
+        return Orbit.calculateOrbitFor(this);
     }
 
     @Override
@@ -59,6 +59,11 @@ public class CentralMind extends Vehicle implements Orbiter {
     }
 
     @Override
+    public void setParentBody(Gravitational parentBody) {
+        this.parentBody = parentBody;
+    }
+
+    @Override
     public OrbitalSystem getSystem() {
         return system;
     }
@@ -79,5 +84,13 @@ public class CentralMind extends Vehicle implements Orbiter {
         result = result * 59 + (this.getParentBody() == null ? 43 : this.getParentBody().hashCode());
         result = result * 59 + (this.getId() == null ? 43 : this.getId().hashCode());
         return result;
+    }
+
+    /**
+     * No where.
+     */
+    @Override
+    public Gravitational getLocation() {
+        return parentBody;
     }
 }

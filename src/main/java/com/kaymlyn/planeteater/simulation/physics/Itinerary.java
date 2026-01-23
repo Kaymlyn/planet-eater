@@ -1,18 +1,17 @@
 package com.kaymlyn.planeteater.simulation.physics;
 
-import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
 
-
+@ToString
 public class Itinerary {
-    private Trajectory trajectory;
+    private final List<ManeuverDetails> maneuvers;
     private final List<PiecewiseState> telemetry;
     @Setter
     @Getter
@@ -24,47 +23,35 @@ public class Itinerary {
     @Getter
     private Spacecraft.SpacecraftState finalSpacecraftState;
     @Getter
+    private double startTime = 0.0;
+    @Getter
+    @Setter
     private Orbiter finalDestination;
     @Getter
-    private double startTime = 0.0;
     @Setter
-    private OrbitalSystem system;
+    private double totalFuelCost;
 
-    public Itinerary(OrbitalSystem system) {
-        this.trajectory = null;
+    public Itinerary() {
         this.telemetry = new ArrayList<>();
-        this.system = system;
+        this.maneuvers = new ArrayList<>();
     }
 
-    public void addFlightPlan(Trajectory trajectory) {
-        if (trajectory != null && this.trajectory == null) {
-            this.trajectory = trajectory;
-            this.finalDestination = trajectory.destination;
-        }
+    public void addFlightPlan(ManeuverDetails maneuver) {
+        maneuvers.add(maneuver);
     }
 
-    public List<PiecewiseState> generateTelemetry(double timeStep, Spacecraft spacecraft) {
+    public List<PiecewiseState> generateTelemetry(double timeStep) {
         if (telemetry.isEmpty()) {
-            Orbit orbit = Orbit.calculateOrbit(system.getCentralStar(),
-                    spacecraft.getPosition(), spacecraft.getVelocity());
-
-            for (Trajectory trajectory : trajectories) {
-                for (int i = 0; i < ((trajectory.travelTime + trajectory.waitTime) / timeStep); i++) {
-                    if(i * timeStep < trajectory.waitTime) {
-
-                        telemetry.add(new PiecewiseState(
-                                TravelCalculator.predictOrbitalPosition(orbit,i*timeStep, system),
-                                Vector3D.ZERO,
-                                0.0,
-                                0.0
-                                ));
-                    } else {
-                        telemetry.add(
-                                TravelCalculator.calculateTrajectoryState(trajectory,
-                                        i*timeStep,
-                                        system.getCentralStar().getMass()));
-                    }
+            int j = 0;
+            for (ManeuverDetails maneuver : maneuvers) {
+                for (int i = 0; i < ((maneuver.getTimeToExecute()) / timeStep); i++) {
+                    telemetry.add(TravelCalculator.calculateTrajectoryState(
+                            maneuver,
+                            j * timeStep
+                    ));
+                    j++;
                 }
+
             }
         }
         return telemetry;
@@ -76,20 +63,11 @@ public class Itinerary {
         }
     }
 
-    public double getTotalFuelRequirement() {
-        double fuelTotal = launchFuel + landingFuel;
-        for(Trajectory trajectory : trajectories) {
-            fuelTotal += trajectory.fuelRequired;
-        }
-        return fuelTotal;
-    }
-
     public double getTotalFlightTime() {
-        double time = 0.0;
-        for (Trajectory trajectory : trajectories) {
-            time += trajectory.travelTime;
-        }
-        return time;
+        return maneuvers.stream().mapToDouble(ManeuverDetails::getTimeToExecute).sum();
     }
 
+    public ManeuverDetails getFinalManeuver() {
+        return maneuvers.getLast();
+    }
 }

@@ -144,16 +144,6 @@ public class Star implements CelestialBody {
         return totalComposition.getTotalMass();
     }
 
-
-    /**
-     * Calculate orbital velocity for a circular orbit at given radius
-     * v = sqrt(G * M / r)
-     */
-    @Override
-    public double getCircularOrbitVelocity(double radius) {
-        return Math.sqrt(PhysicsConstants.G * this.getMass() / radius);
-    }
-
     /**
      * Extract type from the star's corona/photosphere
      * This represents stellar lifting or mass stream capture

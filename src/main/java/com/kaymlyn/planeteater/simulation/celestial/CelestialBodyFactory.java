@@ -62,7 +62,7 @@ public class CelestialBodyFactory {
     }
 
     public CentralMind createCentralMind(double orbitalRadius) {
-        CentralMind centralMind = new CentralMind("Central Mind");
+        CentralMind centralMind = new CentralMind("KHI Central Mind");
         system.placeInCircularOrbit(centralMind,orbitalRadius,0);
         return centralMind;
     }
@@ -97,7 +97,7 @@ public class CelestialBodyFactory {
                                         LayerProfile atmosphere, double atmosphereRadius) {
 
 
-        Planet planet = new Planet(id == null || id.isEmpty() ? bodyNames.get(random.nextInt(bodyNames.size())) : id, parentBody, system, Vector3D.ZERO, Vector3D.ZERO, BodyType.ABERRANT);
+        Planet planet = new Planet(id == null || id.isEmpty() ? bodyNames.get(random.nextInt(bodyNames.size())) : id, parentBody, Vector3D.ZERO, Vector3D.ZERO, BodyType.ABERRANT);
 
         if(core != null)
             planet.getCoreComposition().addBulkMaterial(
@@ -204,6 +204,7 @@ public class CelestialBodyFactory {
             double maximumRadius,
             double minimumOrbitalRadius,
             double maximumOrbitalRadius,
+            Gravitational centerBody,
             long seed) {
         List<Planet> asteroidBelt = new ArrayList<>();
 
@@ -215,7 +216,7 @@ public class CelestialBodyFactory {
                     0.01,
                     Math.PI/4,
                     true,
-                    asteroids);
+                    asteroids,centerBody);
             asteroidBelt.add(
                     createArbitraryPlanet(beltID + "-BeltAsteroid-"+i,
                             init,

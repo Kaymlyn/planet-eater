@@ -14,6 +14,7 @@ public class Gate implements Orbiter {
     private Vector3D velocity;
     private OrbitalSystem system;
     private Orbit initialOrbit;
+    private Gravitational parentBody;
 
     public Gate() {
 
@@ -32,6 +33,11 @@ public class Gate implements Orbiter {
     @Override
     public Gravitational getParentBody() {
         return system.getCentralStar();
+    }
+
+    @Override
+    public Orbit calculateCurrentOrbit() {
+        return Orbit.calculateOrbitFor(this);
     }
 
     @Override

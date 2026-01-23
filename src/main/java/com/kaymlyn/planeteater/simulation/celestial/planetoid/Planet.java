@@ -3,8 +3,10 @@ package com.kaymlyn.planeteater.simulation.celestial.planetoid;
 import com.kaymlyn.planeteater.simulation.celestial.BodyType;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
 import com.kaymlyn.planeteater.simulation.celestial.Dockable;
-import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
+import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
+import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
+import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.operations.Operation;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
@@ -13,6 +15,7 @@ import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.HashMap;
 
@@ -38,19 +41,19 @@ import java.util.HashMap;
 public class Planet extends OrbitingBody implements CelestialBody, Differentiated, Dockable {
 
     @Getter
-    private final CelestialBody parentBody;
+    @Setter
+    private Gravitational parentBody;
     private final BodyType type;
     private final Composition coreComposition;
     private final Composition mantleComposition;
     private final Composition crustComposition;
     private final Composition atmosphereComposition;
-    private final Orbit initialOrbit;
 
     private final HashMap<String, Spacecraft> hanger;
     private final HashMap<String, Operation> operations;
-    
-    public Planet(String id, CelestialBody parentBody, OrbitalSystem system, Vector3D position, Vector3D velocity, BodyType type) {
-        super(id, system, position, velocity);
+
+    public Planet(String id, Gravitational parentBody, Vector3D position, Vector3D velocity, BodyType type) {
+        super(id, position, velocity, parentBody);
         this.type = type;
         this.coreComposition = new Composition();
         this.mantleComposition = new Composition();
@@ -58,8 +61,7 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
         this.atmosphereComposition = new Composition();
         this.parentBody = parentBody;
         this.hanger = new HashMap<>();
-        this.operations = new HashMap<>();
-        this.initialOrbit = Orbit.calculateOrbitFor(this);
+        this.operations = new HashMap<>();;
     }
 
     /**
@@ -100,6 +102,11 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
                 + mantleComposition.getTotalVolume()
                 + crustComposition.getTotalVolume()
                 + atmosphereComposition.getTotalVolume();
+    }
+
+    @Override
+    public OrbitalSystem getSystem() {
+        return parentBody.getSystem();
     }
 
     @Override
@@ -192,7 +199,6 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
      * r_Hill = a * (m_satellite / (3 * m_parent))^(1/3)
      */
     public double calculateHillSphereRadius() {
-
         return this.getPosition().distanceTo(parentBody.getPosition()) * Math.pow(getMass() / (3.0 * parentBody.getMass()), 1.0/3.0);
     }
 

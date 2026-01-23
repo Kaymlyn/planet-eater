@@ -12,7 +12,7 @@ public interface Orbiter {
 
     Gravitational getParentBody();
 
-    Orbit getInitialOrbit();
+    OrbitalSystem getSystem();
 
     Orbit calculateCurrentOrbit();
 
@@ -24,5 +24,5 @@ public interface Orbiter {
 
     void update(Vector3D vector3D, double timeStep);
 
-    OrbitalSystem getSystem();
+    void setParentBody(Gravitational parentBody);
 }

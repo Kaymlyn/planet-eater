@@ -141,9 +141,9 @@ public class OrbitalSystemRenderer {
                 if(ship.getTelemetry() != null && ship.getCurrentTravelCycle() < ship.getTelemetry().size()) {
                     xRaw = ship.getTelemetry().get(ship.getCurrentTravelCycle()).getPosition().getX();
                     yRaw = ship.getTelemetry().get(ship.getCurrentTravelCycle()).getPosition().getY();
-                } else if (ship.getLocation() != null){
-                    xRaw = ship.getLocation().getPosition().getX()/canvasScale;
-                    yRaw = ship.getLocation().getPosition().getY()/canvasScale;
+                } else if (ship.getOrbiting() != null){
+                    xRaw = ship.getOrbiting().getPosition().getX()/canvasScale;
+                    yRaw = ship.getOrbiting().getPosition().getY()/canvasScale;
                 } else {
                     xRaw = ship.getPosition().getX()/canvasScale;
                     yRaw = ship.getPosition().getY()/canvasScale;

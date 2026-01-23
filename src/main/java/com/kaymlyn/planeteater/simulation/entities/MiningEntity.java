@@ -22,7 +22,7 @@ public class MiningEntity {
     private boolean crewable;
     private double productivity;
     private EntityState state;
-    private String currentLocation; // ID of current location (platform or asteroid)
+    private String currentLocation; // ID of current orbiting (platform or asteroid)
     
     public enum EntityState {
         IDLE,           // At platform, not assigned

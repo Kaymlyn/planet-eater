@@ -13,101 +13,130 @@ public class RocketryCalculator {
     public static ManeuverDetails calculateTakeoffToStandardOrbit(Gravitational currentLocation,
                                                 Spacecraft spacecraft) {
 
-        double mu = PhysicsConstants.G * currentLocation.getMass();
-        double rOrbit = currentLocation.getRadius()*Gravitational.STANDARD_ORBIT_MULTIPLIER;
+        double rOrbit = currentLocation.getStandardOrbitalRadius();
 
-        // Surface Velocity from the ground
-        // Sqrt(2 * G * M (1/R - 1/2r))
-        double vSurface = Math.sqrt(2 * mu * (1.0/currentLocation.getRadius() - 1.0/(2*rOrbit)));
-
-        // Orbital velocity at target altitude
-        double vOrbit = Math.sqrt(mu / rOrbit);
-
-        Vector3D orbitalVelocity = Gravitational.getStandardCircularOrbitVector(currentLocation);
-        Vector3D orbitalPosition = Gravitational.getStandardCircularOrbitPosition(currentLocation, Vector3D.randomUnitVector());
+        Vector3D orbitalVelocity = currentLocation.getStandardCircularOrbitVector();
+        Vector3D orbitalPosition = currentLocation.getStandardCircularOrbitPosition( Vector3D.randomUnitVector());
         Orbit orbit = Orbit.calculateOrbit(currentLocation,orbitalPosition,orbitalVelocity);
         return new ManeuverDetails(
                 spacecraft.getPosition(),spacecraft.getVelocity(),
                 orbitalPosition,
                 orbitalVelocity,
-                vSurface + (vOrbit - Math.sqrt(mu / rOrbit)),
+                currentLocation.getEscapeVelocityFromRadius(rOrbit) + (currentLocation.getOrbitalVelocity(rOrbit) - Math.sqrt(currentLocation.getGravitationalParameter() / rOrbit)),
                 orbit,
                 //distance divided by half orbital velocity
-                currentLocation.getRadius()*(Gravitational.STANDARD_ORBIT_MULTIPLIER - 1)*2/orbitalVelocity.magnitude()
-
+                currentLocation.getStandardOrbitalAltitude()*2/orbitalVelocity.magnitude()
         );
     }
 
     public static ManeuverDetails calculateLandingOnGravitational(Gravitational currentLocation,
                                                    Spacecraft spacecraft) {
-        double mu = PhysicsConstants.G * currentLocation.getMass();
-        double rOrbit = currentLocation.getRadius() * Gravitational.STANDARD_ORBIT_MULTIPLIER;
-
-        // Orbital velocity
-        double vOrbit = Math.sqrt(mu / rOrbit);
+        double rOrbit = currentLocation.getStandardOrbitalRadius();
 
         // Surface velocity (if rotating, would subtract rotation speed)
         // For simplification, assume no rotation
         double vSurface = 0.0;
 
-        // Velocity needed to deorbit and descend (Hohmann-like descent)
-        // This is a simplification - real landing is more complex
-        double vLanding = Math.sqrt(mu / currentLocation.getRadius());
-
-        Vector3D orbitalVelocity = Gravitational.getStandardCircularOrbitVector(currentLocation);
-        Vector3D orbitalPosition = Gravitational.getStandardCircularOrbitPosition(currentLocation, Vector3D.randomUnitVector());
-        Orbit orbit = Orbit.calculateOrbit(currentLocation,orbitalPosition,orbitalVelocity);
+        Orbit orbit = Orbit.calculateOrbit(
+                currentLocation,
+                currentLocation.getStandardCircularOrbitPosition(Vector3D.randomUnitVector()),
+                currentLocation.getStandardCircularOrbitVector());
 
         return new ManeuverDetails(
                 spacecraft.getPosition(),spacecraft.getVelocity(),
                 null,
                 Vector3D.ZERO,
-                vOrbit + vLanding - vSurface,
+                currentLocation.getOrbitalVelocity(rOrbit) + currentLocation.getSurfaceEscapeVelocity() - vSurface,
                 orbit,
                 //reentry speed ~333.3 m/s (Transonic speed) scale factor 3600/1200 = 3
-                currentLocation.getRadius()*(Gravitational.STANDARD_ORBIT_MULTIPLIER - 1) * 3
+                currentLocation.getStandardOrbitalAltitude() * 3
         );
     }
 
-    /**
-     *
-     * @param target
-     * @param targetOrbit
-     * @param system
-     * @return
-     */
-    public static double calculateNextLaunchWindowWaitTime(Orbiter origin,
-                                                           Orbiter target,
-                                                           Orbit targetOrbit,
-                                                           OrbitalSystem system) {
-        double mu = PhysicsConstants.G * system.getCentralStar().getMass();
+    public static double calculateNextLaunchWindowWaitTime(Orbit origin,
+                                                           Orbit destination) {
+        OrbitalState originState = origin.calculateOrbitalState();
+        OrbitalState destinationState = destination.calculateOrbitalState();
+        double currentPhaseAngle = originState.position().angleBetween(destinationState.position());
 
-        double targetAngle = Math.atan2(target.getPosition().getY(), target.getPosition().getX());
-        double currentPhaseAngle = normalizeAngle(targetAngle - Math.atan2(origin.getPosition().getY(), origin.getPosition().getX()));
+        double meanAngularVelocity = destination.meanAngularVelocity();
 
-        double transferTime = Math.PI * Math.sqrt(Math.pow((origin.getPosition().magnitude() + targetOrbit.semiMajorAxis()) / 2, 3) / mu);
-        double targetAngularVelocity = Math.sqrt(mu / Math.pow(targetOrbit.semiMajorAxis(), 3));
-        double targetTravelAngle = targetAngularVelocity * transferTime;
-        double optimalPhaseAngle = normalizeAngle(Math.PI - targetTravelAngle);
-
-        double phaseAngleDifference = normalizeAngle(optimalPhaseAngle - currentPhaseAngle);
-
-        double spacecraftAngularVelocity = origin.getVelocity().magnitude() / origin.getPosition().magnitude();
-        double waitTime = phaseAngleDifference / Math.abs(targetAngularVelocity - spacecraftAngularVelocity);
-
-        double synodicPeriod = 2 * Math.PI / Math.abs(targetAngularVelocity - spacecraftAngularVelocity);
-        if (waitTime > synodicPeriod / 2) {
-            waitTime = synodicPeriod - waitTime;
-        }
-
-        return waitTime;
+        return getMinimalWaitTime(
+                normalizeAngle(Math.PI - meanAngularVelocity * calculateMeanTransferTime(origin, destination) - currentPhaseAngle),
+                meanAngularVelocity,
+                originState.velocity().magnitude() / originState.position().magnitude());
     }
 
-    public static double calculateNextLaunchWindowAbsoluteTime(Orbiter origin,
-                                                               Orbiter target,
-                                                               Orbit targetOrbit,
-                                                               OrbitalSystem system) {
-        return calculateNextLaunchWindowWaitTime(origin,target,targetOrbit,system) + system.getCurrentTime();
+//
+//    /**
+//     *
+//     * @param target
+//     * @param targetOrbit
+//     * @return
+//     */
+//    public static double calculateNextLaunchWindowWaitTime(Orbiter origin,
+//                                                           Orbiter target,
+//                                                           Orbit targetOrbit) {
+//
+//        double currentPhaseAngle = origin.getPosition().angleBetween(target.getPosition());
+//
+//        double meanAngularVelocity = targetOrbit.meanAngularVelocity();
+//
+//        double meanTransferTime = calculateMeanTransferTime(origin,targetOrbit);
+//        if(Double.isNaN(meanTransferTime)) meanTransferTime = 0.0;
+//        return getMinimalWaitTime(
+//                normalizeAngle(Math.PI - meanAngularVelocity * meanTransferTime - currentPhaseAngle),
+//                meanAngularVelocity,
+//                origin.getVelocity().magnitude() / origin.getPosition().magnitude());
+//    }
+
+
+    private static double calculateMeanTransferTime(Orbit origin, Orbit targetOrbit) {
+        if(origin.centerBody() == targetOrbit.centerBody()) {
+            OrbitalState originState = origin.calculateOrbitalState();
+            return Math.PI * Math.sqrt(
+                    Math.pow((originState.position().magnitude() + targetOrbit.semiMajorAxis()) / 2, 3) / origin.centerBody().getGravitationalParameter());
+        } else {
+            return Double.NaN;
+        }
+    }
+//
+//
+//    private static double calculateMeanTransferTime(Orbiter origin, Orbit targetOrbit) {
+//        if(origin.getParentBody() == targetOrbit.centerBody()) {
+//            return Math.PI * Math.sqrt(
+//                    Math.pow((origin.getPosition().magnitude() + targetOrbit.semiMajorAxis()) / 2, 3) / origin.getParentBody().getGravitationalParameter());
+//        } else {
+//            return Double.NaN;
+//        }
+//    }
+
+    private static double getMinimalWaitTime(double phaseAngleDifference, double targetAngularVelocity, double spacecraftAngularVelocity) {
+        double waitTime = getWaitTime(phaseAngleDifference, targetAngularVelocity, spacecraftAngularVelocity);
+        double synodicPeriod = getSynodicPeriod(targetAngularVelocity, spacecraftAngularVelocity);
+        return waitTime > synodicPeriod / 2 ? synodicPeriod - waitTime : waitTime;
+    }
+
+    private static double getWaitTime(double phaseAngleDifference, double targetAngularVelocity, double spacecraftAngularVelocity) {
+        return phaseAngleDifference / Math.abs(targetAngularVelocity - spacecraftAngularVelocity);
+    }
+
+    private static double getSynodicPeriod(double targetAngularVelocity, double spacecraftAngularVelocity) {
+        return 2 * Math.PI / Math.abs(targetAngularVelocity - spacecraftAngularVelocity);
+    }
+//
+//    public static double calculateNextLaunchWindowAbsoluteTime(Orbiter origin,
+//                                                               Orbiter target,
+//                                                               Orbit targetOrbit,
+//                                                               OrbitalSystem system) {
+//        return calculateNextLaunchWindowWaitTime(origin,target,targetOrbit) + system.getCurrentTime();
+//    }
+
+    /**
+     * Calculate the relative velocity needed to match orbits with a target
+     */
+    public static double calculateMatchVelocity(Vector3D currentVel, Vector3D targetVel) {
+        return currentVel.subtract(targetVel).magnitude();
     }
 
     /**
@@ -140,8 +169,9 @@ public class RocketryCalculator {
         // Transfer time (half orbital period of transfer ellipse)
         double transferTime = Math.PI * Math.sqrt(Math.pow(semiMajorAxisTransfer, 3) /
                 (parentMass));
-        OrbitalState beginningState = Orbit.calculateOrbitalState(origin);
-        OrbitalState endingState = Orbit.calculateOrbitAfterT0(target,transferTime);
+        OrbitalState beginningState = origin.calculateOrbitalState();
+        OrbitalState endingState = target.calculateOrbitAfterT0(transferTime);
+        System.out.println("delta V : " + totalDeltaV);
         return new ManeuverDetails(
                 beginningState.position(),
                 beginningState.velocity(),
@@ -157,7 +187,12 @@ public class RocketryCalculator {
         double fociSeparation = details.getStartingPosition().distanceTo(details.getEndingPosition())/2;
         double majorAxis = Vector3D.ZERO.distanceTo(details.getEndingPosition());
         double eccentricity = fociSeparation/majorAxis;
-        
+        double totalTime = details.getTimeToExecute();
+        double halfOrbitalPeriod = totalTime/2;
+
+
+        return null;
+        // t/
     }
 
     //Hohmann Transfer plotting:
@@ -191,7 +226,7 @@ public class RocketryCalculator {
 
         //TODO: validate behavior when origin orbit is not related to orbited body.
         if(origin.semiMajorAxis() > sphereOfInfluenceRadius) { //No action required. Already orbiting parent body.
-            OrbitalState state = Orbit.calculateOrbitAfterT0(origin,0);
+            OrbitalState state = origin.calculateOrbitalState();
             return new ManeuverDetails(
                     state.position(),state.velocity(),
                     state.position(),state.velocity(),
@@ -227,7 +262,7 @@ public class RocketryCalculator {
      */
     public static ManeuverDetails adjustToCoplanar(Orbit origin,
                                                    Orbit targetInclination) {
-        OrbitalState originState = Orbit.calculateOrbitalState(origin);
+        OrbitalState originState = origin.calculateOrbitalState();
 
         Vector3D rotatedVelocity = originState.velocity().rotateIn3Space(
                 targetInclination.ascendingNode(),
@@ -239,7 +274,7 @@ public class RocketryCalculator {
                 originState.velocity(),
                 originState.position(),
                 rotatedVelocity,
-                deltaVForInclinationChange(origin, targetInclination),
+                Math.abs(deltaVForInclinationChange(origin, targetInclination)),
                 Orbit.calculateOrbit(origin.centerBody(), originState.position(),rotatedVelocity),
                 0
         );
@@ -248,9 +283,6 @@ public class RocketryCalculator {
     /**
      * Calculate delta-v required to enter orbit around a body from an approach trajectory
      *
-     * @param approachVelocity Velocity relative to the body when entering SOI (m/s)
-     * @param bodyMass Mass of the body to orbit (kg)
-     * @param bodyRadius Radius of the body (m)
      * @param targetOrbitAltitude Desired altitude above surface (m)
      * @return Delta-v required for orbital insertion (m/s)
      */
@@ -270,7 +302,7 @@ public class RocketryCalculator {
                     );
             if(targetOrbitAltitude < soiRadius && targetOrbitAltitude > destinationGrav.getRadius()) {
 
-                OrbitalState state = Orbit.calculateOrbitalState(origin);
+                OrbitalState state = origin.calculateOrbitalState();
                 double mu = PhysicsConstants.G * destinationGrav.getMass();
                 double r = destinationGrav.getRadius() + targetOrbitAltitude; // Orbital radius
 
@@ -311,9 +343,9 @@ public class RocketryCalculator {
 
     private static double deltaVForInclinationChange(Orbit origin, Orbit targetInclination) {
 
-        double angularVelocity = Orbit.meanAngularVelocity(origin);
+        double angularVelocity = origin.meanAngularVelocity();
         
-        double inclinationDelta = (origin.inclination() - targetInclination.inclination())/2;
+        double inclinationDelta = Math.abs(origin.inclination() - targetInclination.inclination())/2;
 
         //representation of e as a conic slice (K: i think?)
         double eAsConicSlice = Math.sqrt(1 - Math.pow(origin.eccentricity(),2));

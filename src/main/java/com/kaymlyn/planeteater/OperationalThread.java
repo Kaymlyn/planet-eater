@@ -24,24 +24,26 @@ public class OperationalThread implements Runnable {
     public OperationalThread() {
         CelestialBodyFactory factory = new CelestialBodyFactory(CelestialBodyFactory.createMainSequenceStar(null, 1),3600);
         this.spark = factory.getSystem();
-        factory.createRandomAsteroidBelt(
+        List<Planet> asteroids = factory.createRandomAsteroidBelt(
                 "Main-Belt",
                 108,
                 1e5,
                 1e6,
                 2,
-                5,23L
+                5,
+                spark.getCentralStar(),
+                23L
         );
         Planet planet_1 = factory.createPlanetFromPattern(
                 null,
                 spark.getCentralStar(),
-                new Orbit(PhysicsConstants.AU, 0.02, .05, 0, 2, 3),
+                new Orbit(PhysicsConstants.AU, 0.02, .05, 0, 2, 1.5, spark.getCentralStar()),
                 PlanetPattern.EARTH,
                 1.0
         );
         Planet planet_2 = factory.createPlanetFromPattern(null,
                 spark.getCentralStar(),
-                new Orbit(PhysicsConstants.AU*5, 0.6, 1.3, 0, 2, 3),
+                new Orbit(PhysicsConstants.AU*5, 0.6, .02, 0, 2, 3, spark.getCentralStar()),
                 PlanetPattern.VENUS,
                 1.0
         );
@@ -66,25 +68,25 @@ public class OperationalThread implements Runnable {
                 .addMaterialAsRawMass(Material.SILICA, 1000)
                 .addMaterialAsRawMass(Material.TITANIUM_OXIDE, 200);
 
-        CentralMind mind =  new CentralMind("KHI Central Mind",crew,composition);
+        CentralMind mind =  factory.createCentralMind(PhysicsConstants.AU);
         spark.placeInEllipticalOrbit(mind,
                 spark.getCentralStar(),
-                new Orbit(PhysicsConstants.AU, 0, 0.03,
-                        Math.PI/3, 2, 3));
+                new Orbit(PhysicsConstants.AU*1.5, 0, 0.02,
+                        Math.PI/3, 2, .2, spark.getCentralStar()));
 
         Spacecraft vehicle = VehicleFactory.createCargoShuttle("Shuttle-1",mind);
-        vehicle.setLocation(mind);
+        vehicle.setOrbiting(mind);
         Itinerary route = vehicle.planRoute(planet_1, true);
-//        System.out.println(route);
-//        System.out.println(route.getTotalFuelRequirement());
-//        System.out.println(vehicle.getFuelMass());
-//        System.out.println(route.getTotalFuelRequirement() < vehicle.getFuelMass());
+        System.out.println(route);
+        System.out.println(route.getTotalFuelCost());
+        System.out.println(vehicle.getFuelMass());
+        System.out.println(route.getTotalFuelCost() < vehicle.getFuelMass());
         vehicle.setSystem(spark);
         vehicle.setItinerary(route);
         vehicle.programItinerary(route);
         System.out.println("Travel Time : " + route.getTotalFlightTime()/PhysicsConstants.SECONDS_PER_DAY);
         System.out.println("Total Fuel : " + vehicle.getFuelMass());
-        System.out.println("Travel Fuel : " + route.getTotalFuelRequirement());
+        System.out.println("Travel Fuel : " + route.getTotalFuelCost());
 
     }
 

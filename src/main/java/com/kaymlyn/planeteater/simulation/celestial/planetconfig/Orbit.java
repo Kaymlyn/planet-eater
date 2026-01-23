@@ -19,30 +19,28 @@ public record Orbit(double semiMajorAxis,
      * This assumes the orbiter is in a 2 body system as 3+body systems are inherently unstable.
      * To calculate a full n-body system use iterative gravitational calculations instead.
      *
-     * @see OrbitalSystem::stepVerlet()
-     *
      * @return Orbit according to the initial state of the orbiter and the gravitational body.
+     * @see OrbitalSystem::stepVerlet()
      */
     public static Orbit calculateOrbit(Gravitational centerBody, Vector3D startPosition, Vector3D startVelocity) {
 
         // gravitational force of dominant center mass.
-        double mu = PhysicsConstants.G * centerBody.getMass();
 
         // Specific orbital energy
-        double energy = startVelocity.magnitudeSquared() / 2.0 - mu / startPosition.magnitude();
+
+        double energy = startVelocity.magnitudeSquared() / 2.0 - centerBody.getGravitationalParameter() / startPosition.magnitude();
 
         // Semi-major axis
-        double semiMajorAxis = -mu / (2.0 * energy);
+        double semiMajorAxis = -centerBody.getGravitationalParameter() / (2.0 * energy);
 
-        // Angular momentum vector
+        // Angular MOMENTUM vector not velocity
         Vector3D angularMomentum = startPosition.cross(startVelocity);
-        double hMag = angularMomentum.magnitude();
 
         // Eccentricity vector
-        Vector3D eccentricity = startVelocity.cross(angularMomentum).divide(mu).subtract(startPosition.normalize());
+        Vector3D eccentricity = startVelocity
+                .cross(angularMomentum).divide(centerBody.getGravitationalParameter())
+                .subtract(startPosition.normalize());
 
-        // Inclination
-        double inclination = Math.acos((angularMomentum.getZ()+0.00000001) / hMag);
 
         // Node vector tangent to the ecliptic (points to ascending node)
         Vector3D node = Vector3D.UNIT_Z.cross(angularMomentum);
@@ -79,120 +77,125 @@ public record Orbit(double semiMajorAxis,
                 trueAnomaly = Math.atan2(startPosition.getY(), startPosition.getX());
             }
         }
-        if(Double.isNaN(trueAnomaly)) {
-            trueAnomaly = 0.0;
-        }
 
         return new Orbit(
                 semiMajorAxis,
                 eccentricity.magnitude(),
-                inclination,
+                Math.acos((angularMomentum.getZ() + 0.00000001) / angularMomentum.magnitude()),
                 ascendingNode,
                 argumentOfPeriapsis,
-                trueAnomaly,
+                Double.isNaN(trueAnomaly) ? 0.0 : trueAnomaly,
                 centerBody
         );
     }
 
-    public static OrbitalState calculateOrbitalState(Orbit orbit) {
-        return calculateOrbitAfterT0(orbit,0.0);
+    public OrbitalState calculateOrbitalState() {
+        return calculateOrbitAfterT0(0.0);
     }
 
     public static Orbit calculateOrbitFor(Orbiter orbiter) {
-        return calculateOrbit(orbiter.getParentBody(),orbiter.getPosition(),orbiter.getVelocity());
+        return calculateOrbit(orbiter.getParentBody(), orbiter.getPosition(), orbiter.getVelocity());
     }
 
     public static OrbitalState createCircularOrbit(double radius, Gravitational centerBody) {
-        return calculateOrbitalState(new Orbit(radius,0.0,0.0,0.0,0.0,0.0, centerBody));
+        return new Orbit(radius, 0.0, 0.0, 0.0, 0.0, 0.0, centerBody)
+                .calculateOrbitalState();
     }
 
     /**
      * Calculates the Orbital State Vectors and the corresponding Orbital Elements. This information must be
      * adjusted by the absolute position and velocity of the parent body relative to its parent body if not the central
      * star.
-     * @param orbit
+     *
      * @param timeElapsed
      * @return
      */
-    public static OrbitalState calculateOrbitAfterT0(Orbit orbit,
-                                                     double timeElapsed) {
+    public OrbitalState calculateOrbitAfterT0(double timeElapsed) {
 
         //Gravitational strength of orbited body
-        double gStar = PhysicsConstants.G * orbit.centerBody.getMass();
-
-        // Calculate mean motion: n = sqrt(μ/a³)
-        double meanMotion = Math.sqrt(Math.abs(gStar / Math.pow(orbit.semiMajorAxis(), 3)));
-
-        // Map current True Anomaly mapped onto an ellipse
-        double E0 = trueAnomalyToEccentricAnomaly(orbit.trueAnomaly(), orbit.eccentricity());
 
         // Angle of Eccentric Anomaly projected to given time discarding rotation past 2*PI
-        double M = normalizeAngle(E0 - orbit.eccentricity() * Math.sin(E0) + meanMotion * timeElapsed);
+        double M = normalizeAngle0and2PI(meanAnomaly() + meanAngularVelocity() * timeElapsed);
+        //^Tells us where the orbiter is
 
         // Solve Kepler's equation via iteration: M = E - e*sin(E) for E
         // The angle past periapsis around the ellipse represented by orbit's eccentricity
-        double E = solveKeplersEquation(M, orbit.eccentricity());
+        double E = solveKeplersEquation(M, eccentricity);
 
         // Convert eccentric anomaly to true anomaly taking into account the orbit's real eccentricity
-        double nu = eccentricAnomalyToTrueAnomaly(E, orbit.eccentricity());
+        double nu = eccentricAnomalyToTrueAnomaly(E, eccentricity);
 
         // Move nu out of the complex plane and into the real.
         double adjustedNu = Double.isNaN(nu) ? 0.0 : nu;
 
-        // Calculate average orbital radius
-        double r = orbit.semiMajorAxis() * (1 - orbit.eccentricity() * Math.cos(E));
+        double r = distanceToBarycenter(E);
 
         // Magnitude of orbital velocity at periapsis (K: I think)
-        double vMagnitude = Math.sqrt(gStar * (2.0 / r - 1.0 / orbit.semiMajorAxis()));
+        double vMagnitude = Math.sqrt(this.centerBody().getGravitationalParameter() * (2.0 / r - 1.0 / semiMajorAxis));
 
         // Velocity direction (perpendicular to radius vector)
         // Flight path angle: tan(φ) = e*sin(ν) / (1 + e*cos(ν))
-        double flightPathAngle = Math.atan2(orbit.eccentricity() * Math.sin(orbit.trueAnomaly()),
-                1.0 + orbit.eccentricity() * Math.cos(orbit.trueAnomaly()));
+        double flightPathAngle = Math.atan2(eccentricity * Math.sin(trueAnomaly),
+                1.0 + eccentricity * Math.cos(trueAnomaly));
 
         // Velocity components in the 2D orbital plane
-        double vxOrbital = vMagnitude * Math.cos(orbit.trueAnomaly() + Math.PI/2 + flightPathAngle);
-        double vyOrbital = vMagnitude * Math.sin(orbit.trueAnomaly() + Math.PI/2 + flightPathAngle);
+        double vxOrbital = vMagnitude * Math.cos(trueAnomaly + Math.PI / 2 + flightPathAngle);
+        double vyOrbital = vMagnitude * Math.sin(trueAnomaly + Math.PI / 2 + flightPathAngle);
 
         // Position in the 2D orbital plane
         double xOrbital = r * Math.cos(adjustedNu);
         double yOrbital = r * Math.sin(adjustedNu);
 
-        Vector3D position = new Vector3D(xOrbital,yOrbital).rotateIn3Space(
-                orbit.ascendingNode(),
-                orbit.inclination(),
-                orbit.periapsis()
+        Vector3D position = new Vector3D(xOrbital, yOrbital).rotateIn3Space(
+                ascendingNode,
+                inclination,
+                periapsis
         );
 
-        Vector3D velocity = new Vector3D(vxOrbital,vyOrbital).rotateIn3Space(
-                orbit.ascendingNode(),
-                orbit.inclination(),
-                orbit.periapsis()
+        Vector3D velocity = new Vector3D(vxOrbital, vyOrbital).rotateIn3Space(
+                ascendingNode,
+                inclination,
+                periapsis
         );
 
         return new OrbitalState(position,  //Position at indicated time
                 velocity,                 //Velocity at indicated time
-                new Orbit(orbit.semiMajorAxis,          //Orbit with updated True Anomaly at indicated time
-                        orbit.eccentricity,
-                        orbit.inclination,
-                        orbit.ascendingNode,
-                        orbit.periapsis,
+                new Orbit(semiMajorAxis,          //Orbit with updated True Anomaly at indicated time
+                        eccentricity,
+                        inclination,
+                        ascendingNode,
+                        periapsis,
                         nu,
-                        orbit.centerBody
+                        centerBody
                 )
         );
     }
 
-    /**
-     * Projects the orbital state into the future by a given amount of time for a Star Orbiting body.
-     * @param orbiter orbiter to predict
-     * @param timeElapsed time from current time
-     * @return OrbitalState of the orbiter after the given time has elapsed
-     */
-    public static OrbitalState calculateOrbitAfterT0(Orbiter orbiter,
-                                                     double timeElapsed
-    ) {
-        return calculateOrbitAfterT0(calculateOrbitFor(orbiter),timeElapsed);
+    public double meanAngularVelocity() {
+        return Math.sqrt(centerBody.getGravitationalParameter() / Math.pow(semiMajorAxis, 3));
+    }
+
+    public double orbitalPeriod() {
+        return 2 * Math.PI * Math.sqrt(Math.pow(semiMajorAxis, 3) / centerBody().getGravitationalParameter());
+    }
+
+    public double distancePerSecond() {
+        return 2 * Math.PI / orbitalPeriod();
+    }
+
+    public double meanAnomaly() {
+
+        // Map current True Anomaly mapped onto an ellipse
+        double eccentricAnomaly = trueAnomalyToEccentricAnomaly(centerBody().getGravitationalParameter(), eccentricity);
+        return eccentricAnomaly - (eccentricity * Math.sin(eccentricAnomaly));
+    }
+
+    public double semiMinorAxis() {
+        return semiMajorAxis * Math.sqrt(1 - Math.pow(eccentricity, 2));
+    }
+
+    private double distanceToBarycenter(double E) {
+        return semiMajorAxis * (1 - eccentricity * Math.cos(E));
     }
 
     /**
@@ -200,14 +203,15 @@ public record Orbit(double semiMajorAxis,
      * effectively: A = (PhaseAngle modulo (2PI))
      * NOTE: should be possible with the statement var A = PhaseAngle % (2 * Math.PI),
      * but I haven't verified the accuracy of floating point modulo and I know this works well enough.
+     *
      * @param currentPhaseAngle angle in radians to normalize between 0 and 2*PI
      * @return normalized angle in radians
      */
-    public static double normalizeAngle (double currentPhaseAngle) {
-        if(currentPhaseAngle < 0) {
-            return normalizeAngle(currentPhaseAngle + 2 * Math.PI);
-        } else if(currentPhaseAngle >= 2 * Math.PI) {
-            return normalizeAngle(currentPhaseAngle -  2 * Math.PI);
+    public static double normalizeAngle0and2PI(double currentPhaseAngle) {
+        if (currentPhaseAngle < 0) {
+            return normalizeAngle0and2PI(currentPhaseAngle + 2 * Math.PI);
+        } else if (currentPhaseAngle >= 2 * Math.PI) {
+            return normalizeAngle0and2PI(currentPhaseAngle - 2 * Math.PI);
         } else {
             return currentPhaseAngle;
         }
@@ -217,7 +221,7 @@ public record Orbit(double semiMajorAxis,
      * Convert true anomaly to eccentric anomaly
      */
     private static double trueAnomalyToEccentricAnomaly(double nu, double e) {
-        double anomaly = Math.sqrt(1 - e*e) * Math.sin(nu) / (1 + e * Math.cos(nu));
+        double anomaly = Math.sqrt(1 - e * e) * Math.sin(nu) / (1 + e * Math.cos(nu));
         return Math.atan2(
                 Double.isNaN(anomaly) ? 0.0 : anomaly,
                 (e + Math.cos(nu)) / (1 + e * Math.cos(nu))
@@ -229,7 +233,7 @@ public record Orbit(double semiMajorAxis,
      */
     private static double eccentricAnomalyToTrueAnomaly(double E, double e) {
         return Math.atan2(
-                Math.sqrt(1 - e*e) * Math.sin(E) / (1 - e * Math.cos(E)),
+                Math.sqrt(1 - e * e) * Math.sin(E) / (1 - e * Math.cos(E)),
                 (Math.cos(E) - e) / (1 - e * Math.cos(E))
         );
     }
@@ -237,6 +241,7 @@ public record Orbit(double semiMajorAxis,
     /**
      * Solve Kepler's equation using Newton-Raphson iteration.
      * M = E - e*sin(E)
+     *
      * @param M
      * @param e
      * @return angle representing the position of a point around an ellipse
@@ -260,7 +265,5 @@ public record Orbit(double semiMajorAxis,
         return E;
     }
 
-    public static double meanAngularVelocity(Orbit origin) {
-        return Math.sqrt(origin.centerBody().getMass()*PhysicsConstants.G / Math.pow(origin.semiMajorAxis(), 3));
-    }
+
 }

@@ -1,5 +1,6 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
+import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.entities.Environment;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
@@ -7,14 +8,16 @@ import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 @EqualsAndHashCode
+@ToString
 @Data
-public class Vehicle {
+public abstract class Vehicle {
 
     protected String id;
     protected Vector3D position;
@@ -156,14 +159,17 @@ public class Vehicle {
         return exhaustVelocity * Math.log(initialMass / finalMass);
     }
 
+    public abstract Gravitational getLocation();
     /**
      * Calculate fuel required for a given delta-v
      * m_fuel = m_dry * (e^(Δv/v_e) - 1)
      */
-    public double getFuelRequiredForDeltaV(double deltaV) {
+    public double getFuelRequiredForDeltaV(double deltaV, double spentFuelMass) {
         double payloadMass = dryMass + cargo.getTotalMass() +
-            crew.stream().mapToDouble(Automaton::getMass).sum();
-        return payloadMass * (Math.exp(deltaV / exhaustVelocity) - 1.0);
+            crew.stream().mapToDouble(Automaton::getMass).sum() + fuelMass - spentFuelMass;
+        System.out.println("Payload Mass : " + payloadMass);
+        return payloadMass * (1 - Math.exp(- (deltaV /
+                (exhaustVelocity * getLocation().getGravitationalForce(getLocation().getPosition().distanceTo(position))))));
     }
 
 }

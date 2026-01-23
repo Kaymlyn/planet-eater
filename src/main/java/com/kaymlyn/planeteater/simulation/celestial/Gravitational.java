@@ -6,44 +6,46 @@ import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 public interface Gravitational {
     double STANDARD_ORBIT_MULTIPLIER = 1.1;
 
+    double getMass();
+    Vector3D getVelocity();
+    double getRadius();
+    Vector3D getPosition();
+    OrbitalSystem getSystem();
+
     /**
      * Gets a circular orbital vector above the given Gravitational body.
      * The radius of the Standard Circular Orbit is set to an altitude equal to 10% of the Gravitational object over the
      * atmospheric radius. For most bodies this is sufficient to lower gravitational influence enough to allow for
-     * orbital transfers.
-     * @param parentBody the gravitational body to orbit
+     * orbital transfers.=
      * @return Vector3D representation of the velocity vector to maintain the altitude.
      */
-    static Vector3D getStandardCircularOrbitVector(Gravitational parentBody) {
-        return getCircularOrbitVector(parentBody, parentBody.getRadius() * (STANDARD_ORBIT_MULTIPLIER - 1));
+    default Vector3D getStandardCircularOrbitVector() {
+        return getCircularOrbitVector(getRadius() * (STANDARD_ORBIT_MULTIPLIER - 1));
     }
 
     /**
      * Gets a circular orbital vector above the given Gravitational body at a given altitude above the atmospheric
      * radius.
-     * @param parentBody the gravitational body to orbit
      * @return Vector3D representation of the velocity vector to maintain the altitude.
      */
-    static Vector3D getCircularOrbitVector(Gravitational parentBody, double altitude) {
+    default Vector3D getCircularOrbitVector(double altitude) {
 
-        return parentBody.getVelocity().add(
+        return getVelocity().add(
                 new Vector3D(
                         0,
-                        Math.sqrt(PhysicsConstants.G * parentBody.getMass() * (1/ (parentBody.getRadius() + altitude)))
+                        Math.sqrt(getGravitationalParameter() * (1/ (getRadius() + altitude)))
                 )
         );
     }
 
-    static Vector3D getStandardCircularOrbitPosition(Gravitational parentBody, Vector3D directionAboveCenter){
+    default Vector3D getStandardCircularOrbitPosition(Vector3D directionAboveCenter){
         //TODO: add derivation from rotational axis in the future. Assume random Axial Tilt for now. Thi will make Vector3D argument unnecessary.
         if(directionAboveCenter == Vector3D.ZERO) {
-            return Vector3D.randomUnitVector().multiply(parentBody.getRadius()*STANDARD_ORBIT_MULTIPLIER);
+            return Vector3D.randomUnitVector().multiply(getRadius()*STANDARD_ORBIT_MULTIPLIER);
         } else {
-            return directionAboveCenter.normalize().multiply(parentBody.getRadius()*STANDARD_ORBIT_MULTIPLIER);
+            return directionAboveCenter.normalize().multiply(getRadius()*STANDARD_ORBIT_MULTIPLIER);
         }
     }
-
-
     /**
      * Calculate sphere of influence (SOI) radius for a body
      * Region where the body's gravity dominates over the primary
@@ -51,14 +53,39 @@ public interface Gravitational {
      * @param semiMajorAxis Distance between the bodies (m)
      * @return SOI radius (m)
      */
-    public static double calculateSphereOfInfluence(Gravitational parent,
-                                                    Orbiter orbiter,
-                                                    double semiMajorAxis) {
+    default double calculateSphereOfInfluence(Orbiter orbiter,
+                                              double semiMajorAxis) {
         // SOI radius: r_SOI = a * (m/M)^(2/5)
-        return semiMajorAxis * Math.pow(orbiter.getMass() / parent.getMass(), 0.4);
+        return semiMajorAxis * Math.pow(orbiter.getMass() / getMass(), 0.4);
     }
 
-    double getMass();
-    Vector3D getVelocity();
-    double getRadius();
+    default double getGravitationalParameter() {
+        return PhysicsConstants.G * getMass();
+    }
+
+    default double getOrbitalVelocity(double rOrbit) {
+        return Math.sqrt(getGravitationalParameter() / rOrbit);
+    }
+
+    default double getEscapeVelocityFromRadius(double radius) {
+
+        // sqrt(2GM(1.0/r - 1.0/2d). when distance = radius sqrt(2GM(2/2r - 1/2r) or sqrt(2GM(1/2r)) or  sqrt(
+        return Math.sqrt(2 * getGravitationalParameter() * radius);
+    }
+
+    default double getSurfaceEscapeVelocity() {
+        return getEscapeVelocityFromRadius(getRadius());
+    }
+
+    default double getStandardOrbitalRadius() {
+        return getRadius() * STANDARD_ORBIT_MULTIPLIER;
+    }
+
+    default double getStandardOrbitalAltitude() {
+        return getRadius() * (STANDARD_ORBIT_MULTIPLIER - 1);
+    }
+
+    default double getGravitationalForce(double distanceToCenter) {
+        return PhysicsConstants.G * Math.pow(getRadius()/distanceToCenter,2);
+    }
 }

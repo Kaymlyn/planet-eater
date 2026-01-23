@@ -4,22 +4,24 @@ import com.kaymlyn.planeteater.simulation.celestial.Dockable;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
+import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.physics.Itinerary;
+import com.kaymlyn.planeteater.simulation.physics.ManeuverDetails;
+import com.kaymlyn.planeteater.simulation.physics.OrbitalState;
 import com.kaymlyn.planeteater.simulation.physics.PiecewiseState;
-import com.kaymlyn.planeteater.simulation.physics.Trajectory;
-import com.kaymlyn.planeteater.simulation.physics.TravelCalculator;
+import com.kaymlyn.planeteater.simulation.physics.RocketryCalculator;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static com.kaymlyn.planeteater.simulation.celestial.Gravitational.STANDARD_ORBIT_MULTIPLIER;
 
 /**
  * Represents a spacecraft for traveling between celestial bodies
@@ -31,7 +33,7 @@ import static com.kaymlyn.planeteater.simulation.celestial.Gravitational.STANDAR
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class Spacecraft extends Vehicle {
-    
+
     public enum SpacecraftState {
         DOCKED,         // At platform
         TRAVELING,      // In transit
@@ -44,14 +46,14 @@ public class Spacecraft extends Vehicle {
     private List<Automaton> crew;
 
     private SpacecraftState state;
-    private Orbiter location;
+    private Orbiter orbiting;
     private Itinerary itinerary;
     private List<PiecewiseState> telemetry;
     private int currentTravelCycle;
     private double transitTime;
 
     private OrbitalSystem system;
-    
+
     public Spacecraft(String id,
                       double dryMass,
                       double maxFuelCapacity,
@@ -67,16 +69,25 @@ public class Spacecraft extends Vehicle {
         this.state = SpacecraftState.DOCKED;
         this.itinerary = null;
         this.telemetry = null;
-        this.location = shipyard;
-        this.system = shipyard.getSystem();
+        this.orbiting = shipyard;
+        this.system = shipyard.getParentBody().getSystem();
         this.position = shipyard.getPosition();
         this.currentTravelCycle = 0;
+        this.cargo = new Composition();
+        this.crew = new ArrayList<>();
 
+    }
+
+    public Gravitational getLocation() {
+        if(orbiting == null || !(orbiting instanceof Gravitational)) {
+            return system.getCentralStar();
+        } else {
+            return ((Gravitational) orbiting);
+        }
     }
 
     public void programItinerary(Itinerary itinerary){
         this.itinerary = itinerary;
-        telemetry = itinerary.generateTelemetry(system.getTimeStep(),this);
         currentTravelCycle = 0;
     }
 
@@ -84,20 +95,20 @@ public class Spacecraft extends Vehicle {
 
         consumeFuel(itinerary.getLandingFuel());
         telemetry = null;
-        System.out.println("Final Destination : " + location);
+        System.out.println("Final Destination : " + orbiting);
         if(itinerary.getFinalSpacecraftState() == SpacecraftState.DOCKED) {
-            if(location instanceof Dockable) {
+            if(orbiting instanceof Dockable) {
                 setState(SpacecraftState.DOCKED);
                 system.unregister(this);
-            } else if (location instanceof Gravitational) {
+            } else if (orbiting instanceof Gravitational) {
                 setState(SpacecraftState.ORBITING);
             } else {
                 setState(SpacecraftState.STRANDED);
             }
         } else if (itinerary.getFinalSpacecraftState() == SpacecraftState.ORBITING){
-            if(location instanceof Gravitational) {
+            if(orbiting instanceof Gravitational) {
                 setState(SpacecraftState.ORBITING);
-            } else if (location instanceof Dockable) {
+            } else if (orbiting instanceof Dockable) {
                 system.unregister(this);
                 setState(SpacecraftState.DOCKED);
             } else {
@@ -113,7 +124,7 @@ public class Spacecraft extends Vehicle {
     public void simulateTravel() {
         if(itinerary != null) {
             if(telemetry == null) {
-                telemetry = itinerary.generateTelemetry(system.getTimeStep(),this);
+                telemetry = itinerary.generateTelemetry(system.getTimeStep());
             }
             if(telemetry == null) {
                 return;
@@ -135,12 +146,15 @@ public class Spacecraft extends Vehicle {
                 }
                 currentTravelCycle++;
             } else {
-                //Arrive at destiation
+                //Arrive at destination
                 Vector3D finalPosition = null;
                 if(itinerary.getFinalDestination() != null) {
-                    this.location = itinerary.getFinalDestination();
-                    this.position = location.getPosition();
-                    finalPosition = this.position;
+                    this.orbiting = itinerary.getFinalDestination();
+                    if(itinerary.getFinalSpacecraftState() == SpacecraftState.DOCKED) {
+                        finalPosition = this.orbiting.getPosition();
+                    } else {
+                        finalPosition = telemetry.getLast().position;
+                    }
                 }
 
                 if(finalPosition == null && !telemetry.isEmpty()) {
@@ -155,58 +169,145 @@ public class Spacecraft extends Vehicle {
     }
 
     //Calculate a dry run of the route
-    public Itinerary planRoute(Orbiter destination, boolean land) {
-        double rendezvousVelocity;
+    public Itinerary planRoute(@NonNull Orbiter destination, boolean land) {
 
-        Itinerary route = new Itinerary(destination.getSystem());
+        Itinerary route = new Itinerary();
 
-        if (location != null) {
-            if (location instanceof Planet) {
-                double originRadius = ((Planet) location).getRadius();
-                route.setLaunchFuel(TravelCalculator.calculateTakeoffDeltaV(location.getMass(), originRadius, originRadius * STANDARD_ORBIT_MULTIPLIER, this));
-                Trajectory rendezvous = TravelCalculator.calculateRendezvousFromSpace(
-                        Vector3D.randomUnitVector().multiply(originRadius * STANDARD_ORBIT_MULTIPLIER).add(location.getPosition()), //Some random point above the surface
-                        location.getVelocity(), destination, this, system);
-                rendezvousVelocity = rendezvous.endVelocity;
-                System.out.println("Takeoff route : " + rendezvous);
-                route.addFlightPlan(rendezvous);
-            } else {
-                System.out.println("Loc : " + location.getPosition());
-                System.out.println("Vel : " + location.getVelocity());
-                System.out.println("Des : " + destination);
-                Trajectory rendezvous = TravelCalculator.calculateRendezvousFromSpace(location.getPosition(), location.getVelocity(), destination, this, destination.getSystem());
-                rendezvousVelocity = rendezvous.endVelocity;
-                route.addFlightPlan(rendezvous);
+        Orbit destinationOrbit = destination.calculateCurrentOrbit();
+        route.setFinalDestination(destination);
+        ManeuverDetails active = null;
+        double fuelSpend = 0;
+        System.out.println("Fuel Spend : " + fuelSpend);
+        //takeoff
+        if (orbiting != null) {
+            //launch if not in orbit
+            if(state == SpacecraftState.DOCKED) {
+                // launch out of a gravitational well
+                // otherwise undocking from a space station negligible deltav for undocking. this can definitely change
+                // in the future for large stations.
+                if (orbiting instanceof Gravitational) {
+                    ManeuverDetails takeoff = RocketryCalculator.calculateTakeoffToStandardOrbit(((Planet) orbiting), this);
+                    route.setLaunchFuel(getFuelRequiredForDeltaV(takeoff.getDeltaV(),0));
+                    fuelSpend += getItinerary().getLaunchFuel();
+                    System.out.println("Fuel Spend - launch : " + fuelSpend);
+                    route.addFlightPlan(takeoff);
+                    active = takeoff;
+                    //get into orbit around parent gravitational body, unless star. Can't escape the star.
+                    if(orbiting instanceof Planet) {
+                        ManeuverDetails escape = RocketryCalculator.calculateEscapeOrbit(
+                            takeoff.getOrbitState(),
+                                orbiting);
+                        fuelSpend += getFuelRequiredForDeltaV(escape.getDeltaV(),fuelSpend);
+                        System.out.println("Fuel Spend - escape : " + fuelSpend);
+                        route.addFlightPlan(escape);
+                        active = escape;
+                    }
+
+                } else { //You're on a satellite harry
+                    ManeuverDetails detach = new ManeuverDetails(Orbit.calculateOrbit(orbiting.getParentBody(),this.position, this.orbiting.getVelocity()));
+                    fuelSpend += getFuelRequiredForDeltaV(detach.getDeltaV(),fuelSpend);
+                    System.out.println("Fuel Spend - detach : " + fuelSpend);
+                    route.addFlightPlan(detach);
+                    active = detach;
+                }
+            } else if (state == SpacecraftState.ORBITING) { //Ship already in orbit. let's escape
+                //unless it's a star
+                if (orbiting instanceof Planet) {
+                    active = RocketryCalculator.calculateEscapeOrbit(
+                            Orbit.calculateOrbit((Gravitational) orbiting, position, velocity),
+                            orbiting);
+                    fuelSpend += getFuelRequiredForDeltaV(active.getDeltaV(),fuelSpend);
+                    System.out.println("Fuel Spend - escape : " + fuelSpend);
+                    route.addFlightPlan(active);
+                }
             }
-        } else {
-            return route;
         }
 
-        if (destination instanceof Planet) {
-            if (land) {
-                route.setLandingFuel(TravelCalculator.calculateLanding(
-                        ((Planet) destination).getRadius() * STANDARD_ORBIT_MULTIPLIER,
-                        destination.getMass(),
-                        ((Planet) destination).getRadius(),
-                        this));
+        ManeuverDetails coplanarBurn;
+        //get into coplanar orbit with the destination
+        if(active == null) {//You've been orbiting a star or on a satellite.
+
+            coplanarBurn = RocketryCalculator.adjustToCoplanar(
+                    Orbit.calculateOrbit(destinationOrbit.centerBody(), position, velocity), // <-- velocity is zero.
+                    destinationOrbit
+            );
+        } else { //get coplanar
+            coplanarBurn = RocketryCalculator.adjustToCoplanar(
+                    Orbit.calculateOrbit(destinationOrbit.centerBody(), active.getEndingPosition(), active.getEndingVelocity()),
+                    destinationOrbit
+            );
+        }
+
+        fuelSpend += getFuelRequiredForDeltaV(coplanarBurn.getDeltaV(),fuelSpend);
+        System.out.println("Fuel Spend - coplanar : " + fuelSpend);
+        route.addFlightPlan(coplanarBurn);
+        active = coplanarBurn;
+
+        //time to wait for Hohmann Transfer
+        ManeuverDetails wait = new ManeuverDetails(
+                active.getOrbitState(),
+                RocketryCalculator.calculateNextLaunchWindowWaitTime(active.getOrbitState(), destinationOrbit)
+        );
+        route.addFlightPlan(wait);
+
+        //Hohmann Transfer. should be fine for most orbital transfers at this stage.
+        // TODO: add a switch to different transfers in the future fuel and time optimizations can be made depending on what maneuvers are chosen
+        ManeuverDetails transfer = RocketryCalculator.calculateHohmannTransferBetweenOrbits(wait.getOrbitState(),destinationOrbit);
+        fuelSpend += getFuelRequiredForDeltaV(transfer.getDeltaV(),fuelSpend);
+        System.out.println("Fuel Spend - Hohmann : " + fuelSpend);
+        route.addFlightPlan(transfer);
+        active = transfer;
+
+        //finalizing travel
+        if(destination instanceof Gravitational) {
+            //get into orbit
+            ManeuverDetails capture = RocketryCalculator.calculateOrbitalInsertionDeltaV(
+                    active.getOrbitState(),
+                    (Gravitational) destination,
+                    destination,
+                    ((Gravitational) destination).getStandardOrbitalAltitude());
+            fuelSpend += getFuelRequiredForDeltaV(capture.getDeltaV(),fuelSpend);
+            System.out.println("Fuel Spend - capture : " + fuelSpend);
+            route.addFlightPlan(capture);
+            if(land) {
+                //landing
+                ManeuverDetails landing = RocketryCalculator.calculateLandingOnGravitational((Gravitational) destination,this);
+                route.addFlightPlan(landing);
+                active = landing;
+                double landingFuel = getFuelRequiredForDeltaV(active.getDeltaV(),fuelSpend);
+                fuelSpend += landingFuel;
+                System.out.println("Fuel Spend - land : " + fuelSpend);
+                route.setLandingFuel(landingFuel);
                 route.setFinalSpacecraftState(SpacecraftState.DOCKED);
             } else {
-                //insert into orbit
-                route.setLandingFuel(TravelCalculator.calculateOrbitalInsertion(
-                        this,
-                        (Planet) destination,
-                        rendezvousVelocity,
-                        ((Planet) destination).getRadius() * STANDARD_ORBIT_MULTIPLIER
-                ).fuelRequired);
+                //orbiting
                 route.setFinalSpacecraftState(SpacecraftState.ORBITING);
+                route.setLandingFuel(0.0);
             }
         } else {
-            //assume coming in from the correct angle of travel just faster/slower than target destination.
-            route.setLandingFuel(TravelCalculator.calculateMatchVelocity(
-                    destination.getVelocity().normalize().multiply(rendezvousVelocity), destination.getVelocity()));
+            //slow down or catch up with the space station
+            System.out.println("Match Velocity" + RocketryCalculator.calculateMatchVelocity(
+                    active.getEndingVelocity(),
+                    destinationOrbit.calculateOrbitAfterT0(route.getTotalFlightTime()).velocity()));
+            OrbitalState futureState = destinationOrbit.calculateOrbitAfterT0(route.getTotalFlightTime());
+            ManeuverDetails match = new ManeuverDetails(
+                    active.getEndingPosition(),
+                    active.getEndingVelocity(),
+                    futureState.position(),
+                    futureState.velocity(),
+                    RocketryCalculator.calculateMatchVelocity(
+                    active.getEndingVelocity(),
+                    destinationOrbit.calculateOrbitAfterT0(route.getTotalFlightTime()).velocity()),
+                    futureState.orbitalElements(),
+                    0.0);
+            fuelSpend += getFuelRequiredForDeltaV(match.getDeltaV(), fuelSpend);
+            System.out.println("Fuel Spend - match : " + fuelSpend);
+            route.addFlightPlan(match);
+
+            route.setLandingFuel(0.0);
             route.setFinalSpacecraftState(SpacecraftState.DOCKED);
         }
-
+        route.setTotalFuelCost(fuelSpend);
         return route;
     }
 

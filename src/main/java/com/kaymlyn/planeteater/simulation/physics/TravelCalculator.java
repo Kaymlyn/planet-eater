@@ -38,7 +38,7 @@ public class TravelCalculator {
         double travelTime = distance / averageVelocity;
 
         // Calculate fuel required using Tsiolkovsky equation
-        double fuelRequired = spacecraft.getFuelRequiredForDeltaV(deltaV);
+        double fuelRequired = spacecraft.getFuelRequiredForDeltaV(deltaV,0.0);
 
         return new Trajectory(start, end, deltaV, travelTime, fuelRequired, averageVelocity);
     }
@@ -73,7 +73,7 @@ public class TravelCalculator {
                 (PhysicsConstants.G * centralMass));
 
         // Fuel required
-        double fuelRequired = spacecraft.getFuelRequiredForDeltaV(totalDeltaV);
+        double fuelRequired = spacecraft.getFuelRequiredForDeltaV(totalDeltaV,0.0);
 
         Vector3D start = new Vector3D(r1, 0, 0);
         Vector3D end = new Vector3D(r2, 0, 0);
@@ -158,7 +158,7 @@ public class TravelCalculator {
         }
 
         // Fuel required
-        double fuelRequired = spacecraft.getFuelRequiredForDeltaV(totalDeltaV);
+        double fuelRequired = spacecraft.getFuelRequiredForDeltaV(totalDeltaV,0.0);
 
         // Position vectors (simplified - actual positions depend on true anomaly)
         Vector3D start = new Vector3D(a1, 0, 0);
@@ -319,7 +319,7 @@ public class TravelCalculator {
 
         // Delta-v budget: deorbit + descent
         // Approximate as orbital velocity + landing velocity
-        return spacecraft.getFuelRequiredForDeltaV(vOrbit + vLanding - vSurface);
+        return spacecraft.getFuelRequiredForDeltaV(vOrbit + vLanding - vSurface,0.0);
     }
 
     /**
@@ -345,7 +345,7 @@ public class TravelCalculator {
 
         // Total delta-v is approximately these combined
         // (This is simplified - real rockets lose efficiency to gravity)
-        return spacecraft.getFuelRequiredForDeltaV(vSurface + (vOrbit - Math.sqrt(mu / rOrbit)));
+        return spacecraft.getFuelRequiredForDeltaV(vSurface + (vOrbit - Math.sqrt(mu / rOrbit)),0.0);
     }
 
     /**
@@ -385,7 +385,7 @@ public class TravelCalculator {
                 orbitAltitude
         );
 
-        double fuelRequired = spacecraft.getFuelRequiredForDeltaV(insertionDeltaV);
+        double fuelRequired = spacecraft.getFuelRequiredForDeltaV(insertionDeltaV,0.0);
 
         // Time for insertion burn (assume short impulsive burn)
         double burnTime = 60.0; // 1 minute typical
@@ -395,7 +395,7 @@ public class TravelCalculator {
                 new Vector3D(targetBody.getRadius() + orbitAltitude, 0, 0)
         );
 
-        return new Trajectory(start, end, insertionDeltaV, burnTime, fuelRequired, targetBody.getCircularOrbitVelocity(targetBody.getRadius() + orbitAltitude));
+        return new Trajectory(start, end, insertionDeltaV, burnTime, fuelRequired, targetBody.getOrbitalVelocity(targetBody.getRadius() + orbitAltitude));
     }
 
     public static Trajectory calculateRendezvousFromSpace(Vector3D startPos, Vector3D startVel,
@@ -473,7 +473,7 @@ public class TravelCalculator {
                 transfer.deltaV + planeChangeDV,
                 totalMissionTime,
                 waitTime,
-                spacecraft.getFuelRequiredForDeltaV(transfer.deltaV + planeChangeDV),
+                spacecraft.getFuelRequiredForDeltaV(transfer.deltaV + planeChangeDV,0.0),
                 target.getVelocity().magnitude());
     }
 
@@ -601,6 +601,63 @@ public class TravelCalculator {
         double cosNu = (Math.cos(E) - e) / (1 - e * Math.cos(E));
         double sinNu = Math.sqrt(1 - e*e) * Math.sin(E) / (1 - e * Math.cos(E));
         return Math.atan2(sinNu, cosNu);
+    } /**
+     * PIECEWISE TRAJECTORY: Calculate spacecraft position at any point during transfer
+     * Uses a simple two-burn Hohmann-like transfer model
+     *
+     * @param elapsedTime Time since trajectory start (seconds)
+     * @return Position and velocity at the given time
+     */
+    public static PiecewiseState calculateTrajectoryState(ManeuverDetails deets,
+                                                          double elapsedTime) {
+        System.out.println("Elasped Time : " + elapsedTime);
+        // Clamp time to trajectory duration
+        if (elapsedTime < 0) elapsedTime = 0;
+        if (elapsedTime > deets.getTimeToExecute()) elapsedTime = deets.getTimeToExecute();
+
+        // Simplified model: instant initial burn, coast, instant final burn
+        // More realistic would be finite burn times
+        // Note on Claude's documentation: Burn times are generally measured in seconds and the expectation is the
+        // simulation is running on a minimum of one hour time steps so burn times are negligible.
+
+        // Calculate transfer orbit parameters
+        double r1 = deets.getStartingPosition().magnitude();
+        double r2 = deets.getEndingPosition().magnitude();
+        double a = (r1 + r2) / 2.0; // Semi-major axis of transfer orbit
+
+        // Position along transfer ellipse
+        double n = Math.sqrt(deets.getOrbitState().meanAngularVelocity()); // Mean motion
+        double M = n * elapsedTime; // Mean anomaly
+
+        // Solve for eccentric anomaly
+        double e = Math.abs(r2 - r1) / (r1 + r2); // Eccentricity of transfer
+        double E = solveKeplersEquation(M, e);
+
+        // True anomaly
+        double nu = eccentricAnomalyToTrueAnomaly(E, e);
+
+        // Radius at this point
+        double r = a * (1 - e * Math.cos(E));
+
+        // Direction from start to end
+        Vector3D direction = deets.getEndingPosition().subtract(deets.getStartingPosition()).normalize();
+
+        // Simplified: position along the straight line weighted by true anomaly
+        // (Real trajectory would follow ellipse)
+        double fraction = nu / Math.PI; // 0 to 1 over half orbit
+        Vector3D currentPos = deets.getStartingPosition().add(direction.multiply(r * fraction));
+
+        System.out.println("Piecewise Position: " + currentPos);
+
+        // Velocity magnitude from vis-viva equation
+        double v = Math.sqrt(deets.getOrbitState().centerBody().getGravitationalParameter() * (2.0/r - 1.0/a));
+
+        // Velocity direction (perpendicular to radius, in direction of motion)
+        Vector3D velocityDirection = new Vector3D(-direction.getY(), direction.getX(), 0).normalize();
+        Vector3D currentVel = velocityDirection.multiply(v);
+
+        return new PiecewiseState(currentPos, currentVel, elapsedTime,
+                elapsedTime / deets.getTimeToExecute());
     }
 
     /**

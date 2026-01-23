@@ -18,14 +18,13 @@ public abstract class OrbitingBody implements Orbiter {
     protected String id;
     protected Vector3D position; // meters
     protected Vector3D velocity; // m/s
-
-    private final OrbitalSystem system;
+    protected Orbit initialOrbit;
     
-    public OrbitingBody(String id, OrbitalSystem system, Vector3D position, Vector3D velocity) {
+    public OrbitingBody(String id, Vector3D position, Vector3D velocity, Gravitational parentBody) {
         this.id = id;
         this.position = position;
         this.velocity = velocity;
-        this.system = system;
+        this.initialOrbit = Orbit.calculateOrbit(parentBody,position,velocity);
     }
 
     /**
