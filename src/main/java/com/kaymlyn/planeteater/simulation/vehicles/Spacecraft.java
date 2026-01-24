@@ -176,8 +176,8 @@ public class Spacecraft extends Vehicle {
         Orbit destinationOrbit = destination.calculateCurrentOrbit();
         route.setFinalDestination(destination);
         ManeuverDetails active = null;
-        double fuelSpend = 0;
-        System.out.println("Fuel Spend : " + fuelSpend);
+        double totalDeltaV = 0;
+        System.out.println("Fuel Spend : " + totalDeltaV);
         //takeoff
         if (orbiting != null) {
             //launch if not in orbit
@@ -187,9 +187,9 @@ public class Spacecraft extends Vehicle {
                 // in the future for large stations.
                 if (orbiting instanceof Gravitational) {
                     ManeuverDetails takeoff = RocketryCalculator.calculateTakeoffToStandardOrbit(((Planet) orbiting), this);
-                    route.setLaunchFuel(getFuelRequiredForDeltaV(takeoff.getDeltaV(),0));
-                    fuelSpend += getItinerary().getLaunchFuel();
-                    System.out.println("Fuel Spend - launch : " + fuelSpend);
+                    totalDeltaV += takeoff.getDeltaV();
+                    route.setLaunchFuel(fuelRequired(takeoff.getDeltaV()));
+                    System.out.println("Fuel Spend - launch : " + totalDeltaV);
                     route.addFlightPlan(takeoff);
                     active = takeoff;
                     //get into orbit around parent gravitational body, unless star. Can't escape the star.
@@ -197,16 +197,16 @@ public class Spacecraft extends Vehicle {
                         ManeuverDetails escape = RocketryCalculator.calculateEscapeOrbit(
                             takeoff.getOrbitState(),
                                 orbiting);
-                        fuelSpend += getFuelRequiredForDeltaV(escape.getDeltaV(),fuelSpend);
-                        System.out.println("Fuel Spend - escape : " + fuelSpend);
+                        totalDeltaV += escape.getDeltaV();
+                        System.out.println("Fuel Spend - escape : " + totalDeltaV);
                         route.addFlightPlan(escape);
                         active = escape;
                     }
 
                 } else { //You're on a satellite harry
                     ManeuverDetails detach = new ManeuverDetails(Orbit.calculateOrbit(orbiting.getParentBody(),this.position, this.orbiting.getVelocity()));
-                    fuelSpend += getFuelRequiredForDeltaV(detach.getDeltaV(),fuelSpend);
-                    System.out.println("Fuel Spend - detach : " + fuelSpend);
+                    totalDeltaV += detach.getDeltaV();
+                    System.out.println("Fuel Spend - detach : " + totalDeltaV);
                     route.addFlightPlan(detach);
                     active = detach;
                 }
@@ -216,8 +216,8 @@ public class Spacecraft extends Vehicle {
                     active = RocketryCalculator.calculateEscapeOrbit(
                             Orbit.calculateOrbit((Gravitational) orbiting, position, velocity),
                             orbiting);
-                    fuelSpend += getFuelRequiredForDeltaV(active.getDeltaV(),fuelSpend);
-                    System.out.println("Fuel Spend - escape : " + fuelSpend);
+                    totalDeltaV += active.getDeltaV();
+                    System.out.println("Fuel Spend - escape : " + totalDeltaV);
                     route.addFlightPlan(active);
                 }
             }
@@ -238,8 +238,8 @@ public class Spacecraft extends Vehicle {
             );
         }
 
-        fuelSpend += getFuelRequiredForDeltaV(coplanarBurn.getDeltaV(),fuelSpend);
-        System.out.println("Fuel Spend - coplanar : " + fuelSpend);
+        totalDeltaV += coplanarBurn.getDeltaV();
+        System.out.println("Fuel Spend - coplanar : " + totalDeltaV);
         route.addFlightPlan(coplanarBurn);
         active = coplanarBurn;
 
@@ -253,8 +253,8 @@ public class Spacecraft extends Vehicle {
         //Hohmann Transfer. should be fine for most orbital transfers at this stage.
         // TODO: add a switch to different transfers in the future fuel and time optimizations can be made depending on what maneuvers are chosen
         ManeuverDetails transfer = RocketryCalculator.calculateHohmannTransferBetweenOrbits(wait.getOrbitState(),destinationOrbit);
-        fuelSpend += getFuelRequiredForDeltaV(transfer.getDeltaV(),fuelSpend);
-        System.out.println("Fuel Spend - Hohmann : " + fuelSpend);
+        totalDeltaV += transfer.getDeltaV();
+        System.out.println("Fuel Spend - Hohmann : " + totalDeltaV);
         route.addFlightPlan(transfer);
         active = transfer;
 
@@ -266,18 +266,18 @@ public class Spacecraft extends Vehicle {
                     (Gravitational) destination,
                     destination,
                     ((Gravitational) destination).getStandardOrbitalAltitude());
-            fuelSpend += getFuelRequiredForDeltaV(capture.getDeltaV(),fuelSpend);
-            System.out.println("Fuel Spend - capture : " + fuelSpend);
+            totalDeltaV += capture.getDeltaV();
+            System.out.println("Fuel Spend - capture : " + totalDeltaV);
             route.addFlightPlan(capture);
             if(land) {
                 //landing
                 ManeuverDetails landing = RocketryCalculator.calculateLandingOnGravitational((Gravitational) destination,this);
                 route.addFlightPlan(landing);
                 active = landing;
-                double landingFuel = getFuelRequiredForDeltaV(active.getDeltaV(),fuelSpend);
-                fuelSpend += landingFuel;
-                System.out.println("Fuel Spend - land : " + fuelSpend);
-                route.setLandingFuel(landingFuel);
+                double landingFuel = active.getDeltaV();
+                totalDeltaV += landingFuel;
+                System.out.println("Fuel Spend - land : " + totalDeltaV);
+                route.setLandingFuel(fuelRequired(landingFuel));
                 route.setFinalSpacecraftState(SpacecraftState.DOCKED);
             } else {
                 //orbiting
@@ -300,14 +300,15 @@ public class Spacecraft extends Vehicle {
                     destinationOrbit.calculateOrbitAfterT0(route.getTotalFlightTime()).velocity()),
                     futureState.orbitalElements(),
                     0.0);
-            fuelSpend += getFuelRequiredForDeltaV(match.getDeltaV(), fuelSpend);
-            System.out.println("Fuel Spend - match : " + fuelSpend);
+            totalDeltaV += match.getDeltaV();
+            System.out.println("Fuel Spend - match : " + totalDeltaV);
             route.addFlightPlan(match);
 
             route.setLandingFuel(0.0);
             route.setFinalSpacecraftState(SpacecraftState.DOCKED);
         }
-        route.setTotalFuelCost(fuelSpend);
+//        route.setTotalFuelCost(totalDeltaV);
+        System.out.println("Total DeltaV Required : " + totalDeltaV + " Total DeltaV Available : " + getAvailableDeltaV());
         return route;
     }
 

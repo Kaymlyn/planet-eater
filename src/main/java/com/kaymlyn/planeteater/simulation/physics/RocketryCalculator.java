@@ -1,12 +1,9 @@
 package com.kaymlyn.planeteater.simulation.physics;
 
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
-import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
-
-import java.util.List;
 
 public class RocketryCalculator {
 
@@ -46,7 +43,7 @@ public class RocketryCalculator {
                 spacecraft.getPosition(),spacecraft.getVelocity(),
                 null,
                 Vector3D.ZERO,
-                currentLocation.getOrbitalVelocity(rOrbit) + currentLocation.getSurfaceEscapeVelocity() - vSurface,
+                Math.abs(currentLocation.getOrbitalVelocity(rOrbit) - currentLocation.getOrbitalVelocity(currentLocation.getRadius())),
                 orbit,
                 //reentry speed ~333.3 m/s (Transonic speed) scale factor 3600/1200 = 3
                 currentLocation.getStandardOrbitalAltitude() * 3
@@ -140,6 +137,42 @@ public class RocketryCalculator {
     }
 
     /**
+     * Total deltaV to phase orbit
+     * @param currentOrbit
+     * @param targetTrueAnomaly
+     * @return
+     */
+    public static ManeuverDetails phaseOrbit(Orbit currentOrbit, double targetTrueAnomaly) {
+        OrbitalState state = currentOrbit.calculateOrbitalState();
+        Gravitational centerBody = currentOrbit.centerBody();
+        double time = timeToAnomaly(currentOrbit,targetTrueAnomaly);
+        double r = centerBody.getPosition().distanceTo(state.position());
+        double phasedApoapsis = getPhasedApoapsis(currentOrbit, targetTrueAnomaly);
+        double phasedAngularMomentum = Math.sqrt(2*currentOrbit.centerBody().getGravitationalParameter()) *
+                Math.sqrt((phasedApoapsis * currentOrbit.periapsis())/(phasedApoapsis + currentOrbit.periapsis()));
+        OrbitalState futureState = currentOrbit.calculateOrbitAfterT0(time);
+        return new ManeuverDetails(
+                state.position(),
+                state.velocity(),
+                futureState.position(),
+                futureState.velocity(),
+                2*(phasedAngularMomentum/r) - (state.angularMomentum()/r),futureState.orbitalElements(),
+                time
+                );
+    }
+
+    private static double timeToAnomaly(Orbit currentOrbit, double targetTrueAnomaly) {
+        return currentOrbit.orbitalPeriod()/(2 * Math.PI) * (currentOrbit.eccentricAnomaly(targetTrueAnomaly)
+                - (currentOrbit.eccentricity()*Math.sin(currentOrbit.eccentricAnomaly(targetTrueAnomaly))));
+    }
+
+    private static double getPhasedApoapsis(Orbit currentOrbit, double time) {
+        double phasedPeriod = currentOrbit.orbitalPeriod() - time;
+        double phasedSemiMajorAxis = Math.pow(Math.sqrt(currentOrbit.centerBody().getGravitationalParameter() * phasedPeriod)/(2*Math.PI), 2.0/3.0);
+        return 2 * phasedSemiMajorAxis - currentOrbit.periapsis();
+    }
+
+    /**
      * Hohmann Transfer between orbits.
      * NOTE: Only accurate for COPLANAR, CIRCULAR orbits. Circular Orbits should not be a problem as all spaceship
      * orbits should be circular by default unless in a transfer orbit.
@@ -181,18 +214,6 @@ public class RocketryCalculator {
                 endingState.orbitalElements(),
                 transferTime
         );
-    }
-
-    public List<PiecewiseState> generateTelemetry(ManeuverDetails details) {
-        double fociSeparation = details.getStartingPosition().distanceTo(details.getEndingPosition())/2;
-        double majorAxis = Vector3D.ZERO.distanceTo(details.getEndingPosition());
-        double eccentricity = fociSeparation/majorAxis;
-        double totalTime = details.getTimeToExecute();
-        double halfOrbitalPeriod = totalTime/2;
-
-
-        return null;
-        // t/
     }
 
     //Hohmann Transfer plotting:
@@ -395,4 +416,94 @@ public class RocketryCalculator {
     }
 
 
+    /**
+     * Solve Kepler's equation using Newton-Raphson iteration
+     * M = E - e*sin(E)
+     */
+    static double solveKeplersEquation(double M, double e) {
+        double E = M;// Initial guess
+        double tolerance = 1e-8;
+        int maxIterations = 100;
+
+        for (int i = 0; i < maxIterations; i++) {
+            double f = E - e * Math.sin(E) - M;
+            double fPrime = 1 - e * Math.cos(E);
+            double deltaE = f / fPrime;
+            E -= deltaE;
+
+            if (Math.abs(deltaE) < tolerance) {
+                break;
+            }
+        }
+
+        return E;
+    }
+
+    /**
+     * Convert eccentric anomaly to true anomaly
+     */
+    static double eccentricAnomalyToTrueAnomaly(double E, double e) {
+        double cosNu = (Math.cos(E) - e) / (1 - e * Math.cos(E));
+        double sinNu = Math.sqrt(1 - e*e) * Math.sin(E) / (1 - e * Math.cos(E));
+        return Math.atan2(sinNu, cosNu);
+    }
+
+    /**
+     * PIECEWISE TRAJECTORY: Calculate spacecraft position at any point during transfer
+     * Uses a simple two-burn Hohmann-like transfer model
+     *
+     * @param elapsedTime Time since trajectory start (seconds)
+     * @return Position and velocity at the given time
+     */
+    public static PiecewiseState calculateTrajectoryState(ManeuverDetails deets,
+                                                          double elapsedTime) {
+        System.out.println("Elasped Time : " + elapsedTime);
+        // Clamp time to trajectory duration
+        if (elapsedTime < 0) elapsedTime = 0;
+        if (elapsedTime > deets.getTimeToExecute()) elapsedTime = deets.getTimeToExecute();
+
+        // Simplified model: instant initial burn, coast, instant final burn
+        // More realistic would be finite burn times
+        // Note on Claude's documentation: Burn times are generally measured in seconds and the expectation is the
+        // simulation is running on a minimum of one hour time steps so burn times are negligible.
+
+        // Calculate transfer orbit parameters
+        double r1 = deets.getStartingPosition().magnitude();
+        double r2 = deets.getEndingPosition().magnitude();
+        double a = (r1 + r2) / 2.0; // Semi-major axis of transfer orbit
+
+        // Position along transfer ellipse
+        double n = Math.sqrt(deets.getOrbitState().meanAngularVelocity()); // Mean motion
+        double M = n * elapsedTime; // Mean anomaly
+
+        // Solve for eccentric anomaly
+        double e = Math.abs(r2 - r1) / (r1 + r2); // Eccentricity of transfer
+        double E = solveKeplersEquation(M, e);
+
+        // True anomaly
+        double nu = eccentricAnomalyToTrueAnomaly(E, e);
+
+        // Radius at this point
+        double r = a * (1 - e * Math.cos(E));
+
+        // Direction from start to end
+        Vector3D direction = deets.getEndingPosition().subtract(deets.getStartingPosition()).normalize();
+
+        // Simplified: position along the straight line weighted by true anomaly
+        // (Real trajectory would follow ellipse)
+        double fraction = nu / Math.PI; // 0 to 1 over half orbit
+        Vector3D currentPos = deets.getStartingPosition().add(direction.multiply(r * fraction));
+
+        System.out.println("Piecewise Position: " + currentPos);
+
+        // Velocity magnitude from vis-viva equation
+        double v = Math.sqrt(deets.getOrbitState().centerBody().getGravitationalParameter() * (2.0/r - 1.0/a));
+
+        // Velocity direction (perpendicular to radius, in direction of motion)
+        Vector3D velocityDirection = new Vector3D(-direction.getY(), direction.getX(), 0).normalize();
+        Vector3D currentVel = velocityDirection.multiply(v);
+
+        return new PiecewiseState(currentPos, currentVel, elapsedTime,
+                elapsedTime / deets.getTimeToExecute());
+    }
 }

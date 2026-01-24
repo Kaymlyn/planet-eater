@@ -45,7 +45,7 @@ public class Itinerary {
             int j = 0;
             for (ManeuverDetails maneuver : maneuvers) {
                 for (int i = 0; i < ((maneuver.getTimeToExecute()) / timeStep); i++) {
-                    telemetry.add(TravelCalculator.calculateTrajectoryState(
+                    telemetry.add(RocketryCalculator.calculateTrajectoryState(
                             maneuver,
                             j * timeStep
                     ));

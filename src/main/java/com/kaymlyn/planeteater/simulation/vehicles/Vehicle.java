@@ -159,17 +159,30 @@ public abstract class Vehicle {
         return exhaustVelocity * Math.log(initialMass / finalMass);
     }
 
-    public abstract Gravitational getLocation();
-    /**
-     * Calculate fuel required for a given delta-v
-     * m_fuel = m_dry * (e^(Δv/v_e) - 1)
-     */
-    public double getFuelRequiredForDeltaV(double deltaV, double spentFuelMass) {
-        double payloadMass = dryMass + cargo.getTotalMass() +
-            crew.stream().mapToDouble(Automaton::getMass).sum() + fuelMass - spentFuelMass;
-        System.out.println("Payload Mass : " + payloadMass);
-        return payloadMass * (1 - Math.exp(- (deltaV /
-                (exhaustVelocity * getLocation().getGravitationalForce(getLocation().getPosition().distanceTo(position))))));
+    public double fuelRequired(double deltaVSpent){
+//        if(getAvailableDeltaV() < deltaVSpent) {
+//            return Double.POSITIVE_INFINITY;
+//        }
+
+        return getTotalMass() - getTotalMass()/Math.exp(deltaVSpent/exhaustVelocity);
+
     }
+
+    public abstract Gravitational getLocation();
+//    /**
+//     * Calculate fuel required for a given delta-v
+//     * m_fuel = m_dry * (e^(Δv/v_e) - 1)
+//     */
+//    public double getFuelRequiredForDeltaV(double deltaV, double spentFuelMass) {
+//        double payloadMass = dryMass + cargo.getTotalMass() +
+//            crew.stream().mapToDouble(Automaton::getMass).sum() + fuelMass;
+//        System.out.println("Payload Mass : " + payloadMass);
+//
+//        //Should be: exhaustVelocity*ln(mass beginning / mass after)
+//        return Math.exp(deltaV/exhaustVelocity)*payloadMass
+//        return exhaustVelocity *
+//        return payloadMass * (1 - Math.exp(- (deltaV /
+//                (exhaustVelocity * getLocation().getGravitationalForce(getLocation().getPosition().distanceTo(position))))));
+//    }
 
 }

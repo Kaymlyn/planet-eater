@@ -217,6 +217,14 @@ public record Orbit(double semiMajorAxis,
         }
     }
 
+    public double eccentricAnomaly() {
+        return trueAnomalyToEccentricAnomaly(trueAnomaly, eccentricity);
+    }
+
+    public double eccentricAnomaly(double newTrueAnomaly) {
+        return trueAnomalyToEccentricAnomaly(newTrueAnomaly, eccentricity);
+    }
+
     /**
      * Convert true anomaly to eccentric anomaly
      */

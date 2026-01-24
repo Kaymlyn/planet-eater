@@ -3,10 +3,8 @@ package com.kaymlyn.planeteater.simulation.operations;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.physics.Trajectory;
-import com.kaymlyn.planeteater.simulation.physics.TravelCalculator;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
-import com.kaymlyn.planeteater.simulation.vehicles.CentralMind;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import lombok.Getter;
 import java.util.ArrayList;
@@ -57,29 +55,29 @@ public abstract class Operation {
     /**
      * Plan the operation - calculate trajectories and check feasibility
      */
-    public boolean planOperation(CentralMind platform, Spacecraft spacecraft, OrbitalSystem system) {
-        if (status != OperationStatus.PLANNING) {
-            return false;
-        }
-        
-        // Calculate outbound trajectory
-        outboundTrajectory = TravelCalculator.calculateRendezvousFromSpace(
-            platform.getPosition(),
-                platform.getVelocity(),
-                target,
-                spacecraft,
-                system
-        );
-
-        // Round Trips aren't needed for operations as they will maintain permanent (semi permanent) activity
-        double totalFuelNeeded = outboundTrajectory.fuelRequired;
-        if (spacecraft.getFuelMass() < totalFuelNeeded) {
-            return false;
-        }
-        
-        // Check crew capacity
-        return crew.size() <= spacecraft.getMaxCrewCapacity();
-    }
+//    public boolean planOperation(CentralMind platform, Spacecraft spacecraft, OrbitalSystem system) {
+//        if (status != OperationStatus.PLANNING) {
+//            return false;
+//        }
+//
+//        // Calculate outbound trajectory
+//        outboundTrajectory = TravelCalculator.calculateRendezvousFromSpace(
+//            platform.getPosition(),
+//                platform.getVelocity(),
+//                target,
+//                spacecraft,
+//                system
+//        );
+//
+//        // Round Trips aren't needed for operations as they will maintain permanent (semi permanent) activity
+//        double totalFuelNeeded = outboundTrajectory.fuelRequired;
+//        if (spacecraft.getFuelMass() < totalFuelNeeded) {
+//            return false;
+//        }
+//
+//        // Check crew capacity
+//        return crew.size() <= spacecraft.getMaxCrewCapacity();
+//    }
 
     public void deploy() {
         status = OperationStatus.DEPLOYING;
