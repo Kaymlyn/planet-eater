@@ -1,6 +1,6 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
+import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
@@ -8,6 +8,7 @@ import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
@@ -140,6 +141,20 @@ public class OrbitalSystem {
             body.setVelocity(newVel);
         }
 
+        for (Orbiter orbiter : orbiters.values()) {
+            if(orbiter instanceof Dockable) {
+                Collection<Spacecraft> hanger = ((Dockable) orbiter).getHanger().values();
+                for(Spacecraft spacecraft : hanger) {
+                    if(spacecraft.getItinerary() != null && spacecraft.getState() != Spacecraft.SpacecraftState.TRAVELING) {
+                        System.out.println("Launching " + spacecraft.getId());
+                        if(spacecraft.launch()) {
+                            System.out.println("Launch Successful");
+                        }
+                    }
+                }
+            }
+        }
+
         for(Spacecraft spacecraft : spacecraftInTransit.values()) {
             spacecraft.simulateTravel();
         }
@@ -164,8 +179,8 @@ public class OrbitalSystem {
      * @param radius Distance from star in meters
      * @param angle Angle in radians (0 = +X axis)
      */
-    public void placeInCircularOrbit(Orbiter body, double radius, double angle) {
-        placeInEllipticalOrbit(
+    public Orbit placeInCircularOrbit(Orbiter body, double radius, double angle) {
+        return placeInEllipticalOrbit(
                 body,
                 getCentralStar(),
                 radius,
@@ -185,8 +200,8 @@ public class OrbitalSystem {
      * @param angle Angle in radians (0 = +X axis)
      * @param inclination Inclination in radians (0 = +Z axis)
      */
-    public void placeInCircularOrbit(Orbiter body, double radius, double angle, double inclination) {
-        placeInEllipticalOrbit(
+    public Orbit placeInCircularOrbit(Orbiter body, double radius, double angle, double inclination) {
+        return placeInEllipticalOrbit(
                 body,
                 getCentralStar(),
                 radius,
@@ -198,11 +213,12 @@ public class OrbitalSystem {
         );
     }
 
-    public void placeAllInCircularOrbits(List<? extends OrbitingBody> bodies, double minimumAURadius, double maximumAURadius) {
+    public List<Orbit> placeAllInCircularOrbits(List<? extends OrbitingBody> bodies, double minimumAURadius, double maximumAURadius) {
         Random random = new Random(0L);
         bodies.forEach(body -> placeInCircularOrbit(body,
                 random.nextDouble(minimumAURadius,maximumAURadius)*PhysicsConstants.AU,
                 random.nextDouble()*2*Math.PI));
+        return bodies.stream().map(Orbiter::calculateCurrentOrbit).toList();
     }
 
     /**
@@ -231,7 +247,7 @@ public class OrbitalSystem {
                 random.nextDouble()*2*Math.PI));
     }
 
-    public void placeInEllipticalOrbit(Orbiter body,
+    public Orbit placeInEllipticalOrbit(Orbiter body,
                                        CelestialBody parentBody,
                                        Orbit initializer) {
         placeInEllipticalOrbit(
@@ -244,6 +260,7 @@ public class OrbitalSystem {
                 initializer.periapsis(),
                 initializer.trueAnomaly()
         );
+        return body.calculateCurrentOrbit();
     }
 
     /**
@@ -259,7 +276,7 @@ public class OrbitalSystem {
      * @param trueAnomaly True anomaly (ν) - position in orbit in radians
      */
     @SuppressWarnings("DuplicateExpressions")
-    public void placeInEllipticalOrbit(Orbiter body,
+    public Orbit placeInEllipticalOrbit(Orbiter body,
                                        CelestialBody parentBody,
                                        double semiMajorAxis,
                                        double eccentricity,
@@ -268,12 +285,17 @@ public class OrbitalSystem {
                                        double argumentOfPeriapsis,
                                        double trueAnomaly) {
 
+
         // Validate inputs
         if (eccentricity < 0.0 || eccentricity >= 1.0) {
             throw new IllegalArgumentException("Eccentricity must be in range [0, 1)");
         }
         if (semiMajorAxis <= 0.0) {
             throw new IllegalArgumentException("Semi-major axis must be positive");
+        }
+
+        if(eccentricity == 0) {
+            eccentricity = 0.00001;
         }
 
         // Calculate distance from focus at true anomaly
@@ -332,6 +354,7 @@ public class OrbitalSystem {
         } else {
             addOrbiter(body);
         }
+        return body.calculateCurrentOrbit();
     }
 
     /**

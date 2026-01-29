@@ -1,6 +1,6 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
+import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 
 public interface Orbiter {

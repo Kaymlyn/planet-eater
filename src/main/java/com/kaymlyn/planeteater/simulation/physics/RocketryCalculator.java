@@ -1,7 +1,6 @@
 package com.kaymlyn.planeteater.simulation.physics;
 
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 
@@ -16,6 +15,7 @@ public class RocketryCalculator {
         Vector3D orbitalPosition = currentLocation.getStandardCircularOrbitPosition( Vector3D.randomUnitVector());
         Orbit orbit = Orbit.calculateOrbit(currentLocation,orbitalPosition,orbitalVelocity);
         return new ManeuverDetails(
+                "Take off to Standard Orbit " + spacecraft.getId() + " ^ " + currentLocation,
                 spacecraft.getPosition(),spacecraft.getVelocity(),
                 orbitalPosition,
                 orbitalVelocity,
@@ -40,8 +40,9 @@ public class RocketryCalculator {
                 currentLocation.getStandardCircularOrbitVector());
 
         return new ManeuverDetails(
+                "Landing " + spacecraft.getId() + " v " + currentLocation,
                 spacecraft.getPosition(),spacecraft.getVelocity(),
-                null,
+                currentLocation.getPosition(),
                 Vector3D.ZERO,
                 Math.abs(currentLocation.getOrbitalVelocity(rOrbit) - currentLocation.getOrbitalVelocity(currentLocation.getRadius())),
                 orbit,
@@ -63,29 +64,6 @@ public class RocketryCalculator {
                 meanAngularVelocity,
                 originState.velocity().magnitude() / originState.position().magnitude());
     }
-
-//
-//    /**
-//     *
-//     * @param target
-//     * @param targetOrbit
-//     * @return
-//     */
-//    public static double calculateNextLaunchWindowWaitTime(Orbiter origin,
-//                                                           Orbiter target,
-//                                                           Orbit targetOrbit) {
-//
-//        double currentPhaseAngle = origin.getPosition().angleBetween(target.getPosition());
-//
-//        double meanAngularVelocity = targetOrbit.meanAngularVelocity();
-//
-//        double meanTransferTime = calculateMeanTransferTime(origin,targetOrbit);
-//        if(Double.isNaN(meanTransferTime)) meanTransferTime = 0.0;
-//        return getMinimalWaitTime(
-//                normalizeAngle(Math.PI - meanAngularVelocity * meanTransferTime - currentPhaseAngle),
-//                meanAngularVelocity,
-//                origin.getVelocity().magnitude() / origin.getPosition().magnitude());
-//    }
 
 
     private static double calculateMeanTransferTime(Orbit origin, Orbit targetOrbit) {
@@ -152,6 +130,7 @@ public class RocketryCalculator {
                 Math.sqrt((phasedApoapsis * currentOrbit.periapsis())/(phasedApoapsis + currentOrbit.periapsis()));
         OrbitalState futureState = currentOrbit.calculateOrbitAfterT0(time);
         return new ManeuverDetails(
+                "Phase Orbit by " + time,
                 state.position(),
                 state.velocity(),
                 futureState.position(),
@@ -162,8 +141,8 @@ public class RocketryCalculator {
     }
 
     private static double timeToAnomaly(Orbit currentOrbit, double targetTrueAnomaly) {
-        return currentOrbit.orbitalPeriod()/(2 * Math.PI) * (currentOrbit.eccentricAnomaly(targetTrueAnomaly)
-                - (currentOrbit.eccentricity()*Math.sin(currentOrbit.eccentricAnomaly(targetTrueAnomaly))));
+        return currentOrbit.orbitalPeriod()/(2 * Math.PI) * (currentOrbit.eccentricAnomalyOnOrbit(targetTrueAnomaly)
+                - (currentOrbit.eccentricity()*Math.sin(currentOrbit.eccentricAnomalyOnOrbit(targetTrueAnomaly))));
     }
 
     private static double getPhasedApoapsis(Orbit currentOrbit, double time) {
@@ -204,8 +183,8 @@ public class RocketryCalculator {
                 (parentMass));
         OrbitalState beginningState = origin.calculateOrbitalState();
         OrbitalState endingState = target.calculateOrbitAfterT0(transferTime);
-        System.out.println("delta V : " + totalDeltaV);
         return new ManeuverDetails(
+                "Hohmann Transfer " + origin + " > " + target,
                 beginningState.position(),
                 beginningState.velocity(),
                 endingState.position(),
@@ -249,6 +228,7 @@ public class RocketryCalculator {
         if(origin.semiMajorAxis() > sphereOfInfluenceRadius) { //No action required. Already orbiting parent body.
             OrbitalState state = origin.calculateOrbitalState();
             return new ManeuverDetails(
+                    "NoOp Orbiting " + orbited.getId(),
                     state.position(),state.velocity(),
                     state.position(),state.velocity(),
                     0.0,
@@ -263,9 +243,10 @@ public class RocketryCalculator {
                     origin.trueAnomaly(),
                     origin.centerBody()));
             //Recalculate orbit in terms of new Parent Body.
-            Orbit recalculateOrbit = Orbit.calculateOrbit(origin.centerBody(),details.getEndingPosition(),details.getEndingVelocity());
+            Orbit recalculateOrbit = Orbit.calculateOrbit(origin.centerBody(),details.getEndingPosition().add(orbited.getPosition()),details.getEndingVelocity().add(orbited.getVelocity()));
             //Update ManeuverDetails with new Orbital Details
             return new ManeuverDetails(
+                    "Hohmann Transfer To Orbiter " + origin + " > " + orbited.getId(),
                     details.getStartingPosition(),details.getStartingVelocity(),
                     details.getEndingPosition(),details.getEndingVelocity(),
                     details.getDeltaV(),
@@ -284,19 +265,25 @@ public class RocketryCalculator {
     public static ManeuverDetails adjustToCoplanar(Orbit origin,
                                                    Orbit targetInclination) {
         OrbitalState originState = origin.calculateOrbitalState();
-
-        Vector3D rotatedVelocity = originState.velocity().rotateIn3Space(
-                targetInclination.ascendingNode(),
+        OrbitalState apoapsisState = origin.calculateOrbitAfterT0(origin.calculateTimeToPoint(origin.apoapsisPoint()));
+        System.out.println("Coplanar start state " + originState.position());
+        Orbit newOrbit = new Orbit(origin.semiMajorAxis(),
+                origin.eccentricity(),
                 targetInclination.inclination(),
-                targetInclination.periapsis());
+                origin.ascendingNode(),origin.periapsis(),origin.trueAnomaly(),origin.centerBody());
+        System.out.println("Orbit after Burn: " + newOrbit);
+        System.out.println(originState.velocity() + " " + newOrbit.calculateOrbitalState().velocity());
+
+        //Figure out how to
 
         return new ManeuverDetails(
+                "Coplanar Burn " + origin.inclination() + " > " + targetInclination.inclination(),
                 originState.position(),
                 originState.velocity(),
-                originState.position(),
-                rotatedVelocity,
+                apoapsisState.position(),
+                apoapsisState.velocity(),
                 Math.abs(deltaVForInclinationChange(origin, targetInclination)),
-                Orbit.calculateOrbit(origin.centerBody(), originState.position(),rotatedVelocity),
+                newOrbit,
                 0
         );
     }
@@ -347,6 +334,7 @@ public class RocketryCalculator {
                 // only provide for the capture but also fine control to put it in a circular orbit matching the angle
                 // of the ecliptic. Assuming a flat 4 hours for pulling off the maneuver due to slop.
                 return new ManeuverDetails(
+                        "Orbital Insertion " + destinationOrbiter.getId(),
                         state.position(),
                         state.velocity(),
                         finalOrbit.position(),
@@ -457,53 +445,18 @@ public class RocketryCalculator {
      */
     public static PiecewiseState calculateTrajectoryState(ManeuverDetails deets,
                                                           double elapsedTime) {
-        System.out.println("Elasped Time : " + elapsedTime);
+        double cardinalTime = elapsedTime < 0 ? 0 : Math.min(elapsedTime, deets.getTimeToExecute());
         // Clamp time to trajectory duration
-        if (elapsedTime < 0) elapsedTime = 0;
-        if (elapsedTime > deets.getTimeToExecute()) elapsedTime = deets.getTimeToExecute();
+
 
         // Simplified model: instant initial burn, coast, instant final burn
         // More realistic would be finite burn times
         // Note on Claude's documentation: Burn times are generally measured in seconds and the expectation is the
         // simulation is running on a minimum of one hour time steps so burn times are negligible.
 
-        // Calculate transfer orbit parameters
-        double r1 = deets.getStartingPosition().magnitude();
-        double r2 = deets.getEndingPosition().magnitude();
-        double a = (r1 + r2) / 2.0; // Semi-major axis of transfer orbit
+        OrbitalState state = deets.getOrbitState().calculateOrbitAfterT0(cardinalTime);
 
-        // Position along transfer ellipse
-        double n = Math.sqrt(deets.getOrbitState().meanAngularVelocity()); // Mean motion
-        double M = n * elapsedTime; // Mean anomaly
-
-        // Solve for eccentric anomaly
-        double e = Math.abs(r2 - r1) / (r1 + r2); // Eccentricity of transfer
-        double E = solveKeplersEquation(M, e);
-
-        // True anomaly
-        double nu = eccentricAnomalyToTrueAnomaly(E, e);
-
-        // Radius at this point
-        double r = a * (1 - e * Math.cos(E));
-
-        // Direction from start to end
-        Vector3D direction = deets.getEndingPosition().subtract(deets.getStartingPosition()).normalize();
-
-        // Simplified: position along the straight line weighted by true anomaly
-        // (Real trajectory would follow ellipse)
-        double fraction = nu / Math.PI; // 0 to 1 over half orbit
-        Vector3D currentPos = deets.getStartingPosition().add(direction.multiply(r * fraction));
-
-        System.out.println("Piecewise Position: " + currentPos);
-
-        // Velocity magnitude from vis-viva equation
-        double v = Math.sqrt(deets.getOrbitState().centerBody().getGravitationalParameter() * (2.0/r - 1.0/a));
-
-        // Velocity direction (perpendicular to radius, in direction of motion)
-        Vector3D velocityDirection = new Vector3D(-direction.getY(), direction.getX(), 0).normalize();
-        Vector3D currentVel = velocityDirection.multiply(v);
-
-        return new PiecewiseState(currentPos, currentVel, elapsedTime,
+        return new PiecewiseState(deets.getId() + " at " + elapsedTime, state.position(), state.velocity(), elapsedTime,
                 elapsedTime / deets.getTimeToExecute());
     }
 }

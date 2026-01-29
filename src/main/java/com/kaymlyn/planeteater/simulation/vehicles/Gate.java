@@ -3,7 +3,7 @@ package com.kaymlyn.planeteater.simulation.vehicles;
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
+import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import lombok.Data;
 

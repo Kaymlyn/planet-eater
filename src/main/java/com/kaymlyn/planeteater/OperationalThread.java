@@ -2,13 +2,14 @@ package com.kaymlyn.planeteater;
 
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
+import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.PlanetPattern;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.entities.Specialization;
 import com.kaymlyn.planeteater.simulation.physics.Itinerary;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.vehicles.CentralMind;
@@ -69,13 +70,17 @@ public class OperationalThread implements Runnable {
                 .addMaterialAsRawMass(Material.TITANIUM_OXIDE, 200);
 
         CentralMind mind =  factory.createCentralMind(PhysicsConstants.AU);
-        spark.placeInEllipticalOrbit(mind,
+        Orbit orbit = spark.placeInEllipticalOrbit(mind,
                 spark.getCentralStar(),
                 new Orbit(PhysicsConstants.AU*1.5, 0, 0.02,
                         Math.PI/3, 2, .2, spark.getCentralStar()));
+        System.out.println("Orbit post placement : " + orbit);
+        System.out.println("Init orbit according to Mind : " + mind.getInitialOrbit());
+        System.out.println("Calc orbit according to Mind : " + mind.calculateCurrentOrbit());
 
         Spacecraft vehicle = VehicleFactory.createCargoShuttle("Shuttle-1",mind);
         vehicle.setOrbiting(mind);
+        mind.dock(vehicle);
         Itinerary route = vehicle.planRoute(planet_1, true);
         System.out.println(route);
         System.out.println(route.getTotalFuelCost());
@@ -97,7 +102,8 @@ public class OperationalThread implements Runnable {
 //        } catch (IOException e) {
 //            throw new RuntimeException(e);
 //        }
-        new RenderingThread(spark, 5200, 40, 5).run();
+        System.out.println("Unit Vector " + Vector3D.randomUnitVector());
+        new RenderingThread(spark, 1000,25 , 7, new Vector3D(0,.700,0)).run();
 
     }
 }

@@ -1,5 +1,6 @@
 package com.kaymlyn.planeteater.simulation.physics;
 
+import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import lombok.Getter;
@@ -31,7 +32,8 @@ public class Itinerary {
     @Setter
     private double totalFuelCost;
 
-    public Itinerary() {
+    public Itinerary(double startTime) {
+        this.startTime = startTime;
         this.telemetry = new ArrayList<>();
         this.maneuvers = new ArrayList<>();
     }
@@ -40,14 +42,14 @@ public class Itinerary {
         maneuvers.add(maneuver);
     }
 
-    public List<PiecewiseState> generateTelemetry(double timeStep) {
+    public List<PiecewiseState> generateTelemetry(OrbitalSystem system) {
         if (telemetry.isEmpty()) {
             int j = 0;
             for (ManeuverDetails maneuver : maneuvers) {
-                for (int i = 0; i < ((maneuver.getTimeToExecute()) / timeStep); i++) {
+                for (int i = 0; i < ((maneuver.getTimeToExecute()) / system.getTimeStep()); i++) {
                     telemetry.add(RocketryCalculator.calculateTrajectoryState(
                             maneuver,
-                            j * timeStep
+                            system.getCurrentTime() + getStartTime() + j * system.getTimeStep()
                     ));
                     j++;
                 }

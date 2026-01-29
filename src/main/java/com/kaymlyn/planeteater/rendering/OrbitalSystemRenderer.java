@@ -4,6 +4,7 @@ import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import org.jcodec.api.SequenceEncoder;
 import org.jcodec.common.io.NIOUtils;
@@ -46,8 +47,8 @@ public class OrbitalSystemRenderer {
         }
     }
 
-    public void render(boolean saveImage, double maxAUVisible) throws IOException {
-        BufferedImage frame = render(system, scalar, maxAUVisible);
+    public void render(boolean saveImage, double maxAUVisible, Vector3D rotate) throws IOException {
+        BufferedImage frame = render(system, scalar, maxAUVisible, rotate);
         renderInfo(frame.createGraphics(),"Day " + (int)(system.getCurrentTime()/PhysicsConstants.SECONDS_PER_DAY)
                 + " Hour " + (int)((system.getCurrentTime()%PhysicsConstants.SECONDS_PER_DAY)/3600),0,16);
 
@@ -63,6 +64,10 @@ public class OrbitalSystemRenderer {
     }
 
     private BufferedImage render(OrbitalSystem system, int scalar, double maxAUVisible) {
+        return render(system,scalar,maxAUVisible,Vector3D.ZERO);
+    }
+
+    private BufferedImage render(OrbitalSystem system, int scalar, double maxAUVisible, Vector3D rotate) {
         int height = 9;
         int width = 16;
 
@@ -110,8 +115,11 @@ public class OrbitalSystemRenderer {
             } else {
                 size = 2;
             }
-            double xRaw = orbiter.getPosition().getX()/canvasScale;
-            double yRaw = orbiter.getPosition().getY()/canvasScale;
+
+            Vector3D rotated = orbiter.getPosition().rotateInto3spaceFrom2space(rotate);
+
+            double xRaw = rotated.getX()/canvasScale;
+            double yRaw = rotated.getY()/canvasScale;
             rectangle.setRect(xRaw * adjustedAU + ((double) (width * scalar) /2),yRaw * adjustedAU + ((double)(height*scalar)/2),size, size);
             canvas.fill(rectangle);
             if(!orbiter.getId().contains("Belt")) {
@@ -119,14 +127,17 @@ public class OrbitalSystemRenderer {
                         orbiter.getId(),
                         (int) (xRaw * adjustedAU + ((double) (width * scalar) / 2) + 3),
                         (int) (yRaw * adjustedAU + ((double) (height * scalar) / 2)));
+
+                System.out.println(orbiter.getId() + " coords: " + (xRaw * adjustedAU + ((double) (width * scalar) /2)) + " : " + (yRaw * adjustedAU + ((double)(height*scalar)/2)));
             }
 
         }
         for(Spacecraft ship : system.getSpacecraftInTransit().values()) {
             if(ship.getTelemetry() != null && ship.getCurrentTravelCycle() < ship.getTelemetry().size()) {
-                System.out.println("origin :" + ship.getSystem().getOrbiter("KHI Central Mind").getPosition());
-                System.out.println("positi :" + ship.getTelemetry().get(ship.getCurrentTravelCycle()).getPosition());
-                System.out.println("destin :" + ship.getSystem().getOrbiter("Theseus").getPosition());
+//                System.out.println("origin :" + ship.getSystem().getOrbiter("KHI Central Mind").getPosition());
+//                System.out.println("positi :" + ship.getTelemetry().get(ship.getCurrentTravelCycle()).position());
+//                System.out.println("destin :" + ship.getSystem().getOrbiter("Theseus").getPosition());
+//                System.out.println("Maneuv :" + ship.getTelemetry().get(ship.getCurrentTravelCycle()).id());
             }
             if(ship.getState() != Spacecraft.SpacecraftState.DOCKED) {
                 canvas.setColor(
@@ -139,14 +150,18 @@ public class OrbitalSystemRenderer {
                 double xRaw;
                 double yRaw;
                 if(ship.getTelemetry() != null && ship.getCurrentTravelCycle() < ship.getTelemetry().size()) {
-                    xRaw = ship.getTelemetry().get(ship.getCurrentTravelCycle()).getPosition().getX();
-                    yRaw = ship.getTelemetry().get(ship.getCurrentTravelCycle()).getPosition().getY();
+                    Vector3D rotated = ship.getTelemetry().get(ship.getCurrentTravelCycle()).position().rotateInto3spaceFrom2space(rotate);
+                    xRaw = rotated.getX()/canvasScale;
+                    yRaw = rotated.getY()/canvasScale;
                 } else if (ship.getOrbiting() != null){
-                    xRaw = ship.getOrbiting().getPosition().getX()/canvasScale;
-                    yRaw = ship.getOrbiting().getPosition().getY()/canvasScale;
+                    Vector3D rotated = ship.getOrbiting().getPosition().rotateInto3spaceFrom2space(rotate);
+                    xRaw = rotated.getX()/canvasScale;
+                    yRaw = rotated.getY()/canvasScale;
                 } else {
-                    xRaw = ship.getPosition().getX()/canvasScale;
-                    yRaw = ship.getPosition().getY()/canvasScale;
+                    Vector3D rotated = ship.getPosition().rotateInto3spaceFrom2space(rotate);
+
+                    xRaw = rotated.getX()/canvasScale;
+                    yRaw = rotated.getY()/canvasScale;
                 }
                 Rectangle rectangle = new Rectangle();
                 int size = 1;
@@ -156,8 +171,8 @@ public class OrbitalSystemRenderer {
                 canvas.fill(rectangle);
                 renderInfo(canvas,
                         ship.getId() + " " + ship.getState(),
-                        (int) (xRaw * adjustedAU + ((double) (width * scalar) / 2) -10),
-                        (int) (yRaw * adjustedAU + ((double) (height * scalar) / 2)));
+                        (int) (xRaw * adjustedAU + ((double) (width * scalar) / 2)),
+                        (int) (yRaw * adjustedAU + ((double) (height * scalar) / 2) + 10));
             }
         }
 

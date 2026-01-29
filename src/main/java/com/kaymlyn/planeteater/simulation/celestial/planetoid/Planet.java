@@ -6,8 +6,7 @@ import com.kaymlyn.planeteater.simulation.celestial.Dockable;
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
-import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
+import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.operations.Operation;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
@@ -18,6 +17,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Represents a planet with differentiated layers.
@@ -202,13 +202,14 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
         return this.getPosition().distanceTo(parentBody.getPosition()) * Math.pow(getMass() / (3.0 * parentBody.getMass()), 1.0/3.0);
     }
 
+
     @Override
-    public void land(Spacecraft spacecraft) {
-        getSystem().unregister(spacecraft);
+    public Map<String, Spacecraft> getHanger() {
+        return hanger;
     }
 
     @Override
-    public void launch(Spacecraft spacecraft) {
-        getSystem().register(spacecraft);
+    public void dock(Spacecraft spacecraft) {
+        hanger.put(spacecraft.getId(),spacecraft);
     }
 }

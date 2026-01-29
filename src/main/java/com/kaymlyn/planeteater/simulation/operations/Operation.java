@@ -2,7 +2,6 @@ package com.kaymlyn.planeteater.simulation.operations;
 
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
-import com.kaymlyn.planeteater.simulation.physics.Trajectory;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
@@ -38,7 +37,6 @@ public abstract class Operation {
 
     private final double deploymentTime;
     private double startTime;           // When mining started (simulation time)
-    private Trajectory outboundTrajectory;
     
     public Operation(String id, OrbitalSystem system, Planet target,
                      Composition supplies, double deploymentTime) {
@@ -195,16 +193,6 @@ public abstract class Operation {
 //        }
 //        return outboundTrajectory.travelTime + estimateMiningTime() + returnTrajectory.travelTime;
 //    }
-    
-    /**
-     * Calculate total fuel cost
-     */
-    public double getTotalFuelCost() {
-        if (outboundTrajectory == null) {
-            return 0.0;
-        }
-        return outboundTrajectory.fuelRequired;
-    }
     
 //    /**
 //     * Get operation efficiency (mined mass per fuel mass)

@@ -132,25 +132,66 @@ public class Vector3D {
         return Math.acos(this.dot(that)/(this.magnitude() * that.magnitude()));
     }
 
-    public Vector3D rotateIn3Space(double x, double y, double z) {
+    public Vector3D rotateAroundVector(Vector3D axis, double rotationAngle) {
 
-        double cosx = Math.cos(x);
-        double sinx = Math.sin(x);
-        double cosy = Math.cos(y);
-        double siny = Math.sin(y);
-        double cosz = Math.cos(z);
-        double sinz = Math.sin(z);
 
-        x = this.x * (cosx * cosz - sinx * sinz * cosy) -
-                this.y * (cosx * sinz + sinx * cosz * cosy);
-        y = this.x * (sinx * cosz + cosx * sinz * cosy) -
-                this.y * (sinx * sinz - cosx * cosz * cosy);
-        z = this.x * (sinz * siny) + this.y * (cosz * siny);
-        return new Vector3D(x,y,z);
+        Vector3D reduce = this.multiply(Math.cos(rotationAngle));
+        Vector3D orientation = axis.normalize().cross(this).multiply(Math.sin(rotationAngle));
+        Vector3D magnitude = axis.normalize().multiply(axis.dot(this) * (1 - Math.cos(rotationAngle)));
+
+        return reduce.add(orientation).add(magnitude);
+    }
+    
+    public Vector3D rotateInto3spaceFrom2space(double omega, double i, double w) {
+
+        // Rotation matrices to transform to 3D space
+        double cosO = Math.cos(omega);
+        double sinO = Math.sin(omega);
+        double cosi = Math.cos(i);
+        double sini = Math.sin(i);
+        double cosw = Math.cos(w);
+        double sinw = Math.sin(w);
+
+        // Transform from orbital plane to 3D
+        double x =  this.x * (cosO * cosw - sinO * sinw * cosi) -
+                    this.y * (cosO * sinw + sinO * cosw * cosi);
+        double y =  this.x * (sinO * cosw + cosO * sinw * cosi) -
+                    this.y * (sinO * sinw - cosO * cosw * cosi);
+        double z =  this.x * (sinw * sini) +
+                    this.y * (cosw * sini);
+
+        return new Vector3D(x, y, z);
     }
 
-    public Vector3D rotateIn3Space(Vector3D rotation) {
-        return rotateIn3Space(rotation.x,rotation.y,rotation.z);
+    public Vector3D rotateInto3spaceFrom2space(Vector3D rotation) {
+        return rotateInto3spaceFrom2space(rotation.x,rotation.y,rotation.z);
+    }
+
+    public Vector3D rotateInto2spaceFrom3space(double omega, double i, double w) {
+
+        double x = this.x;
+        double y = this.y;
+        double z = this.z;
+
+        double cosO = Math.cos(omega);
+        double sinO = Math.sin(omega);
+        double cosi = Math.cos(i);
+        double sini = Math.sin(i);
+        double cosw = Math.cos(w);
+        double sinw = Math.sin(w);
+
+        // Inverse rotation (transpose of rotation matrix)
+        double x_orbital = x * (cosO * cosw - sinO * sinw * cosi) +
+                y * (sinO * cosw + cosO * sinw * cosi) +
+                z * (sinw * sini);
+        double y_orbital = -x * (cosO * sinw + sinO * cosw * cosi) -
+                y * (sinO * sinw - cosO * cosw * cosi) +
+                z * (cosw * sini);
+        return new Vector3D(x_orbital,y_orbital);
+    }
+
+    public Vector3D rotateInto2spaceFrom3space(Vector3D rotation) {
+        return rotateInto2spaceFrom3space(rotation.x,rotation.y,rotation.z);
     }
     
     @Override

@@ -1,6 +1,6 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
+import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.PlanetPattern;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
@@ -63,7 +63,8 @@ public class CelestialBodyFactory {
 
     public CentralMind createCentralMind(double orbitalRadius) {
         CentralMind centralMind = new CentralMind("KHI Central Mind");
-        system.placeInCircularOrbit(centralMind,orbitalRadius,0);
+        Orbit orbit = system.placeInCircularOrbit(centralMind,orbitalRadius,0);
+        centralMind.setInitialOrbit(orbit);
         return centralMind;
     }
     public Planet createPlanetFromPattern(String id,
@@ -134,7 +135,8 @@ public class CelestialBodyFactory {
                     )
             );
 
-        system.placeInEllipticalOrbit(planet,
+
+        planet.initialOrbit = system.placeInEllipticalOrbit(planet,
                 parentBody,
                 init.semiMajorAxis(),
                 init.eccentricity(),
@@ -142,8 +144,6 @@ public class CelestialBodyFactory {
                 init.ascendingNode(),
                 init.periapsis(),
                 init.trueAnomaly());
-
-
         return planet;
     }
 

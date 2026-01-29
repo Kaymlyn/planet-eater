@@ -1,32 +1,34 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
-import com.kaymlyn.planeteater.simulation.celestial.CelestialBody;
+import com.kaymlyn.planeteater.simulation.celestial.Dockable;
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
+import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
-import com.kaymlyn.planeteater.simulation.resources.Composition;
 import lombok.Data;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
  * Represents the player's orbital platform/base of operations
  */
 @Data
-public class CentralMind extends Vehicle implements Orbiter {
+public class CentralMind extends Vehicle implements Orbiter, Dockable {
 
     private Gravitational parentBody;
     private OrbitalSystem system;
     private Orbit initialOrbit;
+    private Map<String, Spacecraft> hanger;
 
     public CentralMind(String id) {
         super(id, 1e6, 1e4, 1e3, 2, true, 12,0);
         this.crew = new ArrayList<>();
+        this.hanger = new HashMap<>();
     }
 
     @Override
@@ -92,5 +94,18 @@ public class CentralMind extends Vehicle implements Orbiter {
     @Override
     public Gravitational getLocation() {
         return parentBody;
+    }
+
+    @Override
+    public Map<String, Spacecraft> getHanger() {
+        return hanger;
+    }
+
+    @Override
+    public void dock(Spacecraft spacecraft) {
+        hanger.put(spacecraft.getId(),spacecraft);
+        spacecraft.setPosition(this.position);
+        spacecraft.setVelocity(this.velocity);
+        spacecraft.setOrbiting(this);
     }
 }

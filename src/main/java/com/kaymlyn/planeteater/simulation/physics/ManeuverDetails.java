@@ -1,14 +1,16 @@
 package com.kaymlyn.planeteater.simulation.physics;
 
-import com.kaymlyn.planeteater.simulation.celestial.planetconfig.Orbit;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
+
+import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
 @ToString
 public class ManeuverDetails {
+    private final String id;
     private final Vector3D startingPosition;
     private final Vector3D startingVelocity;
     private final Vector3D endingPosition;
@@ -19,6 +21,7 @@ public class ManeuverDetails {
 
     //Orbital NoOp
     public ManeuverDetails(Orbit orbit) {
+        id = "NoOp-" + UUID.randomUUID();
         OrbitalState state = orbit.calculateOrbitalState();
         startingPosition = state.position();
         endingPosition = state.position();
@@ -31,6 +34,7 @@ public class ManeuverDetails {
 
     //Holding Orbit
     public ManeuverDetails(Orbit orbit, double waitTime) {
+        id = "Holding-" + UUID.randomUUID();
         OrbitalState state = orbit.calculateOrbitalState();
         OrbitalState wait = orbit.calculateOrbitAfterT0(waitTime);
         startingPosition = state.position();
@@ -40,6 +44,5 @@ public class ManeuverDetails {
         deltaV = 0.0;
         orbitState = wait.orbitalElements();
         timeToExecute = waitTime;
-
     }
 }
