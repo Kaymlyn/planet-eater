@@ -93,19 +93,19 @@ public class Composition {
      *             materials (within some margin of error from float precision)
      * @param targetingEfficiency A coefficient that details how good the extraction process is. This is a raw value
      *                            that is used to shift the ratio of the mined resources towards the target materials. A
-     *                            targeting. Efficiency of 1.0, means that the target materials will appear in equal
+     *                            Targeting Efficiency of 1.0, means that the target materials will appear in equal
      *                            measure to its ratio in the composition list e.g. 1 : 10 -> 1 : 10 (9.09%). Efficiency
      *                            of 2.0 would mean that the ratio would be doubled e.g. 1 : 10 -> 2 : 10 (16.6%).
      *                            Efficiency of .5 would mean that the ratio would be halved e.g. 1 : 10 -> 1 : 20
      *                            (4.76%). Efficiency of 5.0 would result in 1 : 10 -> 5 : 10. (33.3%) etc.
      *                            Efficiency is applied equally to all the targets so that an efficiency of 2 for two
-     *                            of 3 equally available resources (ratio 1 : 1 : 1) would end up with a ratio of 2 : 2
-     *                            : 1. In other words 33% for each resource will go to 40% each for the targets and 20%
+     *                            of three equally available resources (ratio 1 : 1 : 1) would end up with a ratio of 2 : 2
+     *                            : 1. In other words, 33% for each resource will go to 40% each for the targets and 20%
      *                            for the last.
      * @param targets a list of materials to target. Materials not on the list will be auto dumped at a rate of 95% of
      *                the total mass extracted. Dumped resources will be removed from the materials returned and be left
      *                in the layer from which they originated from.
-     * @return
+     * @return Composition of the extracted materials
      */
     public Composition extract(double extractionMass, double targetingEfficiency, Material... targets) {
         Composition extracted = new Composition();

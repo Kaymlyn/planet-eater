@@ -208,7 +208,7 @@ public record Orbit(double semiMajorAxis,
     }
 
     public double semiMinorAxis() {
-        return semiMajorAxis * majorMinorScaleFactor();
+        return semiMajorAxis * conicSlice();
     }
 
     private double distanceToBarycenter(double E) {
@@ -219,7 +219,7 @@ public record Orbit(double semiMajorAxis,
         return semiMinorAxis() / distanceToOrbitParallelSemiMajorAxis(trueAnomaly);
     }
 
-    private double distanceToOrbitParallelSemiMajorAxis(double trueAnomaly) {
+    public double distanceToOrbitParallelSemiMajorAxis(double trueAnomaly) {
         return 1 + eccentricity * Math.cos(trueAnomaly);
     }
     
@@ -474,7 +474,7 @@ public record Orbit(double semiMajorAxis,
      */
     private double convertEccentricAnomalyToTrueAnomaly(double eccentricAnomaly) {
         return Math.atan2(
-                majorMinorScaleFactor() * Math.sin(eccentricAnomaly) / distanceToOrbitParallelSemiMinorAxis(eccentricAnomaly),
+                conicSlice() * Math.sin(eccentricAnomaly) / distanceToOrbitParallelSemiMinorAxis(eccentricAnomaly),
                 (Math.cos(eccentricAnomaly) - eccentricity) / distanceToOrbitParallelSemiMinorAxis(eccentricAnomaly)
         );
     }
@@ -483,7 +483,7 @@ public record Orbit(double semiMajorAxis,
      * Convert true anomaly to eccentric anomaly
      */
     private double convertTrueAnomalyToEccentricAnomaly(double trueAnomaly) {
-        double anomaly = majorMinorScaleFactor() * Math.sin(trueAnomaly) / (distanceToOrbitParallelSemiMajorAxis(trueAnomaly));
+        double anomaly = conicSlice() * Math.sin(trueAnomaly) / (distanceToOrbitParallelSemiMajorAxis(trueAnomaly));
         return Math.atan2(
                 singularityAdjustment(anomaly),
                 (eccentricity + Math.cos(trueAnomaly)) / (distanceToOrbitParallelSemiMajorAxis(trueAnomaly))
@@ -492,9 +492,9 @@ public record Orbit(double semiMajorAxis,
 
     /**
      * The scale factor that represents what needs to be multiplied to the Semi-Major Axis to get the Semi-Minor Axis
-     * @return double axis scale factor
+     * @return Axis scale factor
      */
-    private double majorMinorScaleFactor() {
+    public double conicSlice() {
         return Math.sqrt(1 - eccentricity * eccentricity);
     }
 

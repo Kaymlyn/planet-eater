@@ -70,7 +70,7 @@ public interface Gravitational {
     default double getEscapeVelocityFromRadius(double radius) {
 
         // sqrt(2GM(1.0/r - 1.0/2d). when distance = radius sqrt(2GM(2/2r - 1/2r) or sqrt(2GM(1/2r)) or  sqrt(
-        return Math.sqrt(2 * getGravitationalParameter() * radius);
+        return Math.sqrt(2 * getGravitationalParameter() / radius);
     }
 
     default double getSurfaceEscapeVelocity() {

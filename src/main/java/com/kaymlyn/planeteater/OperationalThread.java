@@ -83,15 +83,15 @@ public class OperationalThread implements Runnable {
         mind.dock(vehicle);
         Itinerary route = vehicle.planRoute(planet_1, true);
         System.out.println(route);
-        System.out.println(route.getTotalFuelCost());
+        System.out.println(vehicle.fuelRequired(route.getTotalDeltaV()));
         System.out.println(vehicle.getFuelMass());
-        System.out.println(route.getTotalFuelCost() < vehicle.getFuelMass());
+        System.out.println(vehicle.fuelRequired(route.getTotalDeltaV()) < vehicle.getFuelMass());
         vehicle.setSystem(spark);
         vehicle.setItinerary(route);
         vehicle.programItinerary(route);
         System.out.println("Travel Time : " + route.getTotalFlightTime()/PhysicsConstants.SECONDS_PER_DAY);
         System.out.println("Total Fuel : " + vehicle.getFuelMass());
-        System.out.println("Travel Fuel : " + route.getTotalFuelCost());
+        System.out.println("Travel Fuel : " + vehicle.fuelRequired(route.getTotalDeltaV()));
 
     }
 

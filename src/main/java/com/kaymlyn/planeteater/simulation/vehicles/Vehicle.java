@@ -2,6 +2,7 @@ package com.kaymlyn.planeteater.simulation.vehicles;
 
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
+import com.kaymlyn.planeteater.simulation.entities.EntityType;
 import com.kaymlyn.planeteater.simulation.entities.Environment;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
@@ -120,16 +121,20 @@ public abstract class Vehicle {
         return cargo.removeMaterial(material, mass);
     }
 
-    /**
-     * Board a mining entity
-     */
     public boolean boardAutomaton(Automaton entity) {
-        if (crew.size() >= maxCrewCapacity) {
+        if (crew.size() >= maxCrewCapacity) return false;
+
+        // Inorganic automatons can board anything
+        if (entity.getType() == EntityType.INORGANIC) {
+            crew.add(entity);
+            return true;
+        }
+
+        // Organic automatons need life support
+        if (!hasLifeSupport) {
             return false;
         }
-        if (new HashSet<>(environments).containsAll(entity.getAdaptations())) {
-            return false;
-        }
+
         crew.add(entity);
         return true;
     }

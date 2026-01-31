@@ -350,23 +350,237 @@ public class RocketryCalculator {
         return new ManeuverDetails(origin);
     }
 
+    /**
+     * Find Lambert transfer that minimizes delta-V for a given flight time
+     *
+     * Lambert's problem: Given two positions and transfer time, find required velocity.
+     * This method finds the transfer time that minimizes total delta-V.
+     *
+     * @param initialPos Starting position vector
+     * @param targetPos Ending position vector
+     * @param centerBody Gravitational body being orbited
+     * @param minTime Minimum transfer time to consider (seconds)
+     * @param maxTime Maximum transfer time to consider (seconds)
+     * @return ManeuverDetails for optimal transfer, or null if no solution
+     */
+    public static ManeuverDetails minimalLambert(
+            Vector3D initialPos,
+            Vector3D targetPos,
+            Gravitational centerBody,
+            double minTime,
+            double maxTime) {
+
+        // Sample transfer times and find minimum delta-V
+        int samples = 20;
+        double timeStep = (maxTime - minTime) / samples;
+
+        double bestTime = minTime;
+        double bestDeltaV = Double.POSITIVE_INFINITY;
+        Vector3D bestVelocity = null;
+
+        for (int i = 0; i <= samples; i++) {
+            double transferTime = minTime + i * timeStep;
+
+            // Calculate required initial velocity for this transfer time
+            Vector3D departureVel = calculateLambertVelocity(
+                    initialPos, targetPos, transferTime);
+
+            // Calculate current orbital velocity at initial position
+            // Assumes circular orbit for simplification
+            double r = initialPos.magnitude();
+            double orbitalSpeed = Math.sqrt(centerBody.getGravitationalParameter() / r);
+            Vector3D currentVel = initialPos.cross(Vector3D.UNIT_Z).normalize()
+                    .multiply(orbitalSpeed);
+
+            // Delta-V required for departure burn
+            double departureDeltaV = departureVel.subtract(currentVel).magnitude();
+
+            // Calculate arrival velocity
+            Vector3D arrivalVel = calculateLambertArrivalVelocity(
+                    initialPos, targetPos, transferTime);
+
+            // Calculate orbital velocity at target
+            double rTarget = targetPos.magnitude();
+            double targetOrbitalSpeed = Math.sqrt(
+                    centerBody.getGravitationalParameter() / rTarget);
+            Vector3D targetVel = targetPos.cross(Vector3D.UNIT_Z).normalize()
+                    .multiply(targetOrbitalSpeed);
+
+            // Delta-V required for arrival burn
+            double arrivalDeltaV = arrivalVel.subtract(targetVel).magnitude();
+
+            // Total delta-V
+            double totalDeltaV = departureDeltaV + arrivalDeltaV;
+
+            // Track best option
+            if (totalDeltaV < bestDeltaV) {
+                bestDeltaV = totalDeltaV;
+                bestTime = transferTime;
+                bestVelocity = departureVel;
+            }
+        }
+
+        if (bestVelocity == null) {
+            return null;
+        }
+
+        // Create orbit for the transfer
+        Orbit transferOrbit = Orbit.calculateOrbit(
+                centerBody, initialPos, bestVelocity);
+
+        return new ManeuverDetails(
+                "Lambert Transfer",
+                initialPos,
+                bestVelocity,
+                targetPos,
+                calculateLambertArrivalVelocity(initialPos, targetPos, bestTime),
+                bestDeltaV,
+                transferOrbit,
+                bestTime
+        );
+    }
+
+    /**
+     * Calculate arrival velocity for Lambert transfer
+     * This is the velocity at the target position
+     */
+    private static Vector3D calculateLambertArrivalVelocity(
+            Vector3D initialPos,
+            Vector3D targetPos,
+            double transferTime) {
+
+        // Use Lagrange coefficients to propagate velocity
+        // This is a simplified approach
+
+        double r0 = initialPos.magnitude();
+        double r1 = targetPos.magnitude();
+        double c = initialPos.subtract(targetPos).magnitude();
+
+        // Lagrange coefficient g
+        double g = 1 - (r1 / (2 * (r0 + r1 + c)));
+
+        // Arrival velocity
+        Vector3D v0 = calculateLambertVelocity(initialPos, targetPos, transferTime);
+        return targetPos.subtract(initialPos.multiply(g)).divide(transferTime);
+    }
+
+    /**
+     * Improved Lambert velocity calculation using universal variable formulation
+     * This is more accurate than the simplified Lagrange approach
+     *
+     * @param r1 Initial position vector
+     * @param r2 Final position vector
+     * @param tof Time of flight (seconds)
+     * @return Initial velocity vector required for transfer
+     */
+    public static Vector3D calculateLambertVelocityUniversal(
+            Vector3D r1,
+            Vector3D r2,
+            double tof,
+            Gravitational centerBody) {
+
+        double mu = centerBody.getGravitationalParameter();
+        double r1Mag = r1.magnitude();
+        double r2Mag = r2.magnitude();
+        double cosDeltaNu = r1.dot(r2) / (r1Mag * r2Mag);
+
+        // Transfer angle
+        double A = Math.sqrt(r1Mag * r2Mag * (1 + cosDeltaNu));
+
+        if (A == 0) {
+            // 180-degree transfer - use different approach
+            return calculateLambertVelocity(r1, r2, tof);
+        }
+
+        // Initial guess for universal variable
+        double psi = 0;
+        double c2 = 0.5;
+        double c3 = 1.0 / 6.0;
+
+        // Iterate to find psi
+        for (int iter = 0; iter < 50; iter++) {
+            double y = r1Mag + r2Mag + A * (psi * c3 - 1) / Math.sqrt(c2);
+
+            if (y <= 0) {
+                // Adjust psi
+                psi = 0.8 * (1.0 / c3) * (1 - r1Mag * r2Mag * Math.sqrt(c2) / A);
+            }
+
+            double chi = Math.sqrt(y / c2);
+            double tofCalculated = Math.pow(chi, 3) * c3 + A * Math.sqrt(y);
+            tofCalculated /= Math.sqrt(mu);
+
+            // Check convergence
+            if (Math.abs(tofCalculated - tof) < 1e-6) {
+                break;
+            }
+
+            // Newton-Raphson update
+            double dt = tofCalculated - tof;
+            double dtdpsi = Math.pow(chi, 3) * (c3 - 3 * c3 * psi / (2 * c2)) / (2 * c2);
+            dtdpsi += A / 8.0 * (3 * c3 * Math.sqrt(y) / c2 + A / chi);
+            dtdpsi /= Math.sqrt(mu);
+
+            psi -= dt / dtdpsi;
+
+            // Update Stumpff functions
+            if (psi > 1e-6) {
+                double sqrtPsi = Math.sqrt(psi);
+                c2 = (1 - Math.cos(sqrtPsi)) / psi;
+                c3 = (sqrtPsi - Math.sin(sqrtPsi)) / Math.sqrt(psi * psi * psi);
+            } else if (psi < -1e-6) {
+                double sqrtMinusPsi = Math.sqrt(-psi);
+                c2 = (1 - Math.cosh(sqrtMinusPsi)) / psi;
+                c3 = (Math.sinh(sqrtMinusPsi) - sqrtMinusPsi) /
+                        Math.sqrt(-psi * psi * psi);
+            } else {
+                c2 = 0.5;
+                c3 = 1.0 / 6.0;
+            }
+        }
+
+        // Calculate Lagrange coefficients
+        double y = r1Mag + r2Mag + A * (psi * c3 - 1) / Math.sqrt(c2);
+        double f = 1 - y / r1Mag;
+        double g = A * Math.sqrt(y / mu);
+
+        // Initial velocity
+        return r2.subtract(r1.multiply(f)).divide(g);
+    }
+
+    /**
+     * Calculate velocity for Lambert's problem (simplified)
+     * Lambert's Problem is assuming two points are on the same orbit and are separated by some time t what is the
+     * composition of the resulting orbit.
+     * This method calculates the velocity vector from the initial point required to make that traversal in the given time.
+     */
+    public static Vector3D calculateLambertVelocity(Vector3D orbitalPointInitial, Vector3D orbitalPointFinal,
+                                                     double time) {
+
+        double finalMag = orbitalPointFinal.magnitude();
+        double initialMag = orbitalPointInitial.magnitude();
+        double diffMag = orbitalPointInitial.subtract(orbitalPointFinal).magnitude();
+
+        // Calculate velocities using Lagrange coefficients (simplified)
+        double f = 2 - (finalMag / (2 * (initialMag + finalMag + diffMag))); // Simplified
+
+        return orbitalPointFinal.subtract(orbitalPointInitial.multiply(f)).divide(time);
+    }
+
     private static double deltaVForInclinationChange(Orbit origin, Orbit targetInclination) {
 
-        double angularVelocity = origin.meanAngularVelocity();
-        
         double inclinationDelta = Math.abs(origin.inclination() - targetInclination.inclination())/2;
 
-        //representation of e as a conic slice (K: i think?)
-        double eAsConicSlice = Math.sqrt(1 - Math.pow(origin.eccentricity(),2));
+        double eAsConicSlice = origin.conicSlice();
 
         //current position in orbit with respect to periapsis
         double currentPositionPastPeriapsis = origin.periapsis() + origin.trueAnomaly();
 
-        //1 if circular orbit
-        double adjustForEccentricity = 1 + origin.eccentricity()*Math.cos(origin.trueAnomaly());
-
-        return 2.0 * Math.sin(inclinationDelta) * (adjustForEccentricity) * angularVelocity * origin.semiMajorAxis()/
-                        (eAsConicSlice * Math.cos(currentPositionPastPeriapsis));
+        return 2.0 * Math.sin(inclinationDelta)
+                * origin.distanceToOrbitParallelSemiMajorAxis(origin.trueAnomaly())
+                * origin.meanAngularVelocity()
+                * origin.semiMajorAxis()
+                / (eAsConicSlice * Math.cos(currentPositionPastPeriapsis));
     }
 
     /**

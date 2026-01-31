@@ -113,10 +113,7 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
     public Orbit calculateCurrentOrbit() {
         return Orbit.calculateOrbit(parentBody,position,velocity);
     }
-    /**
-     * For planets, only the crust and atmosphere are accessible for mining
-     * Deep mining could theoretically access mantle materials
-     */
+
     @Override
     public boolean canMineCrust() {
         return crustComposition.getTotalMass() > 0.0;
