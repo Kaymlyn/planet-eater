@@ -44,15 +44,27 @@ public class Itinerary {
     @Getter
     private String infeasibilityReason;
 
+    /**
+     * -- SETTER --
+     *  Set the launch delta-V requirement
+     *  This is the delta-V needed to escape the departure body's gravity well
+     */
     // Delta-V breakdown (not fuel - that's vehicle-specific)
+    @Setter
     @Getter
     private double launchDeltaV;
 
+    /**
+     * -- SETTER --
+     *  Set the landing delta-V requirement
+     *  This is the delta-V needed to land on the destination body
+     */
+    @Setter
     @Getter
     private double landingDeltaV;
 
     @Getter
-    private double totalDeltaV;
+    private double travelDeltaV;
 
     @Getter
     private double totalWaitTime;
@@ -65,7 +77,7 @@ public class Itinerary {
         this.infeasibilityReason = null;
         this.launchDeltaV = 0.0;
         this.landingDeltaV = 0.0;
-        this.totalDeltaV = 0.0;
+        this.travelDeltaV = 0.0;
         this.totalWaitTime = 0.0;
     }
 
@@ -75,28 +87,12 @@ public class Itinerary {
      */
     public void addFlightPlan(ManeuverDetails maneuver) {
         maneuvers.add(maneuver);
-        totalDeltaV += maneuver.getDeltaV();
+        travelDeltaV += maneuver.getDeltaV();
 
         // Track wait time (coast phases with zero delta-V)
         if (maneuver.getDeltaV() < 1e-6) {
             totalWaitTime += maneuver.getTimeToExecute();
         }
-    }
-
-    /**
-     * Set the launch delta-V requirement
-     * This is the delta-V needed to escape the departure body's gravity well
-     */
-    public void setLaunchDeltaV(double deltaV) {
-        this.launchDeltaV = deltaV;
-    }
-
-    /**
-     * Set the landing delta-V requirement
-     * This is the delta-V needed to land on the destination body
-     */
-    public void setLandingDeltaV(double deltaV) {
-        this.landingDeltaV = deltaV;
     }
 
     /**
@@ -175,7 +171,7 @@ public class Itinerary {
         }
 
         // Check if spacecraft has enough delta-V capability
-        double requiredDeltaV = totalDeltaV + launchDeltaV + landingDeltaV;
+        double requiredDeltaV = travelDeltaV + launchDeltaV + landingDeltaV;
         double availableDeltaV = spacecraft.getAvailableDeltaV();
 
         if (availableDeltaV < requiredDeltaV) {
@@ -210,7 +206,7 @@ public class Itinerary {
 
         if (feasible) {
             sb.append(String.format("Maneuvers: %d\n", maneuvers.size()));
-            sb.append(String.format("Total Δv: %.1f m/s\n", totalDeltaV));
+            sb.append(String.format("Total Δv: %.1f m/s\n", travelDeltaV));
             sb.append(String.format("  Launch: %.1f m/s\n", launchDeltaV));
             sb.append(String.format("  Landing: %.1f m/s\n", landingDeltaV));
             sb.append(String.format("Total Time: %.2f days\n",

@@ -104,7 +104,7 @@ public class Spacecraft extends Vehicle {
 
         // Check fuel availability
         double requiredFuel = fuelRequired(
-                itinerary.getTotalDeltaV() +
+                itinerary.getTravelDeltaV() +
                         itinerary.getLaunchDeltaV() +
                         itinerary.getLandingDeltaV());
 

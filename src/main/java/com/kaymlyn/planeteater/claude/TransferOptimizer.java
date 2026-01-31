@@ -2,6 +2,7 @@ package com.kaymlyn.planeteater.claude;
 
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
+import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.*;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import lombok.Data;
@@ -9,7 +10,6 @@ import lombok.Data;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Generates and compares multiple transfer strategies between orbits
@@ -60,7 +60,7 @@ public class TransferOptimizer {
             this.itinerary = itinerary;
             
             // Calculate efficiency: seconds per m/s of delta-V
-            double totalDeltaV = itinerary.getTotalDeltaV() + 
+            double totalDeltaV = itinerary.getTravelDeltaV() +
                                 itinerary.getLaunchDeltaV() + 
                                 itinerary.getLandingDeltaV();
             this.efficiencyScore = totalDeltaV > 0 ? 
@@ -92,7 +92,7 @@ public class TransferOptimizer {
         // 1. Try Hohmann transfer (if applicable)
         if (canUseHohmann(originOrbit, targetOrbit)) {
             Itinerary hohmann = buildHohmannTransfer(
-                spacecraft, origin, destination, land, originOrbit, targetOrbit);
+                spacecraft, origin, destination, land);
             if (hohmann.isFeasible()) {
                 options.add(new TransferOption(TransferStrategy.HOHMANN, hohmann));
             }
@@ -146,7 +146,7 @@ public class TransferOptimizer {
                 
             case MINIMUM_DELTAV -> options.stream()
                 .min(Comparator.comparingDouble(opt -> 
-                    opt.getItinerary().getTotalDeltaV() +
+                    opt.getItinerary().getTravelDeltaV() +
                     opt.getItinerary().getLaunchDeltaV() +
                     opt.getItinerary().getLandingDeltaV()))
                 .orElse(null);
@@ -164,10 +164,123 @@ public class TransferOptimizer {
             Spacecraft spacecraft,
             Orbiter origin,
             Orbiter destination,
-            boolean land,
-            Orbit originOrbit,
-            Orbit targetOrbit) {
-        
+            boolean land) {
+
+        Itinerary route = new Itinerary(origin.getSystem().getCurrentTime());
+        Orbit destinationOrbit = destination.calculateCurrentOrbit();
+        route.setFinalDestination(destination);
+
+        ManeuverDetails active = null;
+        // === DEPARTURE PHASE ===
+        if (spacecraft.getState() == Spacecraft.SpacecraftState.DOCKED) {
+            if (origin instanceof Gravitational) {
+                // Launch from gravitational body
+                ManeuverDetails takeoff = RocketryCalculator.calculateTakeoffToStandardOrbit(
+                        (Planet) origin, spacecraft);
+                route.setLaunchDeltaV(takeoff.getDeltaV());
+                route.addFlightPlan(takeoff);
+                // Escape to parent orbit (if planet, not star)
+                ManeuverDetails escape = RocketryCalculator.calculateEscapeOrbit(
+                        takeoff.getOrbitState(),
+                        origin);
+                route.addFlightPlan(escape);
+                active = escape;
+            } else {
+                // Detach from satellite/station (negligible delta-V)
+                spacecraft.setPosition(origin.getPosition());
+                spacecraft.setVelocity(origin.getVelocity());
+                Orbit calculated = Orbit.calculateOrbitFor(origin);
+                ManeuverDetails detach = new ManeuverDetails(
+                        "Detach from " + origin.getId(),
+                        origin.getPosition(), origin.getVelocity(),
+                        origin.getPosition(), origin.getVelocity(),
+                        0.0001, calculated, 1.0);
+                route.addFlightPlan(detach);
+                active = detach;
+            }
+        } else if (spacecraft.getState() == Spacecraft.SpacecraftState.ORBITING) {
+            // Already in orbit, escape if around planet
+            if (origin instanceof Planet) {
+                active = RocketryCalculator.calculateEscapeOrbit(
+                        Orbit.calculateOrbit((Gravitational) origin, spacecraft.getPosition(), spacecraft.getVelocity()),
+                        origin);
+                route.addFlightPlan(active);
+            }
+        }
+
+        // === COPLANAR ADJUSTMENT ===
+        ManeuverDetails coplanarBurn;
+        if(active == null) {
+            // Orbiting star or on satellite
+            coplanarBurn = RocketryCalculator.adjustToCoplanar(
+                    Orbit.calculateOrbit(destinationOrbit.centerBody(), spacecraft.getPosition(), spacecraft.getVelocity()),
+                    destinationOrbit);
+        } else {
+            coplanarBurn = RocketryCalculator.adjustToCoplanar(
+                    Orbit.calculateOrbit(destinationOrbit.centerBody(),
+                            active.getEndingPosition(), active.getEndingVelocity()),
+                    destinationOrbit);
+        }
+        route.addFlightPlan(coplanarBurn);
+        active = coplanarBurn;
+
+        // === PHASING WAIT ===
+        ManeuverDetails wait = new ManeuverDetails(
+                active.getOrbitState(),
+                RocketryCalculator.calculateNextLaunchWindowWaitTime(
+                        active.getOrbitState(), destinationOrbit));
+        route.addFlightPlan(wait);
+
+        // === TRANSFER ===
+        ManeuverDetails transfer = RocketryCalculator.calculateHohmannTransferBetweenOrbits(
+                wait.getOrbitState(), destinationOrbit);
+        route.addFlightPlan(transfer);
+        active = transfer;
+
+        // === ARRIVAL PHASE ===
+        if(destination instanceof Gravitational) {
+            // Orbital insertion
+            ManeuverDetails capture = RocketryCalculator.calculateOrbitalInsertionDeltaV(
+                    active.getOrbitState(),
+                    (Gravitational) destination,
+                    destination,
+                    ((Gravitational) destination).getStandardOrbitalAltitude());
+            route.addFlightPlan(capture);
+
+            if(land) {
+                // Land on surface
+                ManeuverDetails landing = RocketryCalculator.calculateLandingOnGravitational(
+                        (Gravitational) destination, spacecraft);
+                route.addFlightPlan(landing);
+                route.setLandingDeltaV(landing.getDeltaV());
+                route.setFinalSpacecraftState(Spacecraft.SpacecraftState.DOCKED);
+            } else {
+                // Stay in orbit
+                route.setFinalSpacecraftState(Spacecraft.SpacecraftState.ORBITING);
+            }
+        } else {
+            // Match velocity with station/satellite
+            OrbitalState futureState = destinationOrbit.calculateOrbitAfterT0(
+                    route.getTotalFlightTime());
+            ManeuverDetails match = new ManeuverDetails(
+                    "Match Velocity",
+                    active.getEndingPosition(),
+                    active.getEndingVelocity(),
+                    futureState.position(),
+                    futureState.velocity(),
+                    RocketryCalculator.calculateMatchVelocity(
+                            active.getEndingVelocity(),
+                            futureState.velocity()),
+                    futureState.orbitalElements(),
+                    0.0);
+            route.addFlightPlan(match);
+            route.setFinalSpacecraftState(Spacecraft.SpacecraftState.DOCKED);
+        }
+
+        // Validate against spacecraft capabilities
+        if (!route.validateAgainstSpacecraft(spacecraft)) {
+            System.out.println("WARNING: Route infeasible - " + route.getInfeasibilityReason());
+        }
         // Use existing Spacecraft.planRoute logic
         // This already builds a Hohmann-based transfer
         return spacecraft.planRoute(destination, land);
@@ -316,7 +429,7 @@ public class TransferOptimizer {
             TransferOption opt = options.get(i);
             Itinerary it = opt.getItinerary();
             
-            double totalDeltaV = it.getTotalDeltaV() + 
+            double totalDeltaV = it.getTravelDeltaV() +
                                 it.getLaunchDeltaV() + 
                                 it.getLandingDeltaV();
             

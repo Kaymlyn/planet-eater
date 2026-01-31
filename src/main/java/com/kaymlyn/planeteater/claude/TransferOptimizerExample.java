@@ -101,14 +101,14 @@ public class TransferOptimizerExample {
             
             System.out.printf("Option %d: %s%n", i + 1, opt.getStrategy());
             System.out.printf("  Delta-V Required: %.1f m/s%n", 
-                it.getTotalDeltaV() + it.getLaunchDeltaV() + it.getLandingDeltaV());
+                it.getTravelDeltaV() + it.getLaunchDeltaV() + it.getLandingDeltaV());
             System.out.printf("  Transfer Time: %.2f days%n", 
                 it.getTotalFlightTime() / 86400);
             System.out.printf("  Maneuvers: %d%n", it.getNumberOfManeuvers());
             
             // Check if this ship can do it
             double requiredFuel = spacecraft.fuelRequired(
-                it.getTotalDeltaV() + it.getLaunchDeltaV() + it.getLandingDeltaV());
+                it.getTravelDeltaV() + it.getLaunchDeltaV() + it.getLandingDeltaV());
             double fuelMargin = spacecraft.getFuelMass() - requiredFuel;
             
             if (fuelMargin > 0) {
