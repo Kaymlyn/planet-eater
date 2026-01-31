@@ -1,17 +1,13 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
+import com.kaymlyn.planeteater.claude.TransferOptimizer;
 import com.kaymlyn.planeteater.simulation.celestial.Dockable;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
-import com.kaymlyn.planeteater.simulation.physics.Orbit;
-import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.physics.Itinerary;
-import com.kaymlyn.planeteater.simulation.physics.ManeuverDetails;
-import com.kaymlyn.planeteater.simulation.physics.OrbitalState;
 import com.kaymlyn.planeteater.simulation.physics.PiecewiseState;
-import com.kaymlyn.planeteater.simulation.physics.RocketryCalculator;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
@@ -22,6 +18,7 @@ import lombok.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents a spacecraft for traveling between celestial bodies
@@ -205,132 +202,10 @@ public class Spacecraft extends Vehicle {
     }
 
     //Calculate a dry run of the route
-    public Itinerary planRoute(@NonNull Orbiter destination, boolean land) {
-
-        Itinerary route = new Itinerary(system.getCurrentTime());
-        Orbit destinationOrbit = destination.calculateCurrentOrbit();
-        route.setFinalDestination(destination);
-
-        ManeuverDetails active = null;
-
-        // === DEPARTURE PHASE ===
-        if (orbiting != null) {
-            if(state == SpacecraftState.DOCKED) {
-                if (orbiting instanceof Gravitational) {
-                    // Launch from gravitational body
-                    ManeuverDetails takeoff = RocketryCalculator.calculateTakeoffToStandardOrbit(
-                            (Planet) orbiting, this);
-                    route.setLaunchDeltaV(takeoff.getDeltaV());
-                    route.addFlightPlan(takeoff);
-                    active = takeoff;
-
-                    // Escape to parent orbit (if planet, not star)
-                    if(orbiting instanceof Planet) {
-                        ManeuverDetails escape = RocketryCalculator.calculateEscapeOrbit(
-                                takeoff.getOrbitState(),
-                                orbiting);
-                        route.addFlightPlan(escape);
-                        active = escape;
-                    }
-                } else {
-                    // Detach from satellite/station (negligible delta-V)
-                    position = orbiting.getPosition();
-                    velocity = orbiting.getVelocity();
-                    Orbit calculated = Orbit.calculateOrbitFor(orbiting);
-                    ManeuverDetails detach = new ManeuverDetails(
-                            "Detach from " + orbiting.getId(),
-                            orbiting.getPosition(), orbiting.getVelocity(),
-                            orbiting.getPosition(), orbiting.getVelocity(),
-                            0.0001, calculated, 1.0);
-                    route.addFlightPlan(detach);
-                    active = detach;
-                }
-            } else if (state == SpacecraftState.ORBITING) {
-                // Already in orbit, escape if around planet
-                if (orbiting instanceof Planet) {
-                    active = RocketryCalculator.calculateEscapeOrbit(
-                            Orbit.calculateOrbit((Gravitational) orbiting, position, velocity),
-                            orbiting);
-                    route.addFlightPlan(active);
-                }
-            }
-        }
-
-        // === COPLANAR ADJUSTMENT ===
-        ManeuverDetails coplanarBurn;
-        if(active == null) {
-            // Orbiting star or on satellite
-            coplanarBurn = RocketryCalculator.adjustToCoplanar(
-                    Orbit.calculateOrbit(destinationOrbit.centerBody(), position, velocity),
-                    destinationOrbit);
-        } else {
-            coplanarBurn = RocketryCalculator.adjustToCoplanar(
-                    Orbit.calculateOrbit(destinationOrbit.centerBody(),
-                            active.getEndingPosition(), active.getEndingVelocity()),
-                    destinationOrbit);
-        }
-        route.addFlightPlan(coplanarBurn);
-        active = coplanarBurn;
-
-        // === PHASING WAIT ===
-        ManeuverDetails wait = new ManeuverDetails(
-                active.getOrbitState(),
-                RocketryCalculator.calculateNextLaunchWindowWaitTime(
-                        active.getOrbitState(), destinationOrbit));
-        route.addFlightPlan(wait);
-
-        // === TRANSFER ===
-        ManeuverDetails transfer = RocketryCalculator.calculateHohmannTransferBetweenOrbits(
-                wait.getOrbitState(), destinationOrbit);
-        route.addFlightPlan(transfer);
-        active = transfer;
-
-        // === ARRIVAL PHASE ===
-        if(destination instanceof Gravitational) {
-            // Orbital insertion
-            ManeuverDetails capture = RocketryCalculator.calculateOrbitalInsertionDeltaV(
-                    active.getOrbitState(),
-                    (Gravitational) destination,
-                    destination,
-                    ((Gravitational) destination).getStandardOrbitalAltitude());
-            route.addFlightPlan(capture);
-
-            if(land) {
-                // Land on surface
-                ManeuverDetails landing = RocketryCalculator.calculateLandingOnGravitational(
-                        (Gravitational) destination, this);
-                route.addFlightPlan(landing);
-                route.setLandingDeltaV(landing.getDeltaV());
-                route.setFinalSpacecraftState(SpacecraftState.DOCKED);
-            } else {
-                // Stay in orbit
-                route.setFinalSpacecraftState(SpacecraftState.ORBITING);
-            }
-        } else {
-            // Match velocity with station/satellite
-            OrbitalState futureState = destinationOrbit.calculateOrbitAfterT0(
-                    route.getTotalFlightTime());
-            ManeuverDetails match = new ManeuverDetails(
-                    "Match Velocity",
-                    active.getEndingPosition(),
-                    active.getEndingVelocity(),
-                    futureState.position(),
-                    futureState.velocity(),
-                    RocketryCalculator.calculateMatchVelocity(
-                            active.getEndingVelocity(),
-                            futureState.velocity()),
-                    futureState.orbitalElements(),
-                    0.0);
-            route.addFlightPlan(match);
-            route.setFinalSpacecraftState(SpacecraftState.DOCKED);
-        }
-
-        // Validate against spacecraft capabilities
-        if (!route.validateAgainstSpacecraft(this)) {
-            System.out.println("WARNING: Route infeasible - " + route.getInfeasibilityReason());
-        }
-
-        return route;
+    public Itinerary planRoute(@NonNull Orbiter destination, boolean land, TransferOptimizer.OptimizationGoal priority) {
+        return Objects.requireNonNull(TransferOptimizer.selectBestTransfer(
+                TransferOptimizer.generateTransferOptions(this, this.orbiting, destination, land),
+                Objects.requireNonNullElse(priority, TransferOptimizer.OptimizationGoal.MINIMUM_DELTAV))).getItinerary();
     }
 
 

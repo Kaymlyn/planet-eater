@@ -281,9 +281,8 @@ public class TransferOptimizer {
         if (!route.validateAgainstSpacecraft(spacecraft)) {
             System.out.println("WARNING: Route infeasible - " + route.getInfeasibilityReason());
         }
-        // Use existing Spacecraft.planRoute logic
-        // This already builds a Hohmann-based transfer
-        return spacecraft.planRoute(destination, land);
+
+        return route;
     }
 
     /**

@@ -62,7 +62,7 @@ public class CelestialBodyFactory {
     }
 
     public CentralMind createCentralMind(double orbitalRadius) {
-        CentralMind centralMind = new CentralMind("KHI Central Mind");
+        CentralMind centralMind = new CentralMind("KHI Central Mind", system);
         Orbit orbit = system.placeInCircularOrbit(centralMind,orbitalRadius,0);
         centralMind.setInitialOrbit(orbit);
         return centralMind;

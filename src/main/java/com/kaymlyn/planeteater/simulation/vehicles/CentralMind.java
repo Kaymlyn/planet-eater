@@ -25,8 +25,9 @@ public class CentralMind extends Vehicle implements Orbiter, Dockable {
     private Orbit initialOrbit;
     private Map<String, Spacecraft> hanger;
 
-    public CentralMind(String id) {
+    public CentralMind(String id, OrbitalSystem system) {
         super(id, 1e6, 1e4, 1e3, 2, true, 12,0);
+        this.system = system;
         this.crew = new ArrayList<>();
         this.hanger = new HashMap<>();
     }

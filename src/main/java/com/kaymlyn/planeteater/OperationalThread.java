@@ -1,5 +1,6 @@
 package com.kaymlyn.planeteater;
 
+import com.kaymlyn.planeteater.claude.TransferOptimizer;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.Orbit;
@@ -77,11 +78,12 @@ public class OperationalThread implements Runnable {
         System.out.println("Orbit post placement : " + orbit);
         System.out.println("Init orbit according to Mind : " + mind.getInitialOrbit());
         System.out.println("Calc orbit according to Mind : " + mind.calculateCurrentOrbit());
+        mind.setSystem(spark);
 
         Spacecraft vehicle = VehicleFactory.createCargoShuttle("Shuttle-1",mind);
         vehicle.setOrbiting(mind);
         mind.dock(vehicle);
-        Itinerary route = vehicle.planRoute(planet_1, true);
+        Itinerary route = vehicle.planRoute(planet_1, true, TransferOptimizer.OptimizationGoal.BALANCED );
         System.out.println(route);
         System.out.println(vehicle.fuelRequired(route.getTravelDeltaV()));
         System.out.println(vehicle.getFuelMass());
