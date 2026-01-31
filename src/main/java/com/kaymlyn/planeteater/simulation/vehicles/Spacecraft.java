@@ -1,6 +1,6 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
-import com.kaymlyn.planeteater.claude.TransferOptimizer;
+import com.kaymlyn.planeteater.simulation.physics.TransferOptimizer;
 import com.kaymlyn.planeteater.simulation.celestial.Dockable;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
@@ -203,9 +203,11 @@ public class Spacecraft extends Vehicle {
 
     //Calculate a dry run of the route
     public Itinerary planRoute(@NonNull Orbiter destination, boolean land, TransferOptimizer.OptimizationGoal priority) {
-        return Objects.requireNonNull(TransferOptimizer.selectBestTransfer(
+        Itinerary plannedRoute = Objects.requireNonNull(TransferOptimizer.selectBestTransfer(
                 TransferOptimizer.generateTransferOptions(this, this.orbiting, destination, land),
                 Objects.requireNonNullElse(priority, TransferOptimizer.OptimizationGoal.MINIMUM_DELTAV))).getItinerary();
+        System.out.println(plannedRoute.getManeuvers());
+        return plannedRoute;
     }
 
 

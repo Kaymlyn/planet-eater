@@ -1,9 +1,8 @@
-package com.kaymlyn.planeteater.claude;
+package com.kaymlyn.planeteater.simulation.physics;
 
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
-import com.kaymlyn.planeteater.simulation.physics.*;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import lombok.Data;
 
@@ -209,7 +208,7 @@ public class TransferOptimizer {
         }
 
         // === COPLANAR ADJUSTMENT ===
-        ManeuverDetails coplanarBurn;
+        List<ManeuverDetails> coplanarBurn;
         if(active == null) {
             // Orbiting star or on satellite
             coplanarBurn = RocketryCalculator.adjustToCoplanar(
@@ -221,8 +220,8 @@ public class TransferOptimizer {
                             active.getEndingPosition(), active.getEndingVelocity()),
                     destinationOrbit);
         }
-        route.addFlightPlan(coplanarBurn);
-        active = coplanarBurn;
+        route.addFlightPlans(coplanarBurn);
+        active = coplanarBurn.getLast();
 
         // === PHASING WAIT ===
         ManeuverDetails wait = new ManeuverDetails(
@@ -287,9 +286,12 @@ public class TransferOptimizer {
 
     /**
      * Build a bi-elliptic transfer itinerary
-     * 
+     *
      * Bi-elliptic transfers can be more efficient than Hohmann for large radius changes.
      * Uses an intermediate apoapsis beyond the target orbit.
+     *
+     * Theory: For large radius ratios (>11.94), going "the long way" via a very high
+     * intermediate orbit requires less total delta-V than a direct Hohmann transfer.
      */
     private static Itinerary buildBiellipticTransfer(
             Spacecraft spacecraft,
@@ -298,11 +300,263 @@ public class TransferOptimizer {
             boolean land,
             Orbit originOrbit,
             Orbit targetOrbit) {
-        
-        // TODO: Implement bi-elliptic transfer
-        // For now, return null (not implemented)
-        // This is a future enhancement
-        return null;
+
+        Itinerary route = new Itinerary(origin.getSystem().getCurrentTime());
+        route.setFinalDestination(destination);
+
+        Gravitational centerBody = originOrbit.centerBody();
+        double mu = centerBody.getGravitationalParameter();
+        ManeuverDetails active = null;
+
+        // === DEPARTURE PHASE ===
+        if (spacecraft.getState() == Spacecraft.SpacecraftState.DOCKED) {
+            if (origin instanceof Gravitational) {
+                ManeuverDetails takeoff = RocketryCalculator.calculateTakeoffToStandardOrbit(
+                        (Gravitational) origin, spacecraft);
+                route.setLaunchDeltaV(takeoff.getDeltaV());
+                route.addFlightPlan(takeoff);
+
+                ManeuverDetails escape = RocketryCalculator.calculateEscapeOrbit(
+                        takeoff.getOrbitState(), origin);
+                route.addFlightPlan(escape);
+                active = escape;
+            } else {
+                Orbit calculated = Orbit.calculateOrbitFor(origin);
+                ManeuverDetails detach = new ManeuverDetails(
+                        "Detach from " + origin.getId(),
+                        origin.getPosition(), origin.getVelocity(),
+                        origin.getPosition(), origin.getVelocity(),
+                        0.0001, calculated, 1.0);
+                route.addFlightPlan(detach);
+                active = detach;
+            }
+        } else if (spacecraft.getState() == Spacecraft.SpacecraftState.ORBITING) {
+            if (origin instanceof Gravitational) {
+                active = RocketryCalculator.calculateEscapeOrbit(
+                        Orbit.calculateOrbit((Gravitational) origin,
+                                spacecraft.getPosition(), spacecraft.getVelocity()),
+                        origin);
+                route.addFlightPlan(active);
+            }
+        }
+
+        Vector3D currentPos = active != null ? active.getEndingPosition() : spacecraft.getPosition();
+        Vector3D currentVel = active != null ? active.getEndingVelocity() : spacecraft.getVelocity();
+
+        List<ManeuverDetails> transfer = RocketryCalculator.buildBiellipticTransfer(currentPos,
+                currentVel,
+                originOrbit,
+                targetOrbit);
+        route.addFlightPlans(transfer);
+
+        active = transfer.getLast();
+
+        // === ARRIVAL PHASE ===
+        if (destination instanceof Gravitational) {
+            ManeuverDetails capture = RocketryCalculator.calculateOrbitalInsertionDeltaV(
+                    active.getOrbitState(),
+                    (Gravitational) destination,
+                    destination,
+                    ((Gravitational) destination).getStandardOrbitalAltitude());
+            route.addFlightPlan(capture);
+
+            if (land) {
+                ManeuverDetails landing = RocketryCalculator.calculateLandingOnGravitational(
+                        (Gravitational) destination, spacecraft);
+                route.addFlightPlan(landing);
+                route.setLandingDeltaV(landing.getDeltaV());
+                route.setFinalSpacecraftState(Spacecraft.SpacecraftState.DOCKED);
+            } else {
+                route.setFinalSpacecraftState(Spacecraft.SpacecraftState.ORBITING);
+            }
+        } else {
+            OrbitalState finalState = targetOrbit.calculateOrbitAfterT0(
+                    route.getTotalFlightTime());
+            ManeuverDetails match = new ManeuverDetails(
+                    "Match Velocity",
+                    active.getEndingPosition(),
+                    active.getEndingVelocity(),
+                    finalState.position(),
+                    finalState.velocity(),
+                    RocketryCalculator.calculateMatchVelocity(
+                            active.getEndingVelocity(),
+                            finalState.velocity()),
+                    finalState.orbitalElements(),
+                    0.0);
+            route.addFlightPlan(match);
+            route.setFinalSpacecraftState(Spacecraft.SpacecraftState.DOCKED);
+        }
+
+        // Validate against spacecraft capabilities
+        if (!route.validateAgainstSpacecraft(spacecraft)) {
+            System.out.println("WARNING: Bi-elliptic route infeasible - " + route.getInfeasibilityReason());
+        }
+
+        return route;
+    }
+
+    /**
+     * Build a Lambert transfer with a specific transfer time
+     */
+    private static Itinerary buildLambertTransfer(
+            Spacecraft spacecraft,
+            Orbiter origin,
+            Orbiter destination,
+            boolean land,
+            Orbit originOrbit,
+            Orbit targetOrbit,
+            double transferTime) {
+
+        Itinerary route = new Itinerary(origin.getSystem().getCurrentTime());
+        route.setFinalDestination(destination);
+
+        Gravitational centerBody = originOrbit.centerBody();
+        ManeuverDetails active = null;
+
+        // === DEPARTURE PHASE ===
+        if (spacecraft.getState() == Spacecraft.SpacecraftState.DOCKED) {
+            if (origin instanceof Gravitational) {
+                // Launch from gravitational body
+                ManeuverDetails takeoff = RocketryCalculator.calculateTakeoffToStandardOrbit(
+                        (Gravitational) origin, spacecraft);
+                route.setLaunchDeltaV(takeoff.getDeltaV());
+                route.addFlightPlan(takeoff);
+
+                // Escape to parent orbit (if needed)
+                ManeuverDetails escape = RocketryCalculator.calculateEscapeOrbit(
+                        takeoff.getOrbitState(), origin);
+                route.addFlightPlan(escape);
+                active = escape;
+            } else {
+                // Detach from station/satellite
+                Orbit calculated = Orbit.calculateOrbitFor(origin);
+                ManeuverDetails detach = new ManeuverDetails(
+                        "Detach from " + origin.getId(),
+                        origin.getPosition(), origin.getVelocity(),
+                        origin.getPosition(), origin.getVelocity(),
+                        0.0001, calculated, 1.0);
+                route.addFlightPlan(detach);
+                active = detach;
+            }
+        } else if (spacecraft.getState() == Spacecraft.SpacecraftState.ORBITING) {
+            if (origin instanceof Gravitational) {
+                active = RocketryCalculator.calculateEscapeOrbit(
+                        Orbit.calculateOrbit((Gravitational) origin,
+                                spacecraft.getPosition(), spacecraft.getVelocity()),
+                        origin);
+                route.addFlightPlan(active);
+            }
+        }
+
+        // Get current position and velocity
+        Vector3D currentPos = active != null ? active.getEndingPosition() : spacecraft.getPosition();
+        Vector3D currentVel = active != null ? active.getEndingVelocity() : spacecraft.getVelocity();
+
+        // === COPLANAR ADJUSTMENT ===
+        List<ManeuverDetails> coplanarBurn = RocketryCalculator.adjustToCoplanar(
+                Orbit.calculateOrbit(centerBody, currentPos, currentVel),
+                targetOrbit);
+        route.addFlightPlans(coplanarBurn);
+        active = coplanarBurn.getLast();
+
+        // === CALCULATE LAMBERT TRANSFER ===
+        // Predict where destination will be after transfer time
+        OrbitalState futureDestination = targetOrbit.calculateOrbitAfterT0(
+                route.getTotalFlightTime() + transferTime);
+
+        // Calculate departure and arrival positions
+        Vector3D departurePos = active.getEndingPosition();
+        Vector3D arrivalPos = futureDestination.position();
+
+        // Use Lambert solver to find required velocity
+        Vector3D departureVel = RocketryCalculator.calculateLambertVelocity(
+                departurePos, arrivalPos, transferTime);
+
+        // Calculate departure burn
+        double departureDeltaV = departureVel.subtract(active.getEndingVelocity()).magnitude();
+        Orbit transferOrbit = Orbit.calculateOrbit(centerBody, departurePos, departureVel);
+
+        ManeuverDetails departureBurn = new ManeuverDetails(
+                "Lambert Departure Burn",
+                departurePos,
+                active.getEndingVelocity(),
+                departurePos,
+                departureVel,
+                departureDeltaV,
+                transferOrbit,
+                0.0);
+        route.addFlightPlan(departureBurn);
+
+        // Coast on transfer orbit
+        ManeuverDetails coast = new ManeuverDetails(transferOrbit, transferTime);
+        route.addFlightPlan(coast);
+
+        // Calculate arrival velocity on transfer orbit
+        Vector3D arrivalVelTransfer = RocketryCalculator.calculateLambertVelocity(
+                departurePos, arrivalPos, transferTime);
+
+        // Calculate arrival burn to match target orbit
+        Vector3D targetVel = futureDestination.velocity();
+        double arrivalDeltaV = targetVel.subtract(arrivalVelTransfer).magnitude();
+
+        ManeuverDetails arrivalBurn = new ManeuverDetails(
+                "Lambert Arrival Burn",
+                arrivalPos,
+                arrivalVelTransfer,
+                arrivalPos,
+                targetVel,
+                arrivalDeltaV,
+                futureDestination.orbitalElements(),
+                0.0);
+        route.addFlightPlan(arrivalBurn);
+        active = arrivalBurn;
+
+        // === ARRIVAL PHASE ===
+        if (destination instanceof Gravitational) {
+            // Orbital insertion
+            ManeuverDetails capture = RocketryCalculator.calculateOrbitalInsertionDeltaV(
+                    active.getOrbitState(),
+                    (Gravitational) destination,
+                    destination,
+                    ((Gravitational) destination).getStandardOrbitalAltitude());
+            route.addFlightPlan(capture);
+
+            if (land) {
+                // Land on surface
+                ManeuverDetails landing = RocketryCalculator.calculateLandingOnGravitational(
+                        (Gravitational) destination, spacecraft);
+                route.addFlightPlan(landing);
+                route.setLandingDeltaV(landing.getDeltaV());
+                route.setFinalSpacecraftState(Spacecraft.SpacecraftState.DOCKED);
+            } else {
+                route.setFinalSpacecraftState(Spacecraft.SpacecraftState.ORBITING);
+            }
+        } else {
+            // Match velocity with station/satellite
+            OrbitalState finalState = targetOrbit.calculateOrbitAfterT0(
+                    route.getTotalFlightTime());
+            ManeuverDetails match = new ManeuverDetails(
+                    "Match Velocity",
+                    active.getEndingPosition(),
+                    active.getEndingVelocity(),
+                    finalState.position(),
+                    finalState.velocity(),
+                    RocketryCalculator.calculateMatchVelocity(
+                            active.getEndingVelocity(),
+                            finalState.velocity()),
+                    finalState.orbitalElements(),
+                    0.0);
+            route.addFlightPlan(match);
+            route.setFinalSpacecraftState(Spacecraft.SpacecraftState.DOCKED);
+        }
+
+        // Validate against spacecraft capabilities
+        if (!route.validateAgainstSpacecraft(spacecraft)) {
+            // Mark as infeasible but still return it for comparison
+            System.out.println("WARNING: Lambert route infeasible - " + route.getInfeasibilityReason());
+        }
+
+        return route;
     }
 
     /**
@@ -331,37 +585,13 @@ public class TransferOptimizer {
             Itinerary lambert = buildLambertTransfer(
                 spacecraft, origin, destination, land, 
                 originOrbit, targetOrbit, transferTime);
-            
-            if (lambert != null) {
-                options.add(lambert);
-            }
+
+            options.add(lambert);
         }
         
         return options;
     }
 
-    /**
-     * Build a Lambert transfer with a specific transfer time
-     */
-    private static Itinerary buildLambertTransfer(
-            Spacecraft spacecraft,
-            Orbiter origin,
-            Orbiter destination,
-            boolean land,
-            Orbit originOrbit,
-            Orbit targetOrbit,
-            double transferTime) {
-        
-        // TODO: Implement full Lambert transfer construction
-        // This requires:
-        // 1. Calculate initial and final positions based on transfer time
-        // 2. Use RocketryCalculator.calculateLambertVelocity() 
-        // 3. Build ManeuverDetails for departure and arrival burns
-        // 4. Construct Itinerary with launch/landing phases
-        
-        // For now, return null (not fully implemented)
-        return null;
-    }
 
     /**
      * Check if Hohmann transfer is applicable

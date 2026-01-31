@@ -2,6 +2,7 @@ package com.kaymlyn.planeteater.claude;
 
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.physics.Itinerary;
+import com.kaymlyn.planeteater.simulation.physics.TransferOptimizer;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 
 import java.util.List;
@@ -23,7 +24,7 @@ public class TransferOptimizerExample {
         boolean land = true;
         
         // === STEP 1: Generate all possible transfer options ===
-        List<TransferOptimizer.TransferOption> options = 
+        List<TransferOptimizer.TransferOption> options =
             TransferOptimizer.generateTransferOptions(minerShip, mars, ceres, land);
         
         System.out.println(TransferOptimizer.summarizeOptions(options));

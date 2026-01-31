@@ -167,18 +167,18 @@ public class Vector3D {
         return rotateInto3spaceFrom2space(rotation.x,rotation.y,rotation.z);
     }
 
-    public Vector3D rotateInto2spaceFrom3space(double omega, double i, double w) {
+    public Vector3D rotateInto2spaceFrom3space(double ascendingNode, double inclination, double periapsis) {
 
         double x = this.x;
         double y = this.y;
         double z = this.z;
 
-        double cosO = Math.cos(omega);
-        double sinO = Math.sin(omega);
-        double cosi = Math.cos(i);
-        double sini = Math.sin(i);
-        double cosw = Math.cos(w);
-        double sinw = Math.sin(w);
+        double cosO = Math.cos(ascendingNode);
+        double sinO = Math.sin(ascendingNode);
+        double cosi = Math.cos(inclination);
+        double sini = Math.sin(inclination);
+        double cosw = Math.cos(periapsis);
+        double sinw = Math.sin(periapsis);
 
         // Inverse rotation (transpose of rotation matrix)
         double x_orbital = x * (cosO * cosw - sinO * sinw * cosi) +

@@ -449,6 +449,24 @@ public record Orbit(double semiMajorAxis,
                 (eccentricity + Math.cos(trueAnomaly)) / distanceToOrbitParallelSemiMajorAxis(trueAnomaly));
     }
 
+    //Comparative Analysis
+    public Vector3D getCoincidalAscendingNode(Orbit orbit) {
+        OrbitalState state = orbit.calculateOrbitalState();
+        Orbit rotatedDown = Orbit.calculateOrbit(this.centerBody,
+                state.position().rotateInto2spaceFrom3space(ascendingNode,inclination,periapsis),
+                state.velocity().rotateInto2spaceFrom3space(ascendingNode,inclination,periapsis));
+        return rotatedDown.getAscendingNode().rotateInto3spaceFrom2space(ascendingNode,inclination,periapsis);
+    }
+    //Comparative Analysis
+    public Vector3D getCoincidalDescendingNode(Orbit orbit) {
+        OrbitalState state = orbit.calculateOrbitalState();
+        Orbit rotatedDown = Orbit.calculateOrbit(this.centerBody,
+                state.position().rotateInto2spaceFrom3space(ascendingNode,inclination,periapsis),
+                state.velocity().rotateInto2spaceFrom3space(ascendingNode,inclination,periapsis));
+        return rotatedDown.getDescendingNode().rotateInto3spaceFrom2space(ascendingNode,inclination,periapsis);
+    }
+
+
     //Utility Methods
     /**
      * Takes a phase angle, positive or negative, and moves it to a value between 0 and 2*PI.

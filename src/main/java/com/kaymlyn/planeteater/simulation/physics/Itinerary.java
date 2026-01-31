@@ -8,6 +8,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -95,6 +96,16 @@ public class Itinerary {
         }
     }
 
+    public void addFlightPlans(List<ManeuverDetails> maneuvers) {
+        for(ManeuverDetails maneuver : maneuvers) {
+            addFlightPlan(maneuver);
+        }
+    }
+
+    public void addFlightPlans(ManeuverDetails... maneuvers) {
+        addFlightPlans(Arrays.stream(maneuvers).toList());
+    }
+
     /**
      * Mark this itinerary as infeasible
      */
@@ -105,7 +116,7 @@ public class Itinerary {
 
     /**
      * Generate telemetry for rendering
-     * Creates position/velocity states for each timestep in the system
+     * Creates position/velocity states for each time step in the system
      *
      * Telemetry is cached - subsequent calls return the same list
      */
@@ -136,13 +147,6 @@ public class Itinerary {
         return maneuvers.stream()
                 .mapToDouble(ManeuverDetails::getTimeToExecute)
                 .sum();
-    }
-
-    /**
-     * Get the final maneuver in the sequence
-     */
-    public ManeuverDetails getFinalManeuver() {
-        return maneuvers.isEmpty() ? null : maneuvers.get(maneuvers.size() - 1);
     }
 
     /**
