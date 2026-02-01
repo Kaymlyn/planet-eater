@@ -101,7 +101,7 @@ public class OrbitFromStateVectors {
             }
         }
 
-        return new Orbit(a, e, i, omega, w, nu,  centralMass);
+        return new Orbit(a, e, i, omega, w, nu,  centralMass, 0.0);
     }
 
     /**

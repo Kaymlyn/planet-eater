@@ -3,6 +3,7 @@ package com.kaymlyn.planeteater.simulation.celestial;
 import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.PlanetPattern;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
+import com.kaymlyn.planeteater.simulation.physics.OrbitalState;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
@@ -65,6 +66,9 @@ public class CelestialBodyFactory {
         CentralMind centralMind = new CentralMind("KHI Central Mind", system);
         Orbit orbit = system.placeInCircularOrbit(centralMind,orbitalRadius,0);
         centralMind.setInitialOrbit(orbit);
+        OrbitalState state = orbit.calculateOrbitalState();
+        centralMind.setPosition(state.position());
+        centralMind.setVelocity(state.velocity());
         return centralMind;
     }
     public Planet createPlanetFromPattern(String id,
@@ -210,7 +214,7 @@ public class CelestialBodyFactory {
 
         Random asteroids = new Random(seed);
         for(int i=0; i < population; i++) {
-            Orbit init = OrbitalSystem.generateRandomOrbitInitializer(
+            Orbit init = OrbitalSystem.generateRandomOrbit(
                     minimumOrbitalRadius,
                     maximumOrbitalRadius,
                     0.01,

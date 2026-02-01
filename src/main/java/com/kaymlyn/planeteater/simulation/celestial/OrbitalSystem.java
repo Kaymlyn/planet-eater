@@ -3,6 +3,7 @@ package com.kaymlyn.planeteater.simulation.celestial;
 import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.physics.RocketryCalculator;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import lombok.Getter;
@@ -535,7 +536,7 @@ public class OrbitalSystem {
         return nearest;
     }
 
-    public static Orbit generateRandomOrbitInitializer(double minimumAURadius,
+    public static Orbit generateRandomOrbit(double minimumAURadius,
                                                        double maximumAURadius,
                                                        double maximumEccentricity,
                                                        double maxInclination,
@@ -543,7 +544,7 @@ public class OrbitalSystem {
                                                        Random random,
                                                        Gravitational centerBody) {
         double inclinationMax = maxInclination;
-        while (maxInclination > Math.PI/2){
+        while (inclinationMax > Math.PI/2){
             inclinationMax -= (Math.PI/2);
         }
 
@@ -557,7 +558,8 @@ public class OrbitalSystem {
                 random.nextDouble()*2*Math.PI,
                 random.nextDouble()*2*Math.PI,
                 random.nextDouble()*2*Math.PI,
-                centerBody
+                centerBody,
+                0.0  // initializer record, rooted at epoch
         );
     }
 

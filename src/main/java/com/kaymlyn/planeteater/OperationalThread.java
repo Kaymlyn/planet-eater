@@ -39,13 +39,13 @@ public class OperationalThread implements Runnable {
         Planet planet_1 = factory.createPlanetFromPattern(
                 null,
                 spark.getCentralStar(),
-                new Orbit(PhysicsConstants.AU, 0.02, .05, 0, 2, 1.5, spark.getCentralStar()),
+                new Orbit(PhysicsConstants.AU, 0.02, .05, 0, 2, 1.5, spark.getCentralStar(), 0.0),
                 PlanetPattern.EARTH,
                 1.0
         );
         Planet planet_2 = factory.createPlanetFromPattern(null,
                 spark.getCentralStar(),
-                new Orbit(PhysicsConstants.AU*5, 0.6, .02, 0, 2, 3, spark.getCentralStar()),
+                new Orbit(PhysicsConstants.AU*5, 0.6, .02, 0, 2, 3, spark.getCentralStar(), 0.0),
                 PlanetPattern.VENUS,
                 1.0
         );
@@ -74,17 +74,19 @@ public class OperationalThread implements Runnable {
         Orbit orbit = spark.placeInEllipticalOrbit(mind,
                 spark.getCentralStar(),
                 new Orbit(PhysicsConstants.AU*1.5, 0, 0.02,
-                        Math.PI/3, 2, .2, spark.getCentralStar()));
+                        Math.PI/3, 2, .2, spark.getCentralStar(), 0.0));
         System.out.println("Orbit post placement : " + orbit);
         System.out.println("Init orbit according to Mind : " + mind.getInitialOrbit());
         System.out.println("Calc orbit according to Mind : " + mind.calculateCurrentOrbit());
         mind.setSystem(spark);
 
         Spacecraft vehicle = VehicleFactory.createCargoShuttle("Shuttle-1",mind);
-        vehicle.setOrbiting(mind);
         mind.dock(vehicle);
         System.out.println("Calc orbit according to Ship : " + Orbit.calculateOrbit(spark.getCentralStar(),vehicle.getPosition(), vehicle.getVelocity()));
+
+        System.out.println("Spacecraft Location : " + vehicle.getPosition());
         Itinerary route = vehicle.planRoute(planet_1, true, TransferOptimizer.OptimizationGoal.MINIMUM_DELTAV );
+        System.out.println(route.getSummary());
         System.out.println(route);
         System.out.println(vehicle.fuelRequired(route.getTravelDeltaV()));
         System.out.println(vehicle.getFuelMass());
@@ -105,7 +107,7 @@ public class OperationalThread implements Runnable {
 //            throw new RuntimeException(e);
 //        }
         System.out.println("Unit Vector " + Vector3D.randomUnitVector());
-        new RenderingThread(spark, 100000,1000, 4, new Vector3D(0,.700,0)).run();
+        new RenderingThread(spark, 2000,25, 4, new Vector3D(0,.700,0)).run();
 
     }
 }

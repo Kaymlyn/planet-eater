@@ -19,6 +19,7 @@ public class VehicleFactory {
         Spacecraft ship = new Spacecraft(id, construction.getTotalMass(), 2.0e10, 120.0, 3000.0, false, 0,0, shipyard);
 
         System.out.println("Shipyard : " + ship.getOrbiting());
+
         // Construction materials
         ship.getConstruction().addBulkMaterial(construction);
 

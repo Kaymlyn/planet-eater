@@ -143,7 +143,7 @@ public class MultiBurnTransfer {
                     "Coast after inclination change",
                     position, position,
                     new Orbit(a1, e1, i2,
-                            startOrbit.ascendingNode(), startOrbit.periapsis(), Math.PI, startOrbit.centerBody()),
+                            startOrbit.ascendingNode(), startOrbit.periapsis(), Math.PI, startOrbit.centerBody(), 0.0),
                     coastTime, currentTime
             );
             plan.addCoast(coast1);
@@ -151,7 +151,7 @@ public class MultiBurnTransfer {
 
             // Update current orbit with new inclination
             currentOrbit = new Orbit(a1, e1, i2,
-                    startOrbit.ascendingNode(), startOrbit.periapsis(), 0, startOrbit.centerBody());
+                    startOrbit.ascendingNode(), startOrbit.periapsis(), 0, startOrbit.centerBody(), 0.0);
 
             // Recalculate points for the new orbit
             points = OrbitalPoints.calculateOrbitalPoints(currentOrbit);
@@ -217,7 +217,7 @@ public class MultiBurnTransfer {
             CoastPhase transferCoast = new CoastPhase(
                     "Transfer orbit coast",
                     departurePos, new Vector3D(a2, 0, 0),
-                    new Orbit(a_transfer, Math.abs(a2 - r1)/(a2 + r1), i2, 0, 0, 0, startOrbit.centerBody()),
+                    new Orbit(a_transfer, Math.abs(a2 - r1)/(a2 + r1), i2, 0, 0, 0, startOrbit.centerBody(), 0.0),
                     transferTime, currentTime
             );
             plan.addCoast(transferCoast);
@@ -313,7 +313,7 @@ public class MultiBurnTransfer {
         plan.addCoast(new CoastPhase("Bi-elliptic: Coast to apoapsis",
                 new Vector3D(r1, 0, 0), new Vector3D(r_intermediate, 0, 0),
                 new Orbit(a_transfer1, (r_intermediate - r1)/(r_intermediate + r1),
-                        startOrbit.inclination(), 0, 0, 0, startOrbit.centerBody()),
+                        startOrbit.inclination(), 0, 0, 0, startOrbit.centerBody(), 0.0),
                 coast1Time, currentTime));
         currentTime += coast1Time;
 
@@ -332,7 +332,7 @@ public class MultiBurnTransfer {
         plan.addCoast(new CoastPhase("Bi-elliptic: Coast to target",
                 new Vector3D(r_intermediate, 0, 0), new Vector3D(a2, 0, 0),
                 new Orbit(a_transfer2, Math.abs(a2 - r_intermediate)/(a2 + r_intermediate),
-                        startOrbit.inclination(), 0, 0, 0, startOrbit.centerBody()),
+                        startOrbit.inclination(), 0, 0, 0, startOrbit.centerBody(), 0.0),
                 coast2Time, currentTime));
         currentTime += coast2Time;
 

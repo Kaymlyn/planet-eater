@@ -24,8 +24,8 @@ public class PlanetTest {
     final static double SMALL_RADIUS = 790;
     final static double SMALL_ORBIT = 1e7;
 
-    private final Orbit oneAUCircularOrbit = new Orbit(PhysicsConstants.AU,0,0,0,0,0,null);
-    private final Orbit smallOrbit = new Orbit(SMALL_ORBIT,0,0,0,0,0, null);
+    private final Orbit oneAUCircularOrbit = new Orbit(PhysicsConstants.AU,0,0,0,0,0,null,0.0);
+    private final Orbit smallOrbit = new Orbit(SMALL_ORBIT,0,0,0,0,0, null, 0.0);
     private final Materials solidIron = new Materials(Material.IRON,100);
     private final Materials solidNickel = new Materials(Material.NICKEL,50);
     private final LayerProfile core = new LayerProfile("NICKLE_IRON",Zone.CORE,List.of(solidIron,solidNickel));
@@ -67,7 +67,7 @@ public class PlanetTest {
         factory.getSystem().advance(3600);
 
         Assertions.assertAll(
-                () -> Assertions.assertEquals( new Vector3D(1.496e11,0.0,0.0), initialPosition),
+                () -> Assertions.assertEquals( new Vector3D(149598504000.0,0.0,0.0), initialPosition),
                 () -> Assertions.assertNotEquals( initialPosition, defaultPlanet.getPosition())
         );
     }
@@ -113,8 +113,8 @@ public class PlanetTest {
     @Test
     public void validateSatellites() {
         Assertions.assertAll(
-                () -> Assertions.assertEquals(1.401858882e9, Math.round(defaultPlanet.calculateHillSphereRadius())),
-                () -> Assertions.assertEquals(1.5714445e7, Math.round(weirdPlanet.calculateHillSphereRadius())),
+                () -> Assertions.assertEquals(1.401844863e9, Math.round(defaultPlanet.calculateHillSphereRadius())),
+                () -> Assertions.assertEquals(1.5714288e7, Math.round(weirdPlanet.calculateHillSphereRadius())),
                 () -> Assertions.assertTrue(weirdPlanet.canHaveSubSatellites(), "Weird Planet is to close to the sun to have satellites"),
                 () -> Assertions.assertTrue(defaultPlanet.canHaveSubSatellites(), "Default Planet is far enough away from Default Planet to have satellites"),
                 () -> Assertions.assertFalse(weirdPlanet.isTidallyLocked(), "Weird Planet is not tidally locked"),

@@ -142,15 +142,15 @@ public class Vector3D {
         return reduce.add(orientation).add(magnitude);
     }
     
-    public Vector3D rotateInto3spaceFrom2space(double omega, double i, double w) {
+    public Vector3D rotateInto3spaceFrom2space(double ascendingNode, double inclination, double periapsis) {
 
         // Rotation matrices to transform to 3D space
-        double cosO = Math.cos(omega);
-        double sinO = Math.sin(omega);
-        double cosi = Math.cos(i);
-        double sini = Math.sin(i);
-        double cosw = Math.cos(w);
-        double sinw = Math.sin(w);
+        double cosO = Math.cos(ascendingNode);
+        double sinO = Math.sin(ascendingNode);
+        double cosi = Math.cos(inclination);
+        double sini = Math.sin(inclination);
+        double cosw = Math.cos(periapsis);
+        double sinw = Math.sin(periapsis);
 
         // Transform from orbital plane to 3D
         double x =  this.x * (cosO * cosw - sinO * sinw * cosi) -

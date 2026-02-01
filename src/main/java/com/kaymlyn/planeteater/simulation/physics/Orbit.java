@@ -10,7 +10,8 @@ public record Orbit(double semiMajorAxis,
                     double ascendingNode,
                     double periapsis,
                     double trueAnomaly,
-                    Gravitational centerBody) {
+                    Gravitational centerBody,
+                    double epoch) {
 
     //Orbital Creation
     /**
@@ -84,7 +85,8 @@ public record Orbit(double semiMajorAxis,
                 ascendingNode,
                 argumentOfPeriapsis,
                 singularityAdjustment(trueAnomaly),
-                centerBody
+                centerBody,
+                centerBody.getSystem().getCurrentTime()  // epoch = now
         );
     }
 
@@ -97,14 +99,15 @@ public record Orbit(double semiMajorAxis,
     }
 
     public static OrbitalState createCircularOrbit(double radius, Gravitational centerBody) {
-        return new Orbit(radius, 0.0, 0.0, 0.0, 0.0, 0.0, centerBody)
+        return new Orbit(radius, 0.0, 0.0, 0.0, 0.0, 0.0, centerBody,0.0)
                 .calculateOrbitalState();
     }
 
 
     //Current and Future State Retrieval
     public OrbitalState calculateOrbitalState() {
-        return calculateOrbitAfterT0(centerBody.getSystem().getCurrentTime());
+        double elapsedSinceEpoch = centerBody.getSystem().getCurrentTime() - epoch;
+        return calculateOrbitAfterT0(elapsedSinceEpoch);
     }
 
     /**
@@ -174,12 +177,12 @@ public record Orbit(double semiMajorAxis,
                         ascendingNode,
                         periapsis,
                         nu,
-                        centerBody
+                        centerBody,
+                        0.0
                 )
         );
     }
 
-    //Derived Scalar Values
     public double meanAngularVelocity() {
         return Math.sqrt(centerBody.getGravitationalParameter() / Math.pow(semiMajorAxis, 3));
     }
@@ -477,7 +480,7 @@ public record Orbit(double semiMajorAxis,
      * @param currentPhaseAngle angle in radians to normalize between 0 and 2*PI
      * @return normalized angle in radians
      */
-    private static double normalizeAngle0and2PI(double currentPhaseAngle) {
+    public static double normalizeAngle0and2PI(double currentPhaseAngle) {
         if (currentPhaseAngle < 0) {
             return normalizeAngle0and2PI(currentPhaseAngle + 2 * Math.PI);
         } else if (currentPhaseAngle >= 2 * Math.PI) {
@@ -540,4 +543,5 @@ public record Orbit(double semiMajorAxis,
 
         return E;
     }
+
 }

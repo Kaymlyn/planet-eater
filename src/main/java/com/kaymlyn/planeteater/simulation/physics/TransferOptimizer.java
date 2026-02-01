@@ -101,7 +101,7 @@ public class TransferOptimizer {
         if (shouldConsiderBielliptic(originOrbit, targetOrbit)) {
             Itinerary bielliptic = buildBiellipticTransfer(
                 spacecraft, origin, destination, land, originOrbit, targetOrbit);
-            if (bielliptic != null && bielliptic.isFeasible()) {
+            if (bielliptic.isFeasible()) {
                 options.add(new TransferOption(TransferStrategy.BI_ELLIPTIC, bielliptic));
             }
         }
@@ -207,6 +207,7 @@ public class TransferOptimizer {
             }
         }
 
+        System.out.println("Active Null : " + active);
         // === COPLANAR ADJUSTMENT ===
         List<ManeuverDetails> coplanarBurn;
         if(active == null) {
@@ -216,8 +217,7 @@ public class TransferOptimizer {
                     destinationOrbit);
         } else {
             coplanarBurn = RocketryCalculator.adjustToCoplanar(
-                    Orbit.calculateOrbit(destinationOrbit.centerBody(),
-                            active.getEndingPosition(), active.getEndingVelocity()),
+                    active.getOrbitState(),
                     destinationOrbit);
         }
         route.addFlightPlans(coplanarBurn);

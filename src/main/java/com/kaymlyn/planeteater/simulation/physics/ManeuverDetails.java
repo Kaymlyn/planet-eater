@@ -42,7 +42,7 @@ public class ManeuverDetails {
         startingVelocity = state.velocity();
         endingVelocity = wait.velocity();
         deltaV = 0.0;
-        orbitState = wait.orbitalElements();
+        orbitState = state.orbitalElements();      // FIX: start-of-wait orbit
         timeToExecute = waitTime;
     }
 }
