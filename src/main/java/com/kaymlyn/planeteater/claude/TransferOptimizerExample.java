@@ -25,7 +25,7 @@ public class TransferOptimizerExample {
         
         // === STEP 1: Generate all possible transfer options ===
         List<TransferOptimizer.TransferOption> options =
-            TransferOptimizer.generateTransferOptions(minerShip, mars, ceres, land);
+            TransferOptimizer.generateTransferOptions(minerShip, mars, ceres, land,0.0);
         
         System.out.println(TransferOptimizer.summarizeOptions(options));
         
@@ -88,10 +88,11 @@ public class TransferOptimizerExample {
     public static void manualSelection(
             Spacecraft spacecraft,
             Orbiter origin, 
-            Orbiter destination) {
+            Orbiter destination,
+            double maneuverStart) {
         
         List<TransferOptimizer.TransferOption> options = 
-            TransferOptimizer.generateTransferOptions(spacecraft, origin, destination, true);
+            TransferOptimizer.generateTransferOptions(spacecraft, origin, destination, true, maneuverStart);
         
         System.out.println("Available transfer options:");
         System.out.println();

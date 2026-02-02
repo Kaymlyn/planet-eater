@@ -18,9 +18,10 @@ public class ManeuverDetails {
     private final double deltaV;
     private final Orbit orbitState;
     private final double timeToExecute;
+    private final double epoch0;
 
     //Orbital NoOp
-    public ManeuverDetails(Orbit orbit) {
+    public ManeuverDetails(Orbit orbit, double startTime) {
         id = "NoOp-" + UUID.randomUUID();
         OrbitalState state = orbit.calculateOrbitalState();
         startingPosition = state.position();
@@ -30,13 +31,14 @@ public class ManeuverDetails {
         deltaV = 0.0;
         orbitState = orbit;
         timeToExecute = 0.0;
+        epoch0 = startTime;
     }
 
     //Holding Orbit
-    public ManeuverDetails(Orbit orbit, double waitTime) {
+    public ManeuverDetails(Orbit orbit, double waitTime, double startTime) {
         id = "Holding-" + UUID.randomUUID();
         OrbitalState state = orbit.calculateOrbitalState();
-        OrbitalState wait = orbit.calculateOrbitAfterT0(waitTime);
+        OrbitalState wait = orbit.calculateOrbitAfterT0(orbit.epoch() + waitTime);
         startingPosition = state.position();
         endingPosition = wait.position();
         startingVelocity = state.velocity();
@@ -44,5 +46,10 @@ public class ManeuverDetails {
         deltaV = 0.0;
         orbitState = state.orbitalElements();      // FIX: start-of-wait orbit
         timeToExecute = waitTime;
+        epoch0 = startTime;
+    }
+
+    public double getTimeAtManeuverEnd() {
+        return epoch0 + timeToExecute;
     }
 }

@@ -37,12 +37,15 @@ public class RenderingThread implements Runnable {
         int skip = Math.max(1, stepOver);
         System.out.printf("Simulating %d cycles with %d stepOver between frames rendered.%n",cycles,skip);
         OrbitalSystemRenderer renderer = new OrbitalSystemRenderer(spark,visibleAU);
+        Date start = new Date();
         for(int i = 0; i < cycles; i++) {
-            Date start = new Date();
             if(i%skip == 0) {
-                System.out.printf("Rendering cycle %d as Frame-%d%n",i,i/skip);
+
+                if(i%(skip*5) == 0)
+                    System.out.printf("Rendering cycle %d as Frame-%d - Image Rendering took %3d milliseconds \r",i,i/skip,(new Date().getTime() - start.getTime()));
                 renderer.render(true, visibleAU, rotate);
-                System.out.println("Image Rendering took " + (new Date().getTime() - start.getTime()) + " milliseconds");
+                System.out.print("");
+                start = new Date();
             }
             spark.stepVerlet();
         }

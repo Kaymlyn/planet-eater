@@ -22,9 +22,19 @@ public abstract class OrbitingBody implements Orbiter {
     
     public OrbitingBody(String id, Vector3D position, Vector3D velocity, Gravitational parentBody) {
         this.id = id;
-        this.position = position;
-        this.velocity = velocity;
-        this.initialOrbit = Orbit.calculateOrbit(parentBody,position,velocity);
+        if(position != Vector3D.ZERO) {
+            this.position = position;
+        } else {
+            this.position = Vector3D.randomUnitVector();
+        }
+        if(velocity != Vector3D.ZERO) {
+            this.velocity = velocity;
+        } else {
+            this.velocity = Vector3D.randomUnitVector();
+        }
+        System.out.println("position : " + this.position + " velocity : " + this.velocity);
+
+        this.initialOrbit = Orbit.calculateOrbit(parentBody,this.position, this.velocity);
     }
 
     /**

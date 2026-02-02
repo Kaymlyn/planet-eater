@@ -1,5 +1,6 @@
 package com.kaymlyn.planeteater;
 
+import com.kaymlyn.planeteater.simulation.physics.ManeuverDetails;
 import com.kaymlyn.planeteater.simulation.physics.TransferOptimizer;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
@@ -85,9 +86,15 @@ public class OperationalThread implements Runnable {
         System.out.println("Calc orbit according to Ship : " + Orbit.calculateOrbit(spark.getCentralStar(),vehicle.getPosition(), vehicle.getVelocity()));
 
         System.out.println("Spacecraft Location : " + vehicle.getPosition());
-        Itinerary route = vehicle.planRoute(planet_1, true, TransferOptimizer.OptimizationGoal.MINIMUM_DELTAV );
+        Itinerary route = vehicle.planRoute(planet_1, true, spark.getCurrentTime(), TransferOptimizer.OptimizationGoal.MINIMUM_DELTAV );
+
+        System.out.println(route.getManeuvers());
         System.out.println(route.getSummary());
-        System.out.println(route);
+
+        for(ManeuverDetails details : route.getManeuvers()) {
+            System.out.println(details.getEpoch0() + " " + details.getTimeToExecute() + " " + details.getTimeAtManeuverEnd() + " " + details.getId());
+        }
+
         System.out.println(vehicle.fuelRequired(route.getTravelDeltaV()));
         System.out.println(vehicle.getFuelMass());
         System.out.println(vehicle.fuelRequired(route.getTravelDeltaV()) < vehicle.getFuelMass());
@@ -101,13 +108,7 @@ public class OperationalThread implements Runnable {
 
     @Override
     public void run() {
-//        try {
-//            new OrbitalSystemRenderer(spark).renderVideoFromImages(1);
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
-        System.out.println("Unit Vector " + Vector3D.randomUnitVector());
-        new RenderingThread(spark, 2000,25, 4, new Vector3D(0,.700,0)).run();
+        new RenderingThread(spark, 20,4, 4, new Vector3D(0,0,0)).run();
 
     }
 }

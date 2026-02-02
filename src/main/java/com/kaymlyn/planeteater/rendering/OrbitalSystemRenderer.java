@@ -14,11 +14,15 @@ import org.jcodec.common.model.Rational;
 import org.jcodec.scale.AWTUtil;
 
 import javax.imageio.ImageIO;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileFilter;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.Objects;
 import java.util.Random;
 
@@ -30,14 +34,12 @@ public class OrbitalSystemRenderer {
     private final OrbitalSystem system;
     private int i;
     private final int scalar;
-    private final double visibleAU;
 
     private static final int imageType = TYPE_INT_RGB;
     public OrbitalSystemRenderer(OrbitalSystem system, double visibleAU) {
         scalar = 80;
         i = 0;
         this.system = system;
-        this.visibleAU = visibleAU;
         File directory = new File("orbits");
         if(!directory.exists()) {
             directory.mkdir();
@@ -128,17 +130,11 @@ public class OrbitalSystemRenderer {
                         (int) (xRaw * adjustedAU + ((double) (width * scalar) / 2) + 3),
                         (int) (yRaw * adjustedAU + ((double) (height * scalar) / 2)));
 
-                System.out.println(orbiter.getId() + " coords: " + (xRaw * adjustedAU + ((double) (width * scalar) /2)) + " : " + (yRaw * adjustedAU + ((double)(height*scalar)/2)));
+                //System.out.println(orbiter.getId() + " coords: " + (xRaw * adjustedAU + ((double) (width * scalar) /2)) + " : " + (yRaw * adjustedAU + ((double)(height*scalar)/2)));
             }
 
         }
         for(Spacecraft ship : system.getSpacecraftInTransit().values()) {
-            if(ship.getTelemetry() != null && ship.getCurrentTravelCycle() < ship.getTelemetry().size()) {
-//                System.out.println("origin :" + ship.getSystem().getOrbiter("KHI Central Mind").getPosition());
-//                System.out.println("positi :" + ship.getTelemetry().get(ship.getCurrentTravelCycle()).position());
-//                System.out.println("destin :" + ship.getSystem().getOrbiter("Theseus").getPosition());
-//                System.out.println("Maneuv :" + ship.getTelemetry().get(ship.getCurrentTravelCycle()).id());
-            }
             if(ship.getState() != Spacecraft.SpacecraftState.DOCKED) {
                 canvas.setColor(
                         new Color(
@@ -166,7 +162,7 @@ public class OrbitalSystemRenderer {
                 Rectangle rectangle = new Rectangle();
                 int size = 1;
 
-                System.out.println("Ship coords: " + (xRaw * adjustedAU + ((double) (width * scalar) / 2)) + " : " + (yRaw * adjustedAU + ((double) (height * scalar) / 2)));
+//                System.out.println("Ship coords: " + (xRaw * adjustedAU + ((double) (width * scalar) / 2)) + " : " + (yRaw * adjustedAU + ((double) (height * scalar) / 2)));
                 rectangle.setRect(xRaw * adjustedAU + ((double) (width * scalar) / 2), yRaw * adjustedAU + ((double) (height * scalar) / 2), size, size);
                 canvas.fill(rectangle);
                 renderInfo(canvas,
@@ -199,8 +195,17 @@ public class OrbitalSystemRenderer {
         scale.scale(scaleWidth,scaleHeight);
         SequenceEncoder enc = SequenceEncoder.createWithFps(NIOUtils.writableChannel(output), Rational.R(30,1));
         int i=0;
+        int totalFiles = new File("orbits/").listFiles(pathname -> pathname.getName().endsWith(".png")).length;
+        int logSkip = 20;
+        Date start = new Date();
         File inputFrame = new File("orbits/Frame-" + i + ".png");
         while(inputFrame.exists()) {
+            if(i%logSkip == 0) {
+                double completed = (double)i/(double)totalFiles;
+                int remainingSeconds = (int) ((double) ((totalFiles-i) * (new Date().getTime() - start.getTime())) /(logSkip*1000));
+                System.out.printf("\rRendering Video Frame %4d - %3.1f%% complete : %3d minutes, %2d seconds remaining.",i,completed*100.0,remainingSeconds/60, remainingSeconds%60);
+                start = new Date();
+            }
             try {
                 enc.encodeNativeFrame(scaleImage(inputFrame, scaleWidth, scaleHeight));
             } catch (IOException e) {
