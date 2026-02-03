@@ -281,7 +281,7 @@ public class RocketryCalculator {
     public static List<ManeuverDetails> adjustToCoplanar(Orbit origin,
                                                          Orbit targetInclination,
                                                          double maneuverStart) {
-        OrbitalState cardinalOrbit = origin.calculateOrbitAfterT0(maneuverStart);
+        OrbitalState cardinalOrbit = origin.calculateOrbitalState();
         Vector3D ascendingCrossOver = cardinalOrbit.orbitalElements().getCoincidentalAscendingNode(targetInclination);
         double waitToAscendingCrossOver = cardinalOrbit.orbitalElements().calculateTimeToPoint(ascendingCrossOver);
         Vector3D descendingCrossOver = cardinalOrbit.orbitalElements().getCoincidentalDescendingNode(targetInclination);

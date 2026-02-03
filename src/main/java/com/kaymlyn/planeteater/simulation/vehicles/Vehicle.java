@@ -35,10 +35,6 @@ public abstract class Vehicle {
     protected List<Environment> environments;// Current cargo
     protected List<Automaton> crew;
 
-    public Vehicle() {
-
-    }
-
     public Vehicle(String id, double dryMass, double maxFuelCapacity, double cargoCapacity, double exhaustVelocity, boolean hasLifeSupport, int maxCrewCapacity, int minCrewRequirement) {
 
         this.id = id;

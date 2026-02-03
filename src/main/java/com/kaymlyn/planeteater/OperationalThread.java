@@ -91,8 +91,9 @@ public class OperationalThread implements Runnable {
         System.out.println(route.getManeuvers());
         System.out.println(route.getSummary());
 
+        System.out.println(" Time: " + spark.getCurrentTime() + " " + mind.getInitialOrbit().calculateOrbitalState().position() + " " + mind.getPosition());
         for(ManeuverDetails details : route.getManeuvers()) {
-            System.out.println(details.getEpoch0() + " " + details.getTimeToExecute() + " " + details.getTimeAtManeuverEnd() + " " + details.getId());
+            System.out.println(details.getStartingPosition() + " " + details.getEndingPosition() + " " + details.getId());
         }
 
         System.out.println(vehicle.fuelRequired(route.getTravelDeltaV()));
@@ -108,7 +109,7 @@ public class OperationalThread implements Runnable {
 
     @Override
     public void run() {
-        new RenderingThread(spark, 20,4, 4, new Vector3D(0,0,0)).run();
+        new RenderingThread(spark, (int)(1200*PhysicsConstants.SECONDS_PER_DAY/3600),25, 4, new Vector3D(0,.25,0)).run();
 
     }
 }

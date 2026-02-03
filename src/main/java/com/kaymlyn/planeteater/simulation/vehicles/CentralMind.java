@@ -34,7 +34,11 @@ public class CentralMind extends Vehicle implements Orbiter, Dockable {
 
     @Override
     public Orbit calculateCurrentOrbit() {
-        return Orbit.calculateOrbitFor(this);
+        Orbit orbit = Orbit.calculateOrbitFor(this);
+        if(initialOrbit == null) {
+            initialOrbit = orbit;
+        }
+        return orbit;
     }
 
     @Override

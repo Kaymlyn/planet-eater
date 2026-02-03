@@ -42,7 +42,7 @@ public class RenderingThread implements Runnable {
             if(i%skip == 0) {
 
                 if(i%(skip*5) == 0)
-                    System.out.printf("Rendering cycle %d as Frame-%d - Image Rendering took %3d milliseconds \r",i,i/skip,(new Date().getTime() - start.getTime()));
+                    System.out.printf("Rendering cycle %d as Frame-%d - remaining time %.0f seconds.\r",i,i/skip,((cycles - i)) * ((new Date().getTime() - start.getTime())/(1000.0 * skip)));
                 renderer.render(true, visibleAU, rotate);
                 System.out.print("");
                 start = new Date();
