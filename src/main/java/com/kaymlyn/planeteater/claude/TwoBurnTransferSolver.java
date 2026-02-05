@@ -310,6 +310,11 @@ public class TwoBurnTransferSolver {
                 new Vector3D(0, 0, 0), // Dummy velocity
                 new Gravitational() {
                     @Override
+                    public String getId() {
+                        return "point orbit";
+                    }
+
+                    @Override
                     public double getMass() {
                         return 1;
                     }

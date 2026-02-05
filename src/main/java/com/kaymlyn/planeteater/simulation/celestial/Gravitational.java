@@ -6,6 +6,7 @@ import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 public interface Gravitational {
     double STANDARD_ORBIT_MULTIPLIER = 1.1;
 
+    String getId();
     double getMass();
     Vector3D getVelocity();
     double getRadius();

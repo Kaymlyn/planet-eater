@@ -9,6 +9,7 @@ import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.List;
 @EqualsAndHashCode
 @ToString
 @Data
+@NoArgsConstructor
 public abstract class Vehicle {
 
     protected String id;
@@ -161,29 +163,11 @@ public abstract class Vehicle {
     }
 
     public double fuelRequired(double deltaVSpent){
-//        if(getAvailableDeltaV() < deltaVSpent) {
-//            return Double.POSITIVE_INFINITY;
-//        }
 
         return getTotalMass() - getTotalMass()/Math.exp(deltaVSpent/exhaustVelocity);
 
     }
 
     public abstract Gravitational getLocation();
-//    /**
-//     * Calculate fuel required for a given delta-v
-//     * m_fuel = m_dry * (e^(Δv/v_e) - 1)
-//     */
-//    public double getFuelRequiredForDeltaV(double deltaV, double spentFuelMass) {
-//        double payloadMass = dryMass + cargo.getTotalMass() +
-//            crew.stream().mapToDouble(Automaton::getMass).sum() + fuelMass;
-//        System.out.println("Payload Mass : " + payloadMass);
-//
-//        //Should be: exhaustVelocity*ln(mass beginning / mass after)
-//        return Math.exp(deltaV/exhaustVelocity)*payloadMass
-//        return exhaustVelocity *
-//        return payloadMass * (1 - Math.exp(- (deltaV /
-//                (exhaustVelocity * getLocation().getGravitationalForce(getLocation().getPosition().distanceTo(position))))));
-//    }
 
 }

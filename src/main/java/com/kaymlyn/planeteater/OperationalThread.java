@@ -83,15 +83,13 @@ public class OperationalThread implements Runnable {
 
         Spacecraft vehicle = VehicleFactory.createCargoShuttle("Shuttle-1",mind);
         mind.dock(vehicle);
-        System.out.println("Calc orbit according to Ship : " + Orbit.calculateOrbit(spark.getCentralStar(),vehicle.getPosition(), vehicle.getVelocity()));
 
-        System.out.println("Spacecraft Location : " + vehicle.getPosition());
         Itinerary route = vehicle.planRoute(planet_1, true, spark.getCurrentTime(), TransferOptimizer.OptimizationGoal.MINIMUM_DELTAV );
 
         System.out.println(route.getManeuvers());
         System.out.println(route.getSummary());
 
-        System.out.println(" Time: " + spark.getCurrentTime() + " " + mind.getInitialOrbit().calculateOrbitalState().position() + " " + mind.getPosition());
+        System.out.println(" Time: " + spark.getCurrentTime() + " " + mind.calculateCurrentOrbit().calculateOrbitalState().position() + " " + mind.getPosition());
         for(ManeuverDetails details : route.getManeuvers()) {
             System.out.println(details.getStartingPosition() + " " + details.getEndingPosition() + " " + details.getId());
         }
@@ -109,7 +107,7 @@ public class OperationalThread implements Runnable {
 
     @Override
     public void run() {
-        new RenderingThread(spark, (int)(1200*PhysicsConstants.SECONDS_PER_DAY/3600),25, 4, new Vector3D(0,.25,0)).run();
+        new RenderingThread(spark, (int)(200*PhysicsConstants.SECONDS_PER_DAY/3600),8, 4, new Vector3D(.9,0,0).multiply(Math.PI)).run();
 
     }
 }

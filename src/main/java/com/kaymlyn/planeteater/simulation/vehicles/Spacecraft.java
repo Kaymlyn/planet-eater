@@ -203,11 +203,10 @@ public class Spacecraft extends Vehicle {
 
     //Calculate a dry run of the route
     public Itinerary planRoute(@NonNull Orbiter destination, boolean land, double maneuverStart, TransferOptimizer.OptimizationGoal priority) {
-        Itinerary plannedRoute = Objects.requireNonNull(
+
+        return Objects.requireNonNull(
                 TransferOptimizer.selectBestTransfer(TransferOptimizer.generateTransferOptions(this, this.orbiting, destination, land, maneuverStart),
                 Objects.requireNonNullElse(priority, TransferOptimizer.OptimizationGoal.MINIMUM_DELTAV))).getItinerary();
-
-        return plannedRoute;
     }
 
 

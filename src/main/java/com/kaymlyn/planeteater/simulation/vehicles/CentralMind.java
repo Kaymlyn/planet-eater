@@ -18,7 +18,7 @@ import java.util.Objects;
  * Represents the player's orbital platform/base of operations
  */
 @Data
-public class CentralMind extends Vehicle implements Orbiter, Dockable {
+public class CentralMind extends Vehicle implements Orbiter, Satellite, Dockable {
 
     private Gravitational parentBody;
     private OrbitalSystem system;

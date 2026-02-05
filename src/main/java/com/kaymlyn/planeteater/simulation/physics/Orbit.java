@@ -38,8 +38,6 @@ public record Orbit(double semiMajorAxis,
                                        Vector3D startPosition,
                                        Vector3D startVelocity) {
 
-        System.out.println(startPosition + " " + startVelocity);
-
         // Specific orbital energy
         double energy = startVelocity.magnitudeSquared() / 2.0 -
                 centerBody.getGravitationalParameter() / startPosition.magnitude();

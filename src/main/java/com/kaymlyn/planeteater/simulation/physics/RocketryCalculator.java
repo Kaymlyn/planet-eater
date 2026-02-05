@@ -1,59 +1,15 @@
 package com.kaymlyn.planeteater.simulation.physics;
 
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
-import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 
-import java.util.ArrayList;
-import java.util.List;
 
 public class RocketryCalculator {
 
-    public static ManeuverDetails calculateTakeoffToStandardOrbit(Gravitational currentLocation,
-                                                Spacecraft spacecraft, double maneuverStart) {
-
-        double rOrbit = currentLocation.getStandardOrbitalRadius();
-
-        Vector3D orbitalVelocity = currentLocation.getStandardCircularOrbitVector();
-        Vector3D orbitalPosition = currentLocation.getStandardCircularOrbitPosition( Vector3D.randomUnitVector());
-        Orbit orbit = Orbit.calculateOrbit(currentLocation,orbitalPosition,orbitalVelocity);
-        return new ManeuverDetails(
-                "Take off to Standard Orbit " + spacecraft.getId() + " ^ " + currentLocation,
-                spacecraft.getPosition(),spacecraft.getVelocity(),
-                orbitalPosition,
-                orbitalVelocity,
-                currentLocation.getEscapeVelocityFromRadius(rOrbit) + (currentLocation.getOrbitalVelocity(rOrbit) - Math.sqrt(currentLocation.getGravitationalParameter() / rOrbit)),
-                orbit,
-                //distance divided by half orbital velocity
-                currentLocation.getStandardOrbitalAltitude()*2/orbitalVelocity.magnitude(),
-                maneuverStart
-        );
-    }
-
     public static ManeuverDetails calculateLandingOnGravitational(Gravitational currentLocation,
-                                                   Spacecraft spacecraft, double maneuverStart) {
-        double rOrbit = currentLocation.getStandardOrbitalRadius();
+                                                                  ManeuverDetails previousManeuver) {
 
-        // Surface velocity (if rotating, would subtract rotation speed)
-        // For simplification, assume no rotation
-        double vSurface = 0.0;
-
-        Orbit orbit = Orbit.calculateOrbit(
-                currentLocation,
-                currentLocation.getStandardCircularOrbitPosition(Vector3D.randomUnitVector()),
-                currentLocation.getStandardCircularOrbitVector());
-
-        return new ManeuverDetails(
-                "Landing " + spacecraft.getId() + " v " + currentLocation,
-                spacecraft.getPosition(),spacecraft.getVelocity(),
-                currentLocation.getPosition(),
-                Vector3D.ZERO,
-                Math.abs(currentLocation.getOrbitalVelocity(rOrbit) - currentLocation.getOrbitalVelocity(currentLocation.getRadius())),
-                orbit,
-                //reentry speed ~333.3 m/s (Transonic speed) scale factor 3600/1200 = 3
-                currentLocation.getStandardOrbitalAltitude() * 3,
-                maneuverStart
-        );
+        return previousManeuver.finallyLand(currentLocation);
     }
 
     public static double calculateNextLaunchWindowWaitTime(Orbit origin,
@@ -70,7 +26,6 @@ public class RocketryCalculator {
                 originState.velocity().magnitude() / originState.position().magnitude());
     }
 
-
     private static double calculateMeanTransferTime(Orbit origin, Orbit targetOrbit) {
         if(origin.centerBody() == targetOrbit.centerBody()) {
             OrbitalState originState = origin.calculateOrbitalState();
@@ -80,16 +35,6 @@ public class RocketryCalculator {
             return Double.NaN;
         }
     }
-//
-//
-//    private static double calculateMeanTransferTime(Orbiter origin, Orbit targetOrbit) {
-//        if(origin.getParentBody() == targetOrbit.centerBody()) {
-//            return Math.PI * Math.sqrt(
-//                    Math.pow((origin.getPosition().magnitude() + targetOrbit.semiMajorAxis()) / 2, 3) / origin.getParentBody().getGravitationalParameter());
-//        } else {
-//            return Double.NaN;
-//        }
-//    }
 
     private static double getMinimalWaitTime(double phaseAngleDifference, double targetAngularVelocity, double spacecraftAngularVelocity) {
         double waitTime = getWaitTime(phaseAngleDifference, targetAngularVelocity, spacecraftAngularVelocity);
@@ -160,8 +105,8 @@ public class RocketryCalculator {
      */
     public static ManeuverDetails calculateHohmannTransferBetweenOrbits(Orbit origin,
                                                                         Orbit target,
-                                                                        double maneuverStart) {
-        double parentMass = PhysicsConstants.G * origin.centerBody().getMass();
+                                                                        ManeuverDetails previousManeuver) {
+        double parentMass = origin.centerBody().getGravitationalParameter();
         // Semi-major axis of transfer ellipse
         double semiMajorAxisTransfer = (origin.semiMajorAxis() + target.semiMajorAxis()) / 2.0;
 
@@ -182,93 +127,11 @@ public class RocketryCalculator {
         double transferTime = Math.PI * Math.sqrt(Math.pow(semiMajorAxisTransfer, 3) /
                 (parentMass));
 
-        OrbitalState beginningState = origin.calculateOrbitalState();
-        OrbitalState endingState = target.calculateOrbitAfterT0(transferTime);
+        OrbitalState endingState = target.calculateOrbitAfterT0(
+                previousManeuver.getEndTime() + transferTime - target.epoch());
 
-        // Construct the transfer ellipse orbit from departure state vectors.
-        // Hohmann burns are prograde/retrograde only — direction is unchanged,
-        // speed changes to vp. This gives calculateOrbit() enough to derive
-        // the full transfer ellipse with trueAnomaly at the departure point.
-        Vector3D departureVelocity = beginningState.velocity().normalize().multiply(vp);
-        Orbit transferEllipse = Orbit.calculateOrbit(
-                origin.centerBody(),
-                beginningState.position(),
-                departureVelocity);
-
-        return new ManeuverDetails(
-                "Hohmann Transfer " + origin + " > " + target,
-                beginningState.position(),
-                beginningState.velocity(),
-                endingState.position(),
-                endingState.velocity(),
-                totalDeltaV,
-                transferEllipse,               // FIX: the actual transfer ellipse
-                transferTime,
-                maneuverStart
-        );
-    }
-
-    //Hohmann Transfer plotting:
-    //Orbital elements
-    // a = distance between start and end,
-    // e = c
-    // distance parent + end = b
-    // distance parent to focus = distance between start and end = f = c
-    // string plot says 2a + 2c = 2b
-    // 2a + 2c = 2b
-    // 2c = 2b - 2a
-    //
-
-    /**
-     * Provides the ManeuverDetails to move from orbiting a local body to the next largest body. The orbit will be coplanar
-     * to the starting orbit. This is to escape the Sphere of Influence from the smaller body.
-     * This utilizes a Hohmann Transfer
-     * NOTE:This will behave poorly if attempting to escape the star. Stars are not currently Orbiters so not valid
-     * method arguments.
-     * @param origin orbit around orbited
-     * @param orbited orbiter being orbited
-     * @return ManeuverDetails for use in telemetry and
-     */
-    public static ManeuverDetails calculateEscapeOrbit(Orbit origin,
-                                                       Orbiter orbited,
-                                                       double maneuverStart) {
-        Orbit latestOrbit = orbited.calculateCurrentOrbit();
-        double sphereOfInfluenceRadius = calculateSphereOfInfluence(
-                orbited.getMass(),
-                orbited.getParentBody().getMass(),
-                latestOrbit.semiMajorAxis());
-
-        //TODO: validate behavior when origin orbit is not related to orbited body.
-        if(origin.semiMajorAxis() > sphereOfInfluenceRadius) { //No action required. Already orbiting parent body.
-            OrbitalState state = origin.calculateOrbitalState();
-            return new ManeuverDetails(
-                    "NoOp Orbiting " + orbited.getId(),
-                    state.position(),state.velocity(),
-                    state.position(),state.velocity(),
-                    0.0,
-                    state.orbitalElements(),0,maneuverStart);
-        } else {
-            //Calculate transfer out of orbited body's sphere of influence
-            ManeuverDetails details = calculateHohmannTransferBetweenOrbits(origin, new Orbit(sphereOfInfluenceRadius,
-                    origin.eccentricity(),
-                    origin.inclination(),
-                    origin.ascendingNode(),
-                    origin.periapsis(),
-                    origin.trueAnomaly(),
-                    origin.centerBody(),
-                    0.0),maneuverStart);
-            //Recalculate orbit in terms of new Parent Body.
-            Orbit recalculateOrbit = Orbit.calculateOrbit(origin.centerBody(),details.getEndingPosition().add(orbited.getPosition()),details.getEndingVelocity().add(orbited.getVelocity()));
-            //Update ManeuverDetails with new Orbital Details
-            return new ManeuverDetails(
-                    "Hohmann Transfer To Orbiter " + origin + " > " + orbited.getId(),
-                    details.getStartingPosition(),details.getStartingVelocity(),
-                    details.getEndingPosition(),details.getEndingVelocity(),
-                    details.getDeltaV(),
-                    recalculateOrbit,
-                    details.getTimeToExecute(),
-                    maneuverStart);
-        }
+        return previousManeuver
+                .thenManeuver(endingState.position(),endingState.velocity(),totalDeltaV,transferTime,"Hohmann Transfer " + origin + " > " + target);
     }
 
     /**
@@ -278,9 +141,9 @@ public class RocketryCalculator {
      * @param targetInclination
      * @return
      */
-    public static List<ManeuverDetails> adjustToCoplanar(Orbit origin,
+    public static ManeuverDetails adjustToCoplanar(Orbit origin,
                                                          Orbit targetInclination,
-                                                         double maneuverStart) {
+                                                         ManeuverDetails previousManeuver) {
         OrbitalState cardinalOrbit = origin.calculateOrbitalState();
         Vector3D ascendingCrossOver = cardinalOrbit.orbitalElements().getCoincidentalAscendingNode(targetInclination);
         double waitToAscendingCrossOver = cardinalOrbit.orbitalElements().calculateTimeToPoint(ascendingCrossOver);
@@ -292,43 +155,22 @@ public class RocketryCalculator {
         } else {
             transferPoint = descendingCrossOver;
         }
+
         Vector3D targetVelocity = targetInclination.calculateVelocityVectorAtPosition(transferPoint);
-        ManeuverDetails crossOverWait = new ManeuverDetails(cardinalOrbit.orbitalElements(), Math.min(waitToAscendingCrossOver,waitToDescendingCrossOver),maneuverStart);
 
-        List<ManeuverDetails> coplanarManeuvers = new ArrayList<>();
+        ManeuverDetails crossOverWait = previousManeuver
+                .thenCoast(Math.min(waitToAscendingCrossOver,waitToDescendingCrossOver));
 
-        coplanarManeuvers.add(crossOverWait);
-        System.out.println("AdjustToCoplanar");
-        System.out.println(origin.calculateOrbitalState().position());
-        System.out.println(coplanarManeuvers.getFirst().getStartingPosition());
-        coplanarManeuvers.add(adjustToCoplanarNow(cardinalOrbit.orbitalElements(),targetInclination,crossOverWait,targetVelocity,crossOverWait.getTimeAtManeuverEnd()));
-
-        return coplanarManeuvers;
-    }
-
-    public static ManeuverDetails adjustToCoplanarNow(Orbit origin,
-                                                      Orbit targetInclination,
-                                                      ManeuverDetails crossOverWait,
-                                                      Vector3D targetVelocity,
-                                                      double maneuverStart) {
         double coplanarDeltaV = crossOverWait.getEndingVelocity()
                 .subtract(targetVelocity)
                 .magnitude();
 
-        System.out.println("Coplanar Now");
-        System.out.println(origin.calculateOrbitalState().position());
-
-        return  new ManeuverDetails(
-                "Coplanar Burn " + origin.inclination() + " > " + targetInclination.inclination(),
-                crossOverWait.getEndingPosition(),
-                crossOverWait.getEndingVelocity(),
+        return crossOverWait.thenManeuver(
                 crossOverWait.getEndingPosition(),
                 targetVelocity,
                 coplanarDeltaV,
-                Orbit.calculateOrbit(origin.centerBody(), crossOverWait.getEndingPosition(), targetVelocity).calculateOrbitAfterT0(maneuverStart).orbitalElements(),
-                0,
-                maneuverStart
-
+                0.0,
+                "Coplanar Burn " + origin.inclination() + " > " + targetInclination.inclination()
         );
     }
 
@@ -342,7 +184,7 @@ public class RocketryCalculator {
                                                                   Gravitational destinationGrav,
                                                                   Orbiter destinationOrbiter,
                                                                   double targetOrbitAltitude,
-                                                                  double maneuverStart) {
+                                                                  ManeuverDetails previousManeuver) {
 
         //destination needs to be gravitational and be orbiting, so verify they are the same object
         //if not then docking is required instead. Orbital Insertion only makes sense if going from
@@ -355,7 +197,8 @@ public class RocketryCalculator {
                     );
             if(targetOrbitAltitude < soiRadius && targetOrbitAltitude > destinationGrav.getRadius()) {
 
-                OrbitalState state = origin.calculateOrbitalState();
+                double timeFromEpoch = previousManeuver.getEndTime() - origin.epoch();
+                OrbitalState state = origin.calculateOrbitAfterT0(timeFromEpoch);
                 double mu = PhysicsConstants.G * destinationGrav.getMass();
                 double r = destinationGrav.getRadius() + targetOrbitAltitude; // Orbital radius
 
@@ -373,27 +216,12 @@ public class RocketryCalculator {
                 // Delta-v is the difference between periapsis velocity and orbital velocity
                 double deltaV = Math.abs(vPeriapsis - orbitalVelocity);
 
-                // The position and velocity are non-continuous.
-                // For the purposes of insertion they are reasonable add we can assume the maneuver itself makes up
-                // for the slop. Making the assumption that the deltaV is expended not all at once and is used to not
-                // only provide for the capture but also fine control to put it in a circular orbit matching the angle
-                // of the ecliptic. Assuming a flat 4 hours for pulling off the maneuver due to slop.
-                return new ManeuverDetails(
-                        "Orbital Insertion " + destinationOrbiter.getId(),
-                        state.position(),
-                        state.velocity(),
-                        finalOrbit.position(),
-                        finalOrbit.velocity(),
-                        deltaV,
-                        finalOrbit.orbitalElements(),
-                        4 * 3600,
-                        maneuverStart
-                );
+                return previousManeuver.thenManeuver(finalOrbit.position(),finalOrbit.velocity(),deltaV,4 * 3600, "Orbital Insertion " + destinationOrbiter.getId());
             }
         }
 
         //Not a valid Maneuver, so do nothing.
-        return new ManeuverDetails(origin,maneuverStart);
+        return previousManeuver;
     }
 
     /**
@@ -497,25 +325,15 @@ public class RocketryCalculator {
      * Theory: For large radius ratios (>11.94), going "the long way" via a very high
      * intermediate orbit requires less total delta-V than a direct Hohmann transfer.
      */
-    public static List<ManeuverDetails> buildBiellipticTransfer(
-            Vector3D startingPosition,
-            Vector3D startingVelocity,
+    public static ManeuverDetails buildBiellipticTransfer(
             Orbit originOrbit,
             Orbit targetOrbit,
-            double maneuverStart) {
+            ManeuverDetails previousManeuver) {
 
         Gravitational centerBody = originOrbit.centerBody();
         double mu = centerBody.getGravitationalParameter();
 
         // === COPLANAR ADJUSTMENT ===
-
-        System.out.println("Bielliptical Transfer");
-        System.out.println(startingPosition);
-        System.out.println(Orbit.calculateOrbit(centerBody, startingPosition, startingVelocity).calculateOrbitalState().position());
-        List<ManeuverDetails> route = new ArrayList<>(RocketryCalculator.adjustToCoplanar(
-                Orbit.calculateOrbit(centerBody, startingPosition, startingVelocity),
-                targetOrbit,
-                maneuverStart));
 
 
         // === BI-ELLIPTIC TRANSFER ===
@@ -532,34 +350,28 @@ public class RocketryCalculator {
         double dv1 = Math.abs(v_transfer1_peri - v1);
 
 
+        ManeuverDetails coplanar = RocketryCalculator.adjustToCoplanar(
+                Orbit.calculateOrbit(centerBody, previousManeuver.getEndingPosition(), previousManeuver.getEndingVelocity()),
+                targetOrbit,
+                previousManeuver);
+
         Orbit intermediateOrbit = new Orbit(a_transfer1,
                 (r_intermediate - r1) / (r_intermediate + r1),
                 targetOrbit.inclination(), 0, 0, 0, centerBody,
-                route.getFirst().getTimeAtManeuverEnd());
+                coplanar.getEndTime());
 
-        List<ManeuverDetails> intermediate = RocketryCalculator.adjustToCoplanar(
-                Orbit.calculateOrbit(centerBody, startingPosition, startingVelocity),
-                intermediateOrbit, route.getFirst().getTimeAtManeuverEnd());
+        ManeuverDetails coplanar2 = RocketryCalculator.adjustToCoplanar(
+                Orbit.calculateOrbit(centerBody, previousManeuver.getEndingPosition(), previousManeuver.getEndingVelocity()),
+                intermediateOrbit, coplanar);
 
-        route.add(intermediate.getFirst());
-
-                route.add(new ManeuverDetails(
-                "Bi-elliptic: Raise to intermediate",
-                intermediate.getLast().getEndingPosition(),
-                intermediate.getLast().getEndingVelocity(),
-                intermediate.getLast().getEndingPosition().normalize().multiply(r1),
-                intermediate.getLast().getEndingVelocity().normalize().multiply(v_transfer1_peri),
+        ManeuverDetails raise = coplanar2.thenManeuver(
+                coplanar2.getEndingPosition().normalize().multiply(r1),
+                coplanar2.getEndingVelocity().normalize().multiply(v_transfer1_peri),
                 dv1,
-                intermediateOrbit,
                 0.0,
-                intermediate.getFirst().getTimeAtManeuverEnd()));
+                "Bi-elliptic: Raise to intermediate")
+                .thenHalfOrbitCoast();
 
-        // COAST 1: To intermediate apoapsis
-        ManeuverDetails coast1 = new ManeuverDetails(
-                intermediateOrbit,
-                Math.PI * Math.sqrt(Math.pow(a_transfer1, 3) / mu),
-                intermediate.getFirst().getTimeAtManeuverEnd());
-        route.add(coast1);
 
         // BURN 2: At intermediate apoapsis, adjust for final orbit
         double v_int = Math.sqrt(mu * (2.0/r_intermediate - 1.0/a_transfer1));
@@ -567,51 +379,30 @@ public class RocketryCalculator {
         double v_transfer2_apo = Math.sqrt(mu * (2.0/r_intermediate - 1.0/a_transfer2));
         double dv2 = Math.abs(v_transfer2_apo - v_int);
 
-        Orbit transfer2 = new Orbit(a_transfer2,
-                Math.abs(r2 - r_intermediate) / (r2 + r_intermediate),
-                targetOrbit.inclination(), 0, 0, Math.PI, centerBody,
-                coast1.getTimeAtManeuverEnd());
 
-        Vector3D intermediatePos = coast1.getEndingPosition();
-
-        route.add(new ManeuverDetails(
-                "Bi-elliptic: Adjust at intermediate",
-                intermediatePos,
-                intermediatePos.cross(Vector3D.UNIT_Z).normalize().multiply(v_int),
-                intermediatePos,
-                intermediatePos.cross(Vector3D.UNIT_Z).normalize().multiply(v_transfer2_apo),
+        ManeuverDetails adjust = raise.thenManeuver(
+                raise.getEndingPosition(),
+                raise.getEndingVelocity().cross(Vector3D.UNIT_Z).normalize().multiply(v_transfer2_apo),
                 dv2,
-                transfer2,
                 0.0,
-                coast1.getTimeAtManeuverEnd()));
+                "Bi-elliptic: Adjust at intermediate")
+                .thenHalfOrbitCoast();
 
-        // COAST 2: To target orbit
-        double coast2Time = Math.PI * Math.sqrt(Math.pow(a_transfer2, 3) / mu);
-        ManeuverDetails coast2 = new ManeuverDetails(transfer2, coast2Time,route.getLast().getTimeAtManeuverEnd());
-        route.add(coast2);
+        ManeuverDetails match = RocketryCalculator.adjustToCoplanar(adjust.getOrbitState(),targetOrbit,adjust);
 
-        route.add(RocketryCalculator.adjustToCoplanarNow(coast2.getOrbitState(),targetOrbit,coast2,
-                targetOrbit.calculateVelocityVectorAtPosition(coast2.getEndingPosition()),coast2.getTimeAtManeuverEnd()));
 
         // BURN 3: Circularize at target
         double v_arrival = Math.sqrt(mu * (2.0/r2 - 1.0/a_transfer2));
         double v_target = Math.sqrt(mu / r2);
         double dv3 = Math.abs(v_target - v_arrival);
 
-        Vector3D targetPos = coast2.getEndingPosition().normalize().multiply(r2);
-        route.add(new ManeuverDetails(
-                "Bi-elliptic: Circularize at target",
-                targetPos,
-                targetPos.cross(Vector3D.UNIT_Z).normalize().multiply(v_arrival),
-                targetPos,
-                targetPos.cross(Vector3D.UNIT_Z).normalize().multiply(v_target),
+        return match.thenManeuver(
+                match.getEndingPosition(),
+                match.getEndingVelocity().cross(Vector3D.UNIT_Z).normalize().multiply(v_target),
                 dv3,
-                targetOrbit,
                 0.0,
-                route.getLast().getTimeAtManeuverEnd()
-                ));
-
-        return route;
+                "Bi-elliptic: Circularize at target"
+        );
     }
 
     /**
@@ -768,9 +559,9 @@ public class RocketryCalculator {
      * @param semiMajorAxis Distance between the bodies (m)
      * @return SOI radius (m)
      */
-    private static double calculateSphereOfInfluence(double bodyMass,
-                                                    double primaryMass,
-                                                    double semiMajorAxis) {
+    static double calculateSphereOfInfluence(double bodyMass,
+                                             double primaryMass,
+                                             double semiMajorAxis) {
         // SOI radius: r_SOI = a * (m/M)^(2/5)
         return semiMajorAxis * Math.pow(bodyMass / primaryMass, 0.4);
     }
