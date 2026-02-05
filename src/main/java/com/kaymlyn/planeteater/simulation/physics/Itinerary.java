@@ -24,11 +24,13 @@ import java.util.List;
  */
 @ToString
 public class Itinerary {
-    private final List<ManeuverDetails> maneuvers;
     private final List<PiecewiseState> telemetry;
 
     @Getter
     private final double startTime;
+
+    @Getter
+    private ManeuverDetails initialManeuver;
 
     @Setter
     @Getter
@@ -73,7 +75,6 @@ public class Itinerary {
     public Itinerary(double startTime) {
         this.startTime = startTime;
         this.telemetry = new ArrayList<>();
-        this.maneuvers = new ArrayList<>();
         this.feasible = true;
         this.infeasibilityReason = null;
         this.launchDeltaV = 0.0;
@@ -82,28 +83,10 @@ public class Itinerary {
         this.totalWaitTime = 0.0;
     }
 
-    /**
-     * Add a maneuver to the flight plan
-     * Automatically updates total delta-V and wait time
-     */
-    public void addFlightPlan(ManeuverDetails maneuver) {
-        maneuvers.add(maneuver);
-        travelDeltaV += maneuver.getDeltaV();
+    public void setInitialManeuver(ManeuverDetails initialManeuver) {
+        this.initialManeuver = initialManeuver;
+        launchDeltaV = initialManeuver.getDeltaV();
 
-        // Track wait time (coast phases with zero delta-V)
-        if (maneuver.getDeltaV() < 1e-6) {
-            totalWaitTime += maneuver.getTimeToExecute();
-        }
-    }
-
-    public void addFlightPlans(List<ManeuverDetails> maneuvers) {
-        for(ManeuverDetails maneuver : maneuvers) {
-            addFlightPlan(maneuver);
-        }
-    }
-
-    public void addFlightPlans(ManeuverDetails... maneuvers) {
-        addFlightPlans(Arrays.stream(maneuvers).toList());
     }
 
     /**
@@ -123,18 +106,19 @@ public class Itinerary {
     public List<PiecewiseState> generateTelemetry(OrbitalSystem system) {
         if (telemetry.isEmpty() && feasible) {
             int totalSteps = 0;
-
-            for (ManeuverDetails maneuver : maneuvers) {
-                int stepsInManeuver = (int) (maneuver.getTimeToExecute() / system.getTimeStep());
+            ManeuverDetails active = initialManeuver;
+            while(active != null) {
+                int stepsInManeuver = (int) (active.getTimeToExecute() / system.getTimeStep());
 
                 for (int step = 0; step < stepsInManeuver; step++) {
                     double elapsedTime = totalSteps * system.getTimeStep();
                     telemetry.add(RocketryCalculator.calculateTrajectoryState(
-                            maneuver,
+                            active,
                             system.getCurrentTime() + startTime + elapsedTime
                     ));
                     totalSteps++;
                 }
+                active = active.getNext();
             }
         }
         return telemetry;
@@ -144,23 +128,13 @@ public class Itinerary {
      * Get total flight time (sum of all maneuver durations)
      */
     public double getTotalFlightTime() {
-        return maneuvers.stream()
-                .mapToDouble(ManeuverDetails::getTimeToExecute)
-                .sum();
-    }
-
-    /**
-     * Get number of maneuvers in this itinerary
-     */
-    public int getNumberOfManeuvers() {
-        return maneuvers.size();
-    }
-
-    /**
-     * Get read-only view of all maneuvers
-     */
-    public List<ManeuverDetails> getManeuvers() {
-        return List.copyOf(maneuvers);
+        ManeuverDetails details = initialManeuver;
+        double counter = 0.0;
+        while (details != null) {
+            counter += details.getTimeToExecute();
+            details = details.getNext();
+        }
+        return  counter;
     }
 
     /**
@@ -209,7 +183,7 @@ public class Itinerary {
         sb.append(String.format("Feasible: %s\n", feasible ? "YES" : "NO - " + infeasibilityReason));
 
         if (feasible) {
-            sb.append(String.format("Maneuvers: %d\n", maneuvers.size()));
+//            sb.append(String.format("Maneuvers: %d\n", maneuvers.size()));
             sb.append(String.format("Total Δv: %.1f m/s\n", travelDeltaV));
             sb.append(String.format("  Launch: %.1f m/s\n", launchDeltaV));
             sb.append(String.format("  Landing: %.1f m/s\n", landingDeltaV));

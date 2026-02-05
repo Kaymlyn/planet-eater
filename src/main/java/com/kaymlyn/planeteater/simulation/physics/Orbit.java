@@ -26,6 +26,14 @@ public record Orbit(double semiMajorAxis,
                     double epoch) {
 
     //Orbital Creation
+
+    /**
+     *
+     */
+    public static Orbit calculateOrbit(Gravitational centerBody,
+                                       ManeuverDetails details) {
+        return calculateOrbit(centerBody,details.getEndingPosition(),details.getEndingVelocity());
+    }
     /**
      * Calculate orbital elements from current position and velocity useful for analyzing orbits.
      * This assumes the orbiter is in a 2 body system as 3+body systems are inherently unstable.

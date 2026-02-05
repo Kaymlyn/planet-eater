@@ -106,7 +106,7 @@ public class TransferOptimizerExample {
                 it.getTravelDeltaV() + it.getLaunchDeltaV() + it.getLandingDeltaV());
             System.out.printf("  Transfer Time: %.2f days%n", 
                 it.getTotalFlightTime() / 86400);
-            System.out.printf("  Maneuvers: %d%n", it.getNumberOfManeuvers());
+//            System.out.printf("  Maneuvers: %d%n", it.getNumberOfManeuvers());
             
             // Check if this ship can do it
             double requiredFuel = spacecraft.fuelRequired(

@@ -86,12 +86,13 @@ public class OperationalThread implements Runnable {
 
         Itinerary route = vehicle.planRoute(planet_1, true, spark.getCurrentTime(), TransferOptimizer.OptimizationGoal.MINIMUM_DELTAV );
 
-        System.out.println(route.getManeuvers());
         System.out.println(route.getSummary());
 
         System.out.println(" Time: " + spark.getCurrentTime() + " " + mind.calculateCurrentOrbit().calculateOrbitalState().position() + " " + mind.getPosition());
-        for(ManeuverDetails details : route.getManeuvers()) {
+        ManeuverDetails details = route.getInitialManeuver();
+        while(details != null) {
             System.out.println(details.getStartingPosition() + " " + details.getEndingPosition() + " " + details.getId());
+            details = details.getNext();
         }
 
         System.out.println(vehicle.fuelRequired(route.getTravelDeltaV()));
@@ -107,7 +108,7 @@ public class OperationalThread implements Runnable {
 
     @Override
     public void run() {
-        new RenderingThread(spark, (int)(200*PhysicsConstants.SECONDS_PER_DAY/3600),8, 4, new Vector3D(.9,0,0).multiply(Math.PI)).run();
+        new RenderingThread(spark, (int)(780*PhysicsConstants.SECONDS_PER_DAY/3600),8, 4, new Vector3D(.9,0,0).multiply(Math.PI)).run();
 
     }
 }
