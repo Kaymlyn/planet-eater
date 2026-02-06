@@ -35,10 +35,6 @@ public class Gate implements Orbiter {
         return system.getCentralStar();
     }
 
-    @Override
-    public Orbit calculateCurrentOrbit() {
-        return Orbit.calculateOrbitFor(this, system.getCurrentTime());
-    }
 
     @Override
     public double getMass() {

@@ -40,13 +40,13 @@ public class OperationalThread implements Runnable {
         Planet planet_1 = factory.createPlanetFromPattern(
                 null,
                 spark.getCentralStar(),
-                new Orbit(PhysicsConstants.AU, 0.02, .05, 0, 2, 1.5, spark.getCentralStar(), 0.0),
+                new Orbit(PhysicsConstants.AU, 0.02, .05, 0, 2, 1.5, spark.getCentralStar()),
                 PlanetPattern.EARTH,
                 1.0
         );
         Planet planet_2 = factory.createPlanetFromPattern(null,
                 spark.getCentralStar(),
-                new Orbit(PhysicsConstants.AU*5, 0.6, .02, 0, 2, 3, spark.getCentralStar(), 0.0),
+                new Orbit(PhysicsConstants.AU*5, 0.6, .02, 0, 2, 3, spark.getCentralStar()),
                 PlanetPattern.VENUS,
                 1.0
         );
@@ -72,23 +72,22 @@ public class OperationalThread implements Runnable {
                 .addMaterialAsRawMass(Material.TITANIUM_OXIDE, 200);
 
         CentralMind mind =  factory.createCentralMind(PhysicsConstants.AU);
-        Orbit orbit = spark.placeInEllipticalOrbit(mind,
+        spark.placeInEllipticalOrbit(mind,
                 spark.getCentralStar(),
                 new Orbit(PhysicsConstants.AU*1.5, 0, 0.02,
-                        Math.PI/3, 2, .2, spark.getCentralStar(), 0.0));
-        System.out.println("Orbit post placement : " + orbit);
-        System.out.println("Init orbit according to Mind : " + mind.getInitialOrbit());
-        System.out.println("Calc orbit according to Mind : " + mind.calculateCurrentOrbit());
+                        Math.PI/3, 2, .2, spark.getCentralStar()));
         mind.setSystem(spark);
 
         Spacecraft vehicle = VehicleFactory.createCargoShuttle("Shuttle-1",mind);
         mind.dock(vehicle);
 
         Itinerary route = vehicle.planRoute(planet_1, true, spark.getCurrentTime(), TransferOptimizer.OptimizationGoal.MINIMUM_DELTAV );
-
+        if(route == null) {
+            System.out.println("Unable to find valid route");
+            return;
+        }
         System.out.println(route.getSummary());
 
-        System.out.println(" Time: " + spark.getCurrentTime() + " " + mind.calculateCurrentOrbit().calculateOrbitalState().position() + " " + mind.getPosition());
         ManeuverDetails details = route.getInitialManeuver();
         while(details != null) {
             System.out.println(details.getStartingPosition() + " " + details.getEndingPosition() + " " + details.getId());

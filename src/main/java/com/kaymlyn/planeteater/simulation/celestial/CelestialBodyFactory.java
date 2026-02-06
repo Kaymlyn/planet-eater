@@ -64,11 +64,7 @@ public class CelestialBodyFactory {
 
     public CentralMind createCentralMind(double orbitalRadius) {
         CentralMind centralMind = new CentralMind("KHI Central Mind", system);
-        Orbit orbit = system.placeInCircularOrbit(centralMind,orbitalRadius,0);
-        centralMind.setInitialOrbit(orbit);
-        OrbitalState state = orbit.calculateOrbitalState();
-        centralMind.setPosition(state.position());
-        centralMind.setVelocity(state.velocity());
+        system.placeInCircularOrbit(centralMind,orbitalRadius,0);
         return centralMind;
     }
     public Planet createPlanetFromPattern(String id,
@@ -140,7 +136,7 @@ public class CelestialBodyFactory {
             );
 
 
-        planet.initialOrbit = system.placeInEllipticalOrbit(planet,
+        system.placeInEllipticalOrbit(planet,
                 parentBody,
                 init.semiMajorAxis(),
                 init.eccentricity(),

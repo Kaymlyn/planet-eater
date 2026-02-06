@@ -3,7 +3,6 @@ package com.kaymlyn.planeteater.claude;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.celestial.Star;
 import com.kaymlyn.planeteater.simulation.physics.ManeuverDetails;
-import com.kaymlyn.planeteater.simulation.physics.OrbitalState;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 
@@ -50,7 +49,6 @@ public class CoastCreationTest {
         System.out.printf("  End Position: %s\n", formatVector(initial.getEndingPosition()));
         System.out.printf("  Start Time: %.2f s\n", initial.getStartTime());
         System.out.printf("  End Time: %.2f s\n", initial.getEndTime());
-        System.out.printf("  Orbit Epoch: %.2f s\n", initial.getOrbit().epoch());
         System.out.println();
 
         // Simulate a burn that changes velocity
@@ -64,7 +62,6 @@ public class CoastCreationTest {
         System.out.printf("  ΔV: %.2f m/s\n", burn.getDeltaV());
         System.out.printf("  Start Time: %.2f s\n", burn.getStartTime());
         System.out.printf("  End Time: %.2f s\n", burn.getEndTime());
-        System.out.printf("  Orbit Epoch: %.2f s\n", burn.getOrbit().epoch());
         System.out.println();
 
         // Now create a coast
@@ -77,7 +74,6 @@ public class CoastCreationTest {
         System.out.printf("  End Position: %s\n", formatVector(coast.getEndingPosition()));
         System.out.printf("  Start Time: %.2f s\n", coast.getStartTime());
         System.out.printf("  End Time: %.2f s\n", coast.getEndTime());
-        System.out.printf("  Orbit Epoch: %.2f s\n", coast.getOrbit().epoch());
         System.out.println();
 
         // Key diagnostic: Does coast start where burn ended?
@@ -108,29 +104,10 @@ public class CoastCreationTest {
 
             // This is what the FIXED code should do:
             double cumulativeTime = coast.getStartTime() + timeInCoast;
-            double timeSinceOrbitEpoch = cumulativeTime - coast.getOrbit().epoch();
-
-            OrbitalState state = coast.getOrbit().calculateOrbitAfterT0(timeSinceOrbitEpoch);
 
             System.out.printf("\nStep %d (t_coast = %.2f h):\n", step, timeInCoast / 3600.0);
             System.out.printf("  Cumulative Time: %.2f s\n", cumulativeTime);
-            System.out.printf("  Time Since Orbit Epoch: %.2f s\n", timeSinceOrbitEpoch);
-            System.out.printf("  Position: %s\n", formatVector(state.position()));
-            System.out.printf("  Velocity: %s\n", formatVector(state.velocity()));
 
-            // Check if step 0 matches coast start
-            if (step == 0) {
-                Vector3D diff = state.position().subtract(coast.getStartingPosition());
-                double distance = diff.magnitude();
-                System.out.printf("  Distance from coast start: %.2e m\n", distance);
-
-                if (distance < 1000.0) {  // 1 km tolerance
-                    System.out.println("  ✓ First telemetry state matches coast start");
-                } else {
-                    System.out.println("  ✗ First telemetry state doesn't match coast start!");
-                    System.out.println("     THIS IS THE BUG!");
-                }
-            }
         }
 
         System.out.println("\n");

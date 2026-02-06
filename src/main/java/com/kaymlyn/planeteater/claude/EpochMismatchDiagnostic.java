@@ -20,22 +20,6 @@ public class EpochMismatchDiagnostic {
             System.out.printf("  Start time: %.1f\n", current.getStartTime());
             System.out.printf("  End time:   %.1f\n", current.getEndTime());
 
-            if (current.getOrbit() != null) {
-                System.out.printf("  Orbit epoch: %.1f\n",
-                        current.getOrbit().epoch());
-
-                double epochDelta = current.getOrbit().epoch() -
-                        current.getStartTime();
-
-                if (Math.abs(epochDelta) > 1.0) {
-                    System.out.printf("  ERROR: Epoch mismatch! Delta = %.1f seconds\n",
-                            epochDelta);
-                    System.out.println("  This will cause position errors in telemetry!");
-                } else {
-                    System.out.println("  OK: Epoch matches maneuver start");
-                }
-            }
-
             System.out.println();
             current = current.getNext();
             index++;

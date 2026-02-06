@@ -53,27 +53,6 @@ public class ManeuverChainDiagnostic {
             System.out.printf("  Velocity Change (ΔV): %.2f m/s\n", velocityChange);
             System.out.printf("  Reported ΔV: %.2f m/s\n", current.getDeltaV());
 
-            // Orbit info
-            if (current.getOrbit() != null) {
-                System.out.printf("  Orbit Epoch: %.2f s (%.2f days)\n",
-                        current.getOrbit().epoch(),
-                        current.getOrbit().epoch() / 86400.0);
-                System.out.printf("  Orbit SMA: %.3e m (%.3f AU)\n",
-                        current.getOrbit().semiMajorAxis(),
-                        current.getOrbit().semiMajorAxis() / 1.496e11);
-                System.out.printf("  Orbit Eccentricity: %.6f\n",
-                        current.getOrbit().eccentricity());
-
-                // Check if orbit epoch matches expected time
-                double expectedEpoch = index == 0 ? current.getStartTime() : current.getStartTime();
-                double epochDiff = Math.abs(current.getOrbit().epoch() - expectedEpoch);
-                if (epochDiff > 0.01) {
-                    System.out.printf("    WARNING: Orbit epoch differs from start time by %.2f s\n", epochDiff);
-                }
-            } else {
-                System.out.println("  No orbit (terminus maneuver)");
-            }
-
             // Type identification
             boolean isBurn = current.getId().contains("Burn") ||
                     current.getId().contains("Launch") ||
@@ -117,7 +96,7 @@ public class ManeuverChainDiagnostic {
         Vector3D diff = secondPos.subtract(firstPos);
         double distance = diff.magnitude();
 
-        System.out.printf("\nDifference:\n");
+        System.out.print("\nDifference:\n");
         System.out.printf("  Vector: %s\n", formatVector(diff));
         System.out.printf("  Distance: %.2e m (%.2e km)\n", distance, distance / 1000.0);
         System.out.printf("  Distance: %.2f AU\n", distance / 1.496e11);
@@ -141,18 +120,8 @@ public class ManeuverChainDiagnostic {
         System.out.printf("Duration: %.2f s (%.2f days)\n",
                 coast.getTimeToExecute(), coast.getTimeToExecute() / 86400.0);
         System.out.printf("Start Time: %.2f s\n", coast.getStartTime());
-        System.out.printf("Orbit Epoch: %.2f s\n", coast.getOrbit().epoch());
         System.out.printf("Time Step: %.2f s\n", systemTimeStep);
 
-        double epochDiff = coast.getStartTime() - coast.getOrbit().epoch();
-        System.out.printf("\nEpoch Difference: %.2f s (%.2f days)\n",
-                epochDiff, epochDiff / 86400.0);
-
-        if (Math.abs(epochDiff) > 0.01) {
-            System.out.println("   WARNING: Coast start time != orbit epoch");
-            System.out.println("   This means the orbit was created before the coast started");
-            System.out.println("   (which is correct - it was created at the burn)");
-        }
 
         System.out.println("\nFirst few telemetry calculations:");
 
@@ -163,17 +132,9 @@ public class ManeuverChainDiagnostic {
             double timeInCoast = step * systemTimeStep;
 
             // What the OLD code would do (WRONG):
-            double oldTimeSinceEpoch = timeInCoast;
-
-            // What the NEW code should do (CORRECT):
-            double cumulativeTime = coast.getStartTime() + timeInCoast;
-            double newTimeSinceEpoch = cumulativeTime - coast.getOrbit().epoch();
 
             System.out.printf("\n  Step %d (t_coast = %.2f s):\n", step, timeInCoast);
-            System.out.printf("    OLD: time since epoch = %.2f s\n", oldTimeSinceEpoch);
-            System.out.printf("    NEW: time since epoch = %.2f s\n", newTimeSinceEpoch);
-            System.out.printf("    Difference: %.2f s\n",
-                    Math.abs(newTimeSinceEpoch - oldTimeSinceEpoch));
+            System.out.printf("    OLD: time since epoch = %.2f s\n", timeInCoast);
         }
 
         System.out.println("\n=======================================================");
