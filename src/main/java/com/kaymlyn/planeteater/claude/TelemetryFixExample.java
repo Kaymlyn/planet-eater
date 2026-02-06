@@ -70,10 +70,10 @@ public class TelemetryFixExample {
         System.out.println(report);
 
         // Show trajectory path
-        TelemetryDiagnostics.printTrajectoryPath(
-                itinerary.generateTelemetry(system),
-                24  // Show every 24 hours
-        );
+//        TelemetryDiagnostics.printTrajectoryPath(
+//                itinerary.generateTelemetry(system),
+//                24  // Show every 24 hours
+//        );
 
         // Explain the fix
         System.out.println("\n" + "=".repeat(50));
@@ -96,11 +96,11 @@ public class TelemetryFixExample {
             System.out.println("✗ Issues remain - further investigation needed");
         }
 
-        EpochMismatchDiagnostic.diagnoseManeuverChain(itinerary.getInitialManeuver());
+//        EpochMismatchDiagnostic.diagnoseManeuverChain(itinerary.getInitialManeuver());
 
-        ManeuverChainDiagnostic.analyzeChain(itinerary.getInitialManeuver());
-        RenderingThread thread = new RenderingThread(spacecraft.getSystem(),
-                (int)(260 * PhysicsConstants.SECONDS_PER_DAY/3600), 1,3,Vector3D.ZERO);
-        thread.run();
+//        ManeuverChainDiagnostic.analyzeChain(itinerary.getInitialManeuver());
+//        RenderingThread thread = new RenderingThread(spacecraft.getSystem(),
+//                (int)(260 * PhysicsConstants.SECONDS_PER_DAY/3600), 1,3,Vector3D.ZERO);
+//        thread.run();
     }
 }

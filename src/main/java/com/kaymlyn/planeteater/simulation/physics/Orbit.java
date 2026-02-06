@@ -166,7 +166,12 @@ public record Orbit(double semiMajorAxis,
     //Current and Future State Retrieval
 
     public OrbitalState calculateOrbitalState() {
-        double elapsedSinceEpoch = centerBody.getSystem().getCurrentTime() - epoch;
+        double elapsedSinceEpoch;
+        if(centerBody.getSystem() == null) {
+            elapsedSinceEpoch = - epoch;
+        } else {
+            elapsedSinceEpoch = centerBody.getSystem().getCurrentTime() - epoch;
+        }
 
         if (Math.abs(elapsedSinceEpoch) < 1e-6) {
             return calculateOrbitalStateDirectly();
@@ -248,19 +253,6 @@ public record Orbit(double semiMajorAxis,
 
         double r = calculateRadiusAtTrueAnomaly(adjustedNu);;
 
-        // Magnitude of orbital velocity at periapsis (K: I think)
-        double vMagnitude = Math.sqrt(centerBody.getGravitationalParameter() * (2.0 / r - 1.0 / semiMajorAxis));
-
-        // Velocity direction (perpendicular to radius vector)
-        // Flight path angle: tan(φ) = e*sin(ν) / (1 + e*cos(ν))
-        double flightPathAngle = Math.atan2(
-                getEccentricAnomalySineComponent(trueAnomaly),
-                1.0 + eccentricity * Math.cos(trueAnomaly)
-        );
-
-        // Velocity components in the 2D orbital plane
-
-        // Position in the 2D orbital plane
 
         Vector3D position = new Vector3D(r * Math.cos(adjustedNu), r * Math.sin(adjustedNu))
                 .rotateInto3spaceFrom2space(

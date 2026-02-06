@@ -116,21 +116,7 @@ public class Vector3D {
     public double distanceTo(Vector3D other) {
         return subtract(other).magnitude();
     }
-    
-    /**
-     * Calculate squared distance (avoids sqrt for performance)
-     */
-    public double distanceSquaredTo(Vector3D other) {
-        return subtract(other).magnitudeSquared();
-    }
 
-    public Vector3D average(Vector3D target) {
-        return this.subtract(target).multiply(.5).add(target);
-    }
-
-    public double angleBetween(Vector3D that) {
-        return Math.acos(this.dot(that)/(this.magnitude() * that.magnitude()));
-    }
 
     public Vector3D rotateAroundVector(Vector3D axis, double rotationAngle) {
 
@@ -141,7 +127,7 @@ public class Vector3D {
 
         return reduce.add(orientation).add(magnitude);
     }
-    
+
     public Vector3D rotateInto3spaceFrom2space(double ascendingNode, double inclination, double periapsis) {
 
         // Rotation matrices to transform to 3D space
@@ -163,10 +149,6 @@ public class Vector3D {
         return new Vector3D(x, y, z);
     }
 
-    public Vector3D rotateInto3spaceFrom2space(Vector3D rotation) {
-        return rotateInto3spaceFrom2space(rotation.x,rotation.y,rotation.z);
-    }
-
     public Vector3D rotateInto2spaceFrom3space(double ascendingNode, double inclination, double periapsis) {
 
         double x = this.x;
@@ -184,14 +166,13 @@ public class Vector3D {
         double x_orbital = x * (cosO * cosw - sinO * sinw * cosi) +
                 y * (sinO * cosw + cosO * sinw * cosi) +
                 z * (sinw * sini);
-        double y_orbital = -x * (cosO * sinw + sinO * cosw * cosi) -
-                y * (sinO * sinw - cosO * cosw * cosi) +
-                z * (cosw * sini);
-        return new Vector3D(x_orbital,y_orbital);
-    }
 
-    public Vector3D rotateInto2spaceFrom3space(Vector3D rotation) {
-        return rotateInto2spaceFrom3space(rotation.x,rotation.y,rotation.z);
+        // Row 2 of transpose (was column 2 of original)
+        double y_orbital = x * (-cosO * sinw - sinO * cosw * cosi) +
+                y * (-sinO * sinw + cosO * cosw * cosi) +
+                z * (cosw * sini);
+
+        return new Vector3D(x_orbital,y_orbital);
     }
     
     @Override

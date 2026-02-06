@@ -275,11 +275,10 @@ public class ManeuverDetails {
             throw new IllegalArgumentException("Non-Positive Coast Times not allowed.");
         }
 
-        // Calculate where we'll be after coasting
-        System.out.println("End time : " + getEndTime() + " orbital epoch : " + orbit.epoch());
-        System.out.println("resultantTime : " + (getEndTime() - orbit.epoch()));
-        double timeFromEpoch = getEndTime() - orbit.epoch();
-        OrbitalState endState = orbit.calculateOrbitAfterT0(timeFromEpoch + coastTime);
+        double timeFromOrbitEpoch = getEndTime() - orbit.epoch();
+        double finalTimeFromOrbitEpoch = timeFromOrbitEpoch + coastTime;
+
+        OrbitalState endState = orbit.calculateOrbitAfterT0(finalTimeFromOrbitEpoch);
 
         return new ManeuverDetails(
                 "Coast-" + UUID.randomUUID(),
@@ -288,7 +287,7 @@ public class ManeuverDetails {
                 endState.position(),      // End at propagated position
                 endState.velocity(),      // With propagated velocity
                 0.0,                      // No delta-V for coasting
-                orbit.withTime(getEndTime()),               // Same orbit
+                orbit,                    // ✓ FIXED: Use original orbit, don't modify epoch!
                 coastTime,
                 getEndTime(),
                 this);

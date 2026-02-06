@@ -45,7 +45,7 @@ public class TelemetryDiagnostics {
             if (positionDelta > POSITION_JUMP_THRESHOLD) {
                 report.positionJumps++;
                 report.addError(String.format(
-                        "Position jump at state %d: %.0f km\n  From: %s\n  To: %s\n   First: %s\n   Second: %s  ",
+                        "Position jump at state %d: %.0f km\n  From: %s\n  To: %s\n   First: %s\n   Second: %s",
                         i, positionDelta / 1000, prev.position(), curr.position(), prev.id(), curr.id()
                 ));
             }
