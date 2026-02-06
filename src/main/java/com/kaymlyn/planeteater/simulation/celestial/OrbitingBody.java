@@ -33,7 +33,7 @@ public abstract class OrbitingBody implements Orbiter {
             this.velocity = Vector3D.randomUnitVector();
         }
 
-        this.initialOrbit = Orbit.calculateOrbit(parentBody,this.position, this.velocity);
+        this.initialOrbit = Orbit.calculateOrbit(parentBody,this.position, this.velocity, parentBody.getSystem().getCurrentTime());
     }
 
     /**

@@ -111,7 +111,7 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
 
     @Override
     public Orbit calculateCurrentOrbit() {
-        return Orbit.calculateOrbit(parentBody,position,velocity);
+        return Orbit.calculateOrbit(parentBody,position,velocity,getSystem().getCurrentTime());
     }
 
     @Override

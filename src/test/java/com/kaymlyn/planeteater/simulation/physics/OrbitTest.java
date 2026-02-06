@@ -52,7 +52,7 @@ public class OrbitTest {
         double orbitalVel = Math.sqrt(sun.getGravitationalParameter() / PhysicsConstants.AU);
         Vector3D velocity = new Vector3D(0, orbitalVel, 0);
 
-        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity);
+        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity, 0.0);
 
         assertEquals(PhysicsConstants.AU, orbit.semiMajorAxis(), DISTANCE_TOLERANCE,
                 "Semi-major axis should equal orbital radius");
@@ -75,7 +75,7 @@ public class OrbitTest {
                 (2.0/periapsis - 1.0/semiMajorAxis));
         Vector3D velocity = new Vector3D(0, vPeriapsis, 0);
 
-        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity);
+        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity, 0.0);
 
         assertEquals(semiMajorAxis, orbit.semiMajorAxis(), DISTANCE_TOLERANCE,
                 "Semi-major axis incorrect");
@@ -101,7 +101,7 @@ public class OrbitTest {
         double orbitalVel = Math.sqrt(sun.getGravitationalParameter() / radius);
         Vector3D velocity = new Vector3D(0, orbitalVel, 0);
 
-        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity);
+        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity, 0.0);
 
         assertEquals(inclination, orbit.inclination(), Math.toRadians(1),
                 "Inclination should be ~30 degrees");
@@ -334,7 +334,7 @@ public class OrbitTest {
         double orbitalVel = Math.sqrt(sun.getGravitationalParameter() / PhysicsConstants.AU);
         Vector3D initialVel = new Vector3D(0, orbitalVel, 0);
 
-        Orbit orbit = Orbit.calculateOrbit(sun, initialPos, initialVel);
+        Orbit orbit = Orbit.calculateOrbit(sun, initialPos, initialVel, 0.0);
 
         // Propagate for full period
         OrbitalState state = orbit.calculateOrbitAfterT0(orbit.orbitalPeriod());
@@ -410,7 +410,7 @@ public class OrbitTest {
         double orbitalVel = Math.sqrt(sun.getGravitationalParameter() / PhysicsConstants.AU);
         Vector3D velocity = new Vector3D(0, orbitalVel, 0);
 
-        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity);
+        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity, 0.0);
 
         // Calculate initial energy
         double initialEnergy = velocity.magnitudeSquared() / 2.0 -
@@ -469,7 +469,7 @@ public class OrbitTest {
     // ==================== HELPER METHODS ====================
 
     private void testRoundTrip(Vector3D originalPos, Vector3D originalVel, String testName) {
-        Orbit orbit = Orbit.calculateOrbit(sun, originalPos, originalVel);
+        Orbit orbit = Orbit.calculateOrbit(sun, originalPos, originalVel, 0.0);
         OrbitalState state = orbit.calculateOrbitalState();
 
         double posError = state.position().subtract(originalPos).magnitude();

@@ -37,7 +37,7 @@ public class Gate implements Orbiter {
 
     @Override
     public Orbit calculateCurrentOrbit() {
-        return Orbit.calculateOrbitFor(this);
+        return Orbit.calculateOrbitFor(this, system.getCurrentTime());
     }
 
     @Override

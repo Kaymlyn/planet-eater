@@ -126,7 +126,7 @@ public class OrbitRoundTripTest {
      */
     private void testRoundTrip(Vector3D originalPos, Vector3D originalVel, String testName) {
         // Calculate orbit from position/velocity
-        Orbit orbit = Orbit.calculateOrbit(sun, originalPos, originalVel);
+        Orbit orbit = Orbit.calculateOrbit(sun, originalPos, originalVel,system.getCurrentTime());
 
         // Calculate state from orbit
         OrbitalState state = orbit.calculateOrbitalState();
@@ -156,7 +156,7 @@ public class OrbitRoundTripTest {
         System.out.println("Original velocity: " + originalVel);
 
         // Calculate orbit
-        Orbit orbit = Orbit.calculateOrbit(sun, originalPos, originalVel);
+        Orbit orbit = Orbit.calculateOrbit(sun, originalPos, originalVel, system.getCurrentTime());
 
         System.out.println("\nOrbit elements:");
         System.out.printf("  a = %.3e m\n", orbit.semiMajorAxis());

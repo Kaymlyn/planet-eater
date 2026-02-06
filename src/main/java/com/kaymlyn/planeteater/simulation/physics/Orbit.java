@@ -32,7 +32,7 @@ public record Orbit(double semiMajorAxis,
      */
     public static Orbit calculateOrbit(Gravitational centerBody,
                                        ManeuverDetails details) {
-        return calculateOrbit(centerBody,details.getEndingPosition(),details.getEndingVelocity());
+        return calculateOrbit(centerBody,details.getEndingPosition(),details.getEndingVelocity(),details.getEndTime());
     }
     /**
      * Calculate orbital elements from current position and velocity useful for analyzing orbits.
@@ -44,7 +44,8 @@ public record Orbit(double semiMajorAxis,
      */
     public static Orbit calculateOrbit(Gravitational centerBody,
                                        Vector3D startPosition,
-                                       Vector3D startVelocity) {
+                                       Vector3D startVelocity,
+                                       double epoch0) {
 
         // Specific orbital energy
         double energy = startVelocity.magnitudeSquared() / 2.0 -
@@ -127,26 +128,39 @@ public record Orbit(double semiMajorAxis,
                 argumentOfPeriapsis,
                 trueAnomaly,
                 centerBody,
-                centerBody.getSystem().getCurrentTime()  // epoch = now
+                epoch0  // epoch = now
         );
     }
 
     /**
      * Convenience method for Orbiter objects
      */
-    public static Orbit calculateOrbitFor(Orbiter orbiter) {
+    public static Orbit calculateOrbitFor(Orbiter orbiter, double epoch0) {
         return calculateOrbit(orbiter.getParentBody(),
                 orbiter.getPosition(),
-                orbiter.getVelocity());
+                orbiter.getVelocity(),
+                epoch0);
     }
 
     private static double singularityAdjustment(double trueAnomaly) {
         return Double.isNaN(trueAnomaly) ? 0.0 : wrapAngle(trueAnomaly);
     }
 
-    public static OrbitalState createCircularOrbit(double radius, Gravitational centerBody) {
-        return new Orbit(radius, 0.0, 0.0, 0.0, 0.0, 0.0, centerBody,0.0)
-                .calculateOrbitalState();
+    public static Orbit calculateStateOnCircularOrbit(double radius, Gravitational centerBody, double epoch0) {
+        return new Orbit(radius, 0.0, 0.0, 0.0, 0.0, 0.0, centerBody,epoch0);
+    }
+
+    public Orbit withTime(double startTime) {
+        return new Orbit(
+                semiMajorAxis,
+                eccentricity,
+                inclination,
+                ascendingNode,
+                periapsis,
+                trueAnomaly,
+                centerBody,
+                startTime  // overrides Epoch
+        );
     }
 
     //Current and Future State Retrieval
@@ -550,7 +564,8 @@ public record Orbit(double semiMajorAxis,
         OrbitalState state = orbit.calculateOrbitalState();
         Orbit rotatedDown = Orbit.calculateOrbit(this.centerBody,
                 state.position().rotateInto2spaceFrom3space(ascendingNode,inclination,periapsis),
-                state.velocity().rotateInto2spaceFrom3space(ascendingNode,inclination,periapsis));
+                state.velocity().rotateInto2spaceFrom3space(ascendingNode,inclination,periapsis),
+                orbit.epoch);
         return rotatedDown.getAscendingNode().rotateInto3spaceFrom2space(ascendingNode,inclination,periapsis);
     }
     //Comparative Analysis
@@ -558,7 +573,8 @@ public record Orbit(double semiMajorAxis,
         OrbitalState state = orbit.calculateOrbitalState();
         Orbit rotatedDown = Orbit.calculateOrbit(this.centerBody,
                 state.position().rotateInto2spaceFrom3space(ascendingNode,inclination,periapsis),
-                state.velocity().rotateInto2spaceFrom3space(ascendingNode,inclination,periapsis));
+                state.velocity().rotateInto2spaceFrom3space(ascendingNode,inclination,periapsis),
+                orbit.epoch);
         return rotatedDown.getDescendingNode().rotateInto3spaceFrom2space(ascendingNode,inclination,periapsis);
     }
 
@@ -613,6 +629,26 @@ public record Orbit(double semiMajorAxis,
 
     public Vector3D rotationVector(){
         return new Vector3D(ascendingNode,inclination,periapsis);
+    }
+
+    /**
+     * Check if Hohmann transfer is applicable
+     * Requires approximately coplanar, circular orbits around same body
+     */
+    public boolean canUseHohmann(Orbit target) {
+        // Same central body
+        if (centerBody != target.centerBody()) {
+            return false;
+        }
+
+        // Approximately circular (eccentricity < 0.1)
+        if (eccentricity > 0.1 || target.eccentricity() > 0.1) {
+            return false;
+        }
+
+        // Approximately coplanar (inclination difference < 5 degrees)
+        double inclinationDiff = Math.abs(inclination - target.inclination());
+        return inclinationDiff < Math.toRadians(5.0);
     }
 
     /**

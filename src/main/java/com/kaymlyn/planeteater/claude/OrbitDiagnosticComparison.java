@@ -57,7 +57,7 @@ public class OrbitDiagnosticComparison {
 
         // === ORIGINAL IMPLEMENTATION ===
         System.out.println("--- ORIGINAL IMPLEMENTATION ---");
-        Orbit originalOrbit = Orbit.calculateOrbit(sun, pos, vel);
+        Orbit originalOrbit = Orbit.calculateOrbit(sun, pos, vel,0.0);
 
         System.out.println("Orbital elements:");
         System.out.printf("  a = %.6e m\n", originalOrbit.semiMajorAxis());

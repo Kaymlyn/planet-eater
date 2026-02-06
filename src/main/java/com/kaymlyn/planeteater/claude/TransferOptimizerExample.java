@@ -27,7 +27,7 @@ public class TransferOptimizerExample {
         List<TransferOptimizer.TransferOption> options =
             TransferOptimizer.generateTransferOptions(minerShip, mars, ceres, land,0.0);
         
-        System.out.println(TransferOptimizer.summarizeOptions(options));
+//        System.out.println(TransferOptimizer.summarizeOptions(options));
         
         // === STEP 2: Player chooses optimization goal ===
         
