@@ -240,7 +240,7 @@ public class OrbitalSystem {
                 random.nextDouble()*2*Math.PI));
     }
 
-    public Orbiter placeInEllipticalOrbit(Orbiter body,
+    public void placeInEllipticalOrbit(Orbiter body,
                                        CelestialBody parentBody,
                                        Orbit initializer) {
         placeInEllipticalOrbit(
@@ -253,7 +253,6 @@ public class OrbitalSystem {
                 initializer.periapsis(),
                 initializer.trueAnomaly()
         );
-        return body;
     }
 
     /**

@@ -52,7 +52,7 @@ public class OrbitTest {
         double orbitalVel = Math.sqrt(sun.getGravitationalParameter() / PhysicsConstants.AU);
         Vector3D velocity = new Vector3D(0, orbitalVel, 0);
 
-        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity, 0.0);
+        Orbit orbit = Orbit.fromState(sun, position, velocity);
 
         assertEquals(PhysicsConstants.AU, orbit.semiMajorAxis(), DISTANCE_TOLERANCE,
                 "Semi-major axis should equal orbital radius");
@@ -75,7 +75,7 @@ public class OrbitTest {
                 (2.0/periapsis - 1.0/semiMajorAxis));
         Vector3D velocity = new Vector3D(0, vPeriapsis, 0);
 
-        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity, 0.0);
+        Orbit orbit = Orbit.fromState(sun, position, velocity);
 
         assertEquals(semiMajorAxis, orbit.semiMajorAxis(), DISTANCE_TOLERANCE,
                 "Semi-major axis incorrect");
@@ -101,7 +101,7 @@ public class OrbitTest {
         double orbitalVel = Math.sqrt(sun.getGravitationalParameter() / radius);
         Vector3D velocity = new Vector3D(0, orbitalVel, 0);
 
-        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity, 0.0);
+        Orbit orbit = Orbit.fromState(sun, position, velocity);
 
         assertEquals(inclination, orbit.inclination(), Math.toRadians(1),
                 "Inclination should be ~30 degrees");
@@ -196,7 +196,7 @@ public class OrbitTest {
 
         Orbit orbit = new Orbit(
                 semiMajorAxis, eccentricity, 0, 0, 0, 0,
-                sun, 0.0
+                sun
         );
 
         double expectedPeriapsis = semiMajorAxis * (1 - eccentricity);
@@ -217,7 +217,7 @@ public class OrbitTest {
 
         Orbit orbit = new Orbit(
                 semiMajorAxis, eccentricity, 0, 0, 0, 0,
-                sun, 0.0
+                sun
         );
 
         double expectedSemiMinor = semiMajorAxis * Math.sqrt(1 - eccentricity * eccentricity);
@@ -231,7 +231,7 @@ public class OrbitTest {
     void testOrbitalPeriod() {
         Orbit orbit = new Orbit(
                 PhysicsConstants.AU, 0.0, 0, 0, 0, 0,
-                sun, 0.0
+                sun
         );
 
         double expectedPeriod = 2 * Math.PI * Math.sqrt(
@@ -256,7 +256,7 @@ public class OrbitTest {
         double eccentricity = 0.5;
         Orbit orbit = new Orbit(
                 PhysicsConstants.AU, eccentricity, 0, 0, 0, 0,
-                sun, 0.0
+                sun
         );
 
         // At periapsis: true = 0, eccentric = 0
@@ -285,13 +285,13 @@ public class OrbitTest {
     void testMeanAnomaly() {
         Orbit orbit = new Orbit(
                 PhysicsConstants.AU, 0.5, 0, 0, 0, 0,
-                sun, 0.0
+                sun
         );
 
         // At periapsis: mean anomaly = 0
         Orbit periapsisOrbit = new Orbit(
                 PhysicsConstants.AU, 0.5, 0, 0, 0, 0.0,
-                sun, 0.0
+                sun
         );
         assertEquals(0.0, periapsisOrbit.meanAnomaly(), ANGLE_TOLERANCE,
                 "Mean anomaly at periapsis should be 0");
@@ -299,7 +299,7 @@ public class OrbitTest {
         // At apoapsis: mean anomaly = π
         Orbit apoapsisOrbit = new Orbit(
                 PhysicsConstants.AU, 0.5, 0, 0, 0, Math.PI,
-                sun, 0.0
+                sun
         );
         assertEquals(Math.PI, apoapsisOrbit.meanAnomaly(), ANGLE_TOLERANCE,
                 "Mean anomaly at apoapsis should be π");
@@ -313,16 +313,16 @@ public class OrbitTest {
     void testOrbitPropagation() {
         Orbit orbit = new Orbit(
                 PhysicsConstants.AU, 0.0, 0, 0, 0, 0,
-                sun, 0.0
+                sun
         );
 
         // Propagate for 1/4 period (should be at 90 degrees)
         double quarterPeriod = orbit.orbitalPeriod() / 4.0;
-        OrbitalState state = orbit.calculateOrbitAfterT0(quarterPeriod);
+        OrbitalState state = orbit.stateAt(sun.getSystem().getCurrentTime(), sun.getSystem().getCurrentTime() + quarterPeriod);
 
         // Should be at approximately 90 degrees
         double expectedAngle = Math.PI / 2;
-        assertEquals(expectedAngle, state.orbitalElements().trueAnomaly(),
+        assertEquals(expectedAngle, state.toOrbit(sun).trueAnomaly(),
                 Math.toRadians(1), "After 1/4 period should be at 90°");
     }
 
@@ -334,10 +334,10 @@ public class OrbitTest {
         double orbitalVel = Math.sqrt(sun.getGravitationalParameter() / PhysicsConstants.AU);
         Vector3D initialVel = new Vector3D(0, orbitalVel, 0);
 
-        Orbit orbit = Orbit.calculateOrbit(sun, initialPos, initialVel, 0.0);
+        Orbit orbit = Orbit.fromState(sun, initialPos, initialVel);
 
         // Propagate for full period
-        OrbitalState state = orbit.calculateOrbitAfterT0(orbit.orbitalPeriod());
+        OrbitalState state = orbit.stateAt(sun.getSystem().getCurrentTime(), orbit.orbitalPeriod());
 
         // Should return to approximately same position
         double positionError = state.position().subtract(initialPos).magnitude();
@@ -355,7 +355,7 @@ public class OrbitTest {
         Orbit orbit = new Orbit(
                 PhysicsConstants.AU, 0.1, inclination,
                 Math.toRadians(45), Math.toRadians(60), 0,
-                sun, 0.0
+                sun
         );
 
         Vector3D ascendingNode = orbit.getAscendingNode();
@@ -379,7 +379,7 @@ public class OrbitTest {
     void testPeriapsisApoapsisPositions() {
         Orbit orbit = new Orbit(
                 PhysicsConstants.AU, 0.3, 0, 0, 0, 0,
-                sun, 0.0
+                sun
         );
 
         Vector3D periapsis = orbit.periapsisPoint();
@@ -410,7 +410,7 @@ public class OrbitTest {
         double orbitalVel = Math.sqrt(sun.getGravitationalParameter() / PhysicsConstants.AU);
         Vector3D velocity = new Vector3D(0, orbitalVel, 0);
 
-        Orbit orbit = Orbit.calculateOrbit(sun, position, velocity, 0.0);
+        Orbit orbit = Orbit.fromState(sun, position, velocity);
 
         // Calculate initial energy
         double initialEnergy = velocity.magnitudeSquared() / 2.0 -
@@ -418,8 +418,7 @@ public class OrbitTest {
 
         // Propagate to various points
         for (double timeFraction : new double[]{0.25, 0.5, 0.75, 1.0}) {
-            OrbitalState state = orbit.calculateOrbitAfterT0(
-                    orbit.orbitalPeriod() * timeFraction);
+            OrbitalState state = orbit.stateAt(sun.getSystem().getCurrentTime(), orbit.orbitalPeriod() * timeFraction);
 
             double energy = state.velocity().magnitudeSquared() / 2.0 -
                     sun.getGravitationalParameter() / state.position().magnitude();
@@ -437,7 +436,7 @@ public class OrbitTest {
     void testNearlyCircular() {
         Orbit orbit = new Orbit(
                 PhysicsConstants.AU, 1e-10, 0, 0, 0, 0,
-                sun, 0.0
+                sun
         );
 
         // Should behave like circular orbit
@@ -454,7 +453,7 @@ public class OrbitTest {
     void testHighlyEccentric() {
         Orbit orbit = new Orbit(
                 PhysicsConstants.AU, 0.99, 0, 0, 0, 0,
-                sun, 0.0
+                sun
         );
 
         double periapsis = orbit.calculateRadiusAtTrueAnomaly(0);
@@ -469,8 +468,8 @@ public class OrbitTest {
     // ==================== HELPER METHODS ====================
 
     private void testRoundTrip(Vector3D originalPos, Vector3D originalVel, String testName) {
-        Orbit orbit = Orbit.calculateOrbit(sun, originalPos, originalVel, 0.0);
-        OrbitalState state = orbit.calculateOrbitalState();
+        Orbit orbit = Orbit.fromState(sun, originalPos, originalVel);
+        OrbitalState state = orbit.stateAt(sun.getSystem().getCurrentTime(),sun.getSystem().getCurrentTime());
 
         double posError = state.position().subtract(originalPos).magnitude();
         double velError = state.velocity().subtract(originalVel).magnitude();

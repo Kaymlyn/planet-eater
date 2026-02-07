@@ -4,6 +4,7 @@ import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.physics.PiecewiseState;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import org.jcodec.api.SequenceEncoder;
@@ -19,6 +20,7 @@ import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 
 /**
  * HIGH-PERFORMANCE orbital system renderer
@@ -226,25 +228,64 @@ public class OrbitalSystemRendererOptimized {
         }
     }
 
-    /**
-     * Render all orbiters - batch processing
-     */
-    private void renderAllOrbiters(int[] pixels, RotationMatrix rotation, double canvasScale) {
-        for(Orbiter orbiter : system.getOrbiters().values()) {
-            String id = orbiter.getId();
+    private void render4view(double maxAUVisible, int frameIndex) throws IOException {
+        long startTime = System.nanoTime();
 
-            // Transform position (single matrix multiply)
-            Vector3D position = orbiter.getPosition();
-            Vector3D rotated = rotation.transform(position);
+        Vector3D sideOn = new Vector3D(0.0,0.0,0.0);
+        // Pre-compute rotation matrix (OPTIMIZATION 1)
+        RotationMatrix rotationMatrix = new RotationMatrix(sideOn);
 
-            int screenX = (int)(rotated.getX() / canvasScale * adjustedAU + centerX);
-            int screenY = (int)(rotated.getY() / canvasScale * adjustedAU + centerY);
+        BufferedImage image = new BufferedImage(width*2, height*2, IMAGE_TYPE);
 
-            // Use cached properties
-            Color color = colorCache.get(id);
-            int size = sizeCache.get(id);
+        // Get direct access to pixel data (OPTIMIZATION 2)
+        int[] pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
+        Arrays.fill(pixels, BLACK_RGB);
 
-            drawFilledSquare(pixels, screenX, screenY, size, color.getRGB());
+        double canvasScale = PhysicsConstants.AU * (maxAUVisible * 3.0 / 4.0);
+
+        // Draw central star
+        drawFilledCircle(pixels, centerX, centerY, 4, COLOR_STAR.getRGB());
+
+        // Batch render orbiters by color (OPTIMIZATION 3)
+        renderAllOrbiters(pixels, rotationMatrix, canvasScale);
+
+        // Render spacecraft
+        renderAllSpacecraft(pixels, rotationMatrix, canvasScale);
+
+        // Add text overlays (still needs Graphics2D, but batched)
+        Graphics2D g2d = image.createGraphics();
+        g2d.setColor(Color.WHITE);
+
+        // Render timestamp
+        String timeInfo = String.format("Day %d Hour %d",
+                (int)(system.getCurrentTime() / PhysicsConstants.SECONDS_PER_DAY),
+                (int)((system.getCurrentTime() % PhysicsConstants.SECONDS_PER_DAY) / 3600));
+        g2d.drawString(timeInfo, 5, 16);
+
+        // Render labels for orbiters
+        renderOrbiterLabels(g2d, rotationMatrix, canvasScale);
+
+        // Render labels for spacecraft
+        renderSpacecraftLabels(g2d, rotationMatrix, canvasScale);
+
+        g2d.dispose();
+
+        // Output handling (OPTIMIZATION 4)
+        if(directToVideo && videoEncoder != null) {
+            videoEncoder.encodeNativeFrame(AWTUtil.fromBufferedImage(image, ColorSpace.RGB));
+        } else {
+            File output = new File(String.format("orbits/Frame-%d.png", frameIndex));
+            ImageIO.write(image, "PNG", output);
+        }
+
+        // Performance tracking
+        long renderTime = (System.nanoTime() - startTime) / 1_000_000;
+        totalRenderTime += renderTime;
+        frameCount++;
+
+        if(frameCount % 100 == 0) {
+            System.out.printf("\rRendered %d frames, avg %.1f ms/frame",
+                    frameCount, (double)totalRenderTime / frameCount);
         }
     }
 
@@ -273,11 +314,33 @@ public class OrbitalSystemRendererOptimized {
     }
 
     /**
-     * Render all spacecraft
+     * Render all orbiters - batch processing
+     */
+    private void renderAllOrbiters(int[] pixels, RotationMatrix rotation, double canvasScale) {
+        for(Orbiter orbiter : system.getOrbiters().values()) {
+            String id = orbiter.getId();
+
+            // Transform position (single matrix multiply)
+            Vector3D position = orbiter.getPosition();
+            Vector3D rotated = rotation.transform(position);
+
+            int screenX = (int)(rotated.getX() / canvasScale * adjustedAU + centerX);
+            int screenY = (int)(rotated.getY() / canvasScale * adjustedAU + centerY);
+
+            // Use cached properties
+            Color color = colorCache.get(id);
+            int size = sizeCache.get(id);
+
+            drawFilledSquare(pixels, screenX, screenY, size, color.getRGB());
+        }
+    }
+
+    /**
+     * Render all spacecraft (in transit only; docked are omitted to avoid label clutter).
      */
     private void renderAllSpacecraft(int[] pixels, RotationMatrix rotation, double canvasScale) {
-        for(Spacecraft spacecraft : system.getSpacecraftInTransit().values()) {
-            if(spacecraft.getState() == Spacecraft.SpacecraftState.DOCKED) {
+        for (Spacecraft spacecraft : system.getSpacecraftInTransit().values()) {
+            if (spacecraft.getState() == Spacecraft.SpacecraftState.DOCKED) {
                 continue;
             }
 
@@ -295,8 +358,8 @@ public class OrbitalSystemRendererOptimized {
      * Render labels for spacecraft with state info
      */
     private void renderSpacecraftLabels(Graphics2D g2d, RotationMatrix rotation, double canvasScale) {
-        for(Spacecraft spacecraft : system.getSpacecraftInTransit().values()) {
-            if(spacecraft.getState() == Spacecraft.SpacecraftState.DOCKED) {
+        for (Spacecraft spacecraft : system.getSpacecraftInTransit().values()) {
+            if (spacecraft.getState() == Spacecraft.SpacecraftState.DOCKED) {
                 continue;
             }
 
@@ -313,19 +376,14 @@ public class OrbitalSystemRendererOptimized {
     }
 
     /**
-     * Get spacecraft position (same logic as before)
+     * Get spacecraft position for rendering. When in transit with telemetry, uses the
+     * current simulation time to pick the correct telemetry sample so the craft is
+     * drawn at the position that matches the current time (avoids drift vs orbiters).
      */
     private Vector3D getCurrentSpacecraftPosition(Spacecraft spacecraft) {
-        if(spacecraft.getTelemetry() != null &&
-                spacecraft.getCurrentTravelCycle() < spacecraft.getTelemetry().size()) {
-            return spacecraft.getTelemetry().get(spacecraft.getCurrentTravelCycle()).position();
-        }
-
-        if(spacecraft.getOrbiting() != null) {
-            return spacecraft.getOrbiting().getPosition();
-        }
-
-        return spacecraft.getPosition();
+        // Use new time-based API - simpler and more robust
+        double currentTime = system.getCurrentTime();
+        return spacecraft.getPositionAt(currentTime);
     }
 
     /**

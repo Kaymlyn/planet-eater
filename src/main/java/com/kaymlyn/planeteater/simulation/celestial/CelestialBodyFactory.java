@@ -214,7 +214,7 @@ public class CelestialBodyFactory {
                     minimumOrbitalRadius,
                     maximumOrbitalRadius,
                     0.01,
-                    Math.PI/4,
+                    Math.PI/16,
                     true,
                     asteroids,centerBody);
             asteroidBelt.add(

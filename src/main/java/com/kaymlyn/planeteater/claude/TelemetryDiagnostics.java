@@ -61,11 +61,11 @@ public class TelemetryDiagnostics {
             }
 
             // Time check
-            double timeDelta = curr.timeElapsed() - prev.timeElapsed();
+            double timeDelta = curr.absoluteTime() - prev.absoluteTime();
             if (timeDelta < 0) {
                 report.addError(String.format(
                         "Time goes backward at state %d: %.1f → %.1f\n%s -> %s",
-                        i, prev.timeElapsed(), curr.timeElapsed(), prev.id(), curr.id()
+                        i, prev.absoluteTime(), curr.absoluteTime(), prev.id(), curr.id()
                 ));
             }
         }
@@ -153,7 +153,7 @@ public class TelemetryDiagnostics {
         for (int i = 0; i < telemetry.size(); i += stride) {
             PiecewiseState state = telemetry.get(i);
             System.out.printf("t=%.1fd pos=%s (%.0f%% complete)\n",
-                    state.timeElapsed() / PhysicsConstants.SECONDS_PER_DAY,
+                    state.absoluteTime() / PhysicsConstants.SECONDS_PER_DAY,
                     formatVector(state.position()),
                     state.fractionComplete() * 100
             );

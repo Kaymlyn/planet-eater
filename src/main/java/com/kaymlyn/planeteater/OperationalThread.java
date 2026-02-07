@@ -81,6 +81,8 @@ public class OperationalThread implements Runnable {
         Spacecraft vehicle = VehicleFactory.createCargoShuttle("Shuttle-1",mind);
         mind.dock(vehicle);
 
+        spark.stepVerlet();
+
         Itinerary route = vehicle.planRoute(planet_1, true, spark.getCurrentTime(), TransferOptimizer.OptimizationGoal.MINIMUM_DELTAV );
         if(route == null) {
             System.out.println("Unable to find valid route");
@@ -99,15 +101,15 @@ public class OperationalThread implements Runnable {
         System.out.println(vehicle.fuelRequired(route.getTravelDeltaV()) < vehicle.getFuelMass());
         vehicle.setItinerary(route);
         vehicle.programItinerary(route);
-        System.out.println("Travel Time : " + route.getTotalFlightTime()/PhysicsConstants.SECONDS_PER_DAY);
-        System.out.println("Total Fuel : " + vehicle.getFuelMass());
-        System.out.println("Travel Fuel : " + vehicle.fuelRequired(route.getTravelDeltaV()));
-
+        System.out.println("Positionals");
+        System.out.println(mind.getPosition());
+        System.out.println(mind.getPosition(0));
+        System.out.println(mind.getPosition(3600));
     }
 
     @Override
     public void run() {
-        new RenderingThread(spark, (int)(780*PhysicsConstants.SECONDS_PER_DAY/3600),8, 4, new Vector3D(.9,0,0).multiply(Math.PI)).run();
+        new RenderingThread(spark, (int)(650 *PhysicsConstants.SECONDS_PER_DAY/3600),24, 4, new Vector3D(0.0,0.0,0.0).multiply(Math.PI/16)).run();
 
     }
 }

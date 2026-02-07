@@ -24,8 +24,8 @@ public class PlanetTest {
     final static double SMALL_RADIUS = 790;
     final static double SMALL_ORBIT = 1e7;
 
-    private final Orbit oneAUCircularOrbit = new Orbit(PhysicsConstants.AU,0,0,0,0,0,null,0.0);
-    private final Orbit smallOrbit = new Orbit(SMALL_ORBIT,0,0,0,0,0, null, 0.0);
+    private final Orbit oneAUCircularOrbit = new Orbit(PhysicsConstants.AU,0,0,0,0,0,null);
+    private final Orbit smallOrbit = new Orbit(SMALL_ORBIT,0,0,0,0,0, null);
     private final Materials solidIron = new Materials(Material.IRON,100);
     private final Materials solidNickel = new Materials(Material.NICKEL,50);
     private final LayerProfile core = new LayerProfile("NICKLE_IRON",Zone.CORE,List.of(solidIron,solidNickel));

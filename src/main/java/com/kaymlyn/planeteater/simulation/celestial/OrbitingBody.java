@@ -39,15 +39,6 @@ public abstract class OrbitingBody implements Orbiter {
         position = position.add(velocity.multiply(dt));
     }
 
-    public double getCircularOrbitVelocity(double radius) {
-        return Math.sqrt(PhysicsConstants.G * this.getMass() / radius);
-    }
-
-    public double orbitalPeriod(double radius) {
-        return 2.0 * Math.PI * Math.sqrt(Math.pow(radius, 3) /
-                (PhysicsConstants.G * this.getMass()));
-    }
-
     public abstract double getVolume();
 
     @Override
