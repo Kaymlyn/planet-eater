@@ -27,13 +27,31 @@ public interface Gravitational extends Body {
      * @return Vector3D representation of the velocity vector to maintain the altitude.
      */
     default Vector3D getCircularOrbitVector(double altitude) {
+        double orbitalRadius = getRadius() + altitude;
+        double orbitalSpeed = Math.sqrt(getGravitationalParameter() / orbitalRadius);
 
-        return getVelocity().add(
-                new Vector3D(
-                        0,
-                        Math.sqrt(getGravitationalParameter() * (1/ (getRadius() + altitude)))
-                )
+        // Determine orbital direction (perpendicular to radial)
+        Vector3D radial = getPosition().subtract(
+                getSystem() != null && getSystem().getCentralStar() != null
+                        ? getSystem().getCentralStar().getPosition()
+                        : Vector3D.ZERO
         );
+
+        if(radial.magnitude() < 1e-10) {
+            radial = Vector3D.UNIT_X;
+        }
+
+        // Orbital velocity is perpendicular to radial direction
+        // Use cross product with Z-axis to get tangential direction
+        Vector3D tangential = Vector3D.UNIT_Z.cross(radial).normalize();
+
+        if(tangential.magnitude() < 1e-10) {
+            // Edge case: radial is along Z-axis
+            tangential = Vector3D.UNIT_X;
+        }
+
+        // Return body's velocity PLUS orbital velocity around body
+        return getVelocity().add(tangential.multiply(orbitalSpeed));
     }
 
     /**
@@ -46,23 +64,25 @@ public interface Gravitational extends Body {
      */
     default Vector3D getStandardCircularOrbitPosition(Vector3D directionAboveCenter){
         if(directionAboveCenter == Vector3D.ZERO) {
-            // Deterministic: place in orbit along the direction from parent to this body
-            // This ensures spacecraft launches "away" from the system's center
+            // For bodies orbiting a star: orbital position points away from star
             Vector3D toThisBody = getPosition().subtract(
-                    getSystem() != null && getSystem().getCentralStar() != null
-                            ? getSystem().getCentralStar().getPosition()
-                            : Vector3D.ZERO
+                    getSystem().getCentralStar().getPosition()
             );
 
             if(toThisBody.magnitude() < 1e-10) {
-                // Fallback: if at center, use +X direction
-                return Vector3D.UNIT_X.multiply(getRadius() * STANDARD_ORBIT_MULTIPLIER);
+                // At star center - use +X direction
+                directionAboveCenter = Vector3D.UNIT_X;
+            } else {
+                // Point away from star (radial direction)
+                directionAboveCenter = toThisBody.normalize();
             }
-
-            return toThisBody.normalize().multiply(getRadius() * STANDARD_ORBIT_MULTIPLIER);
-        } else {
-            return directionAboveCenter.normalize().multiply(getRadius() * STANDARD_ORBIT_MULTIPLIER);
         }
+
+        // Position is body-relative: radius * 1.1 in specified direction
+        // Add getPosition() to get absolute coordinates
+        return directionAboveCenter.normalize()
+                .multiply(getRadius() * STANDARD_ORBIT_MULTIPLIER)
+                .add(getPosition());
     }
 
     /**

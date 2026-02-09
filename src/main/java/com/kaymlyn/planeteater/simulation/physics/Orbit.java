@@ -120,30 +120,6 @@ public record Orbit(
         );
     }
 
-    /**
-     * Create orbit from orbital elements.
-     * Used for initial configuration.
-     */
-    public static Orbit fromElements(
-            double semiMajorAxis,
-            double eccentricity,
-            double inclination,
-            double ascendingNode,
-            double periapsis,
-            double trueAnomaly,
-            Gravitational centerBody) {
-
-        return new Orbit(
-                semiMajorAxis,
-                eccentricity,
-                inclination,
-                ascendingNode,
-                periapsis,
-                trueAnomaly,
-                centerBody
-        );
-    }
-
     // ==================== STATE PROPAGATION (ABSOLUTE TIME) ====================
 
     /**

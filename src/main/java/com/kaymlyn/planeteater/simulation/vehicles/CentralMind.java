@@ -97,4 +97,9 @@ public class CentralMind extends Vehicle implements Orbiter, Satellite, Dockable
         spacecraft.setVelocity(this.velocity);
         spacecraft.setOrbiting(this);
     }
+
+    @Override
+    public void updateDocked() {
+        hanger.forEach((id,ship) -> {ship.setPosition(this.position); ship.setVelocity(this.velocity);});
+    }
 }

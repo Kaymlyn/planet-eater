@@ -4,7 +4,6 @@ import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
-import com.kaymlyn.planeteater.simulation.physics.PiecewiseState;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import org.jcodec.api.SequenceEncoder;
@@ -20,7 +19,6 @@ import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.List;
 
 /**
  * HIGH-PERFORMANCE orbital system renderer
@@ -383,7 +381,7 @@ public class OrbitalSystemRendererOptimized {
     private Vector3D getCurrentSpacecraftPosition(Spacecraft spacecraft) {
         // Use new time-based API - simpler and more robust
         double currentTime = system.getCurrentTime();
-        return spacecraft.getPositionAt(currentTime);
+        return spacecraft.getPositionAtTime(currentTime);
     }
 
     /**

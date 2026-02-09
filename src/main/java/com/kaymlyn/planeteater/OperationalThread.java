@@ -1,7 +1,5 @@
 package com.kaymlyn.planeteater;
 
-import com.kaymlyn.planeteater.simulation.physics.ManeuverDetails;
-import com.kaymlyn.planeteater.simulation.physics.TransferOptimizer;
 import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.Orbit;
@@ -11,6 +9,7 @@ import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.entities.Specialization;
 import com.kaymlyn.planeteater.simulation.physics.Itinerary;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.physics.TransferPlannerSimple;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
@@ -83,25 +82,20 @@ public class OperationalThread implements Runnable {
 
         spark.stepVerlet();
 
-        Itinerary route = vehicle.planRoute(planet_1, true, spark.getCurrentTime(), TransferOptimizer.OptimizationGoal.MINIMUM_DELTAV );
+        Itinerary route = vehicle.planRoute(planet_1, true, spark.getCurrentTime(), TransferPlannerSimple.OptimizationGoal.MINIMUM_DELTAV );
         if(route == null) {
             System.out.println("Unable to find valid route");
             return;
         }
         System.out.println(route.getSummary());
 
-        ManeuverDetails details = route.getInitialManeuver();
-        while(details != null) {
-            System.out.println(details.getStartingPosition() + " " + details.getEndingPosition() + " " + details.getId());
-            details = details.getNext();
-        }
 
-        System.out.println(vehicle.fuelRequired(route.getTravelDeltaV()));
+        System.out.println(vehicle.fuelRequired(route.getTotalDeltaV()));
         System.out.println(vehicle.getFuelMass());
-        System.out.println(vehicle.fuelRequired(route.getTravelDeltaV()) < vehicle.getFuelMass());
+        System.out.println(vehicle.fuelRequired(route.getTotalDeltaV()) < vehicle.getFuelMass());
         vehicle.setItinerary(route);
         vehicle.programItinerary(route);
-        System.out.println("Positionals");
+        System.out.println("Positions");
         System.out.println(mind.getPosition());
         System.out.println(mind.getPosition(0));
         System.out.println(mind.getPosition(3600));

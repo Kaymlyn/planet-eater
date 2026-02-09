@@ -151,5 +151,14 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
     @Override
     public void dock(Spacecraft spacecraft) {
         hanger.put(spacecraft.getId(), spacecraft);
+        spacecraft.setState(Spacecraft.SpacecraftState.DOCKED);
+    }
+
+    @Override
+    public void updateDocked() {
+        hanger.forEach((id,ship) -> {
+            ship.setPosition(this.position);
+            ship.setVelocity(this.velocity);
+        });
     }
 }

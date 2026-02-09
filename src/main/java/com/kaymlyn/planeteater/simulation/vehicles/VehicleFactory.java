@@ -1,5 +1,6 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
+import com.kaymlyn.planeteater.simulation.celestial.Dockable;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
@@ -10,20 +11,19 @@ public class VehicleFactory {
     /**
      * Create a basic cargo shuttle (no life support)
      */
-    public static Spacecraft createCargoShuttle(String id, Orbiter shipyard) {
+    public static Spacecraft createCargoShuttle(String id, Dockable shipyard) {
         Composition construction = new Composition();
         construction.addMaterialAsVolume(Material.ALUMINUM, 2.0);
         construction.addMaterialAsVolume(Material.TITANIUM, 3.0);
         construction.addMaterialAsVolume(Material.IRON, 1.0);
         System.out.println("Total Mass : " + construction.getTotalMass());
-        Spacecraft ship = new Spacecraft(id, construction.getTotalMass(), 2.0e20, 120.0, 3000.0, false, 0,0, shipyard);
+        Spacecraft ship = new Spacecraft(id, construction.getTotalMass(), 2.0e18, 120.0, 8000.0, false, 0,0, shipyard);
 
-        System.out.println("Shipyard : " + ship.getOrbiting());
+        //Place in shipyard
+        shipyard.dock(ship);
 
         // Construction materials
         ship.getConstruction().addBulkMaterial(construction);
-
-
         return ship;
     }
 
