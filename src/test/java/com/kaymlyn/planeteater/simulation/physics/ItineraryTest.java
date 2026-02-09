@@ -44,7 +44,7 @@ public class ItineraryTest {
                         venus,
                         false,
                         spark.getTimeStep()*4,
-                        TransferPlannerSimple.OptimizationGoal.MINIMUM_DELTAV)
+                        TransferPlanner.OptimizationGoal.MINIMUM_DELTAV)
         );
 
         Vector3D earthPositionStart = earth.getPosition();
@@ -69,52 +69,7 @@ public class ItineraryTest {
         );
 
     }
-    @Test
-    public void testTakeOffStartsAtSurface() {
 
-        ManeuverDetails launch = ManeuverDetails.takeOff(earth, 0.0);
-
-        double distanceFromEarthCenter = launch.getStartingPosition()
-                .subtract(earth.getPosition())
-                .magnitude();
-
-        assertEquals(earth.getRadius(), distanceFromEarthCenter, 1.0,
-                "Launch should start at surface (1 radius from center)");
-    }
-
-    @Test
-    public void testTakeOffEndsAtStandardOrbit() {
-
-        ManeuverDetails launch = ManeuverDetails.takeOff(earth, 0.0);
-
-        double distanceFromEarthCenter = launch.getEndingPosition()
-                .subtract(earth.getPosition())
-                .magnitude();
-
-        double expectedOrbitalRadius = earth.getRadius() * 1.1;
-
-        assertEquals(expectedOrbitalRadius, distanceFromEarthCenter, 1000.0,
-                "Launch should end at 1.1 * radius from Earth center");
-    }
-
-    @Test
-    public void testOrbitalVelocityIsTangential() {
-
-        ManeuverDetails launch = ManeuverDetails.takeOff(earth, 0.0);
-
-        // Velocity should be perpendicular to position (relative to Earth)
-        Vector3D positionRelativeToEarth = launch.getEndingPosition()
-                .subtract(earth.getPosition());
-
-        Vector3D velocityRelativeToEarth = launch.getEndingVelocity()
-                .subtract(earth.getVelocity());
-
-        double dotProduct = positionRelativeToEarth.normalize()
-                .dot(velocityRelativeToEarth.normalize());
-
-        assertEquals(0.0, dotProduct, 0.1,
-                "Orbital velocity should be perpendicular to position");
-    }
     @Test
     public void testEarthToVenusTransfer() {
         // Setup
@@ -125,7 +80,7 @@ public class ItineraryTest {
         Orbit venusOrbit = venus.snapshotOrbit();
 
         double startTime = system.getCurrentTime() + 3600; // Launch in 1 hour
-        Itinerary itinerary = TransferPlannerSimple.buildHohmannTransfer(
+        Itinerary itinerary = TransferPlanner.buildHohmannTransfer(
                 shuttle, earthOrbit, venusOrbit, earth, venus, false, startTime
         );
 

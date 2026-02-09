@@ -36,7 +36,6 @@ import java.util.*;
 public class OrbitalSystemRendererOptimized {
 
     private final OrbitalSystem system;
-    private final int scalar;
     private final int width;
     private final int height;
 
@@ -80,7 +79,7 @@ public class OrbitalSystemRendererOptimized {
      */
     public OrbitalSystemRendererOptimized(OrbitalSystem system, double visibleAU, boolean directToVideo) {
         this.system = system;
-        this.scalar = 80;
+        int scalar = 80;
         this.width = WIDTH_RATIO * scalar;
         this.height = HEIGHT_RATIO * scalar;
         this.directToVideo = directToVideo;

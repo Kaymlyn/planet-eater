@@ -49,33 +49,6 @@ public abstract class Operation {
         this.status = OperationStatus.PLANNING;
         this.deploymentTime = deploymentTime;
     }
-    
-    /**
-     * Plan the operation - calculate trajectories and check feasibility
-     */
-//    public boolean planOperation(CentralMind platform, Spacecraft spacecraft, OrbitalSystem system) {
-//        if (status != OperationStatus.PLANNING) {
-//            return false;
-//        }
-//
-//        // Calculate outbound trajectory
-//        outboundTrajectory = TravelCalculator.calculateRendezvousFromSpace(
-//            platform.getPosition(),
-//                platform.getVelocity(),
-//                target,
-//                spacecraft,
-//                system
-//        );
-//
-//        // Round Trips aren't needed for operations as they will maintain permanent (semi permanent) activity
-//        double totalFuelNeeded = outboundTrajectory.fuelRequired;
-//        if (spacecraft.getFuelMass() < totalFuelNeeded) {
-//            return false;
-//        }
-//
-//        // Check crew capacity
-//        return crew.size() <= spacecraft.getMaxCrewCapacity();
-//    }
 
     public void deploy() {
         status = OperationStatus.DEPLOYING;
@@ -109,97 +82,6 @@ public abstract class Operation {
             }
         }
     }
-//
-//    /**
-//     * Arrive at the asteroid and begin mining
-//     */
-//    private void arriveAtDestination(double currentTime) {
-//        spacecraft.setState(Spacecraft.SpacecraftState.DOCKED);
-//        status = OperationStatus.DEPLOYING;
-//        startTime = currentTime;
-//
-//        // Disembark crew
-//        for (Automaton miner : crew) {
-//            crew.add(spacecraft.disembarkCrew(miner));
-//        }
-//    }
-
-    /**
-     * Begin return journey to platform
-     */
-//    private void beginReturn(CentralMind platform) {
-//        // Re-board crew
-//        for (Automaton automaton : crew) {
-//            spacecraft.boardAutomaton(automaton);
-//        }
-//
-//        // Consume fuel for return
-//        outboundTrajectory = TravelCalculator.calculateRendezvous(
-//                platform.getPosition(),
-//                target,
-//                spacecraft
-//        );
-//
-//        spacecraft.consumeFuel(outboundTrajectory.fuelRequired);
-//        spacecraft.setState(Spacecraft.SpacecraftState.TRAVELING);
-//        startTime = System.currentTimeMillis() / 1000.0; // Use real time for simplicity
-//    }
 
     public abstract void performTask(double dt);
-//    /**
-//     * Perform mining for a time step
-//     */
-//    private void performMining(double dt) {
-//        double rate = getTotalMiningRate();
-//        double toMine = Math.min(rate * dt, targetAmount - minedAmount);
-//
-//        // Extract from asteroid
-//        double actualMined = target.mineMaterial(targetMaterial, toMine);
-//
-//        // Load into spacecraft
-//        double loaded = spacecraft.loadCargo(targetMaterial, actualMined);
-//        minedAmount += loaded;
-//        elapsedMiningTime += dt;
-//
-//        // Check if target reached
-//        if (minedAmount >= targetAmount || !target.hasMaterial(targetMaterial)) {
-//            beginReturn();
-//        }
-//    }
-
-//    /**
-//     * Begin return journey to platform
-//     */
-//    private void beginReturn() {
-//        // Re-board crew
-//        for (MiningEntity miner : crew) {
-//            spacecraft.boardEntity(miner);
-//            miner.setCurrentLocation(null);
-//        }
-//
-//        // Consume fuel for return
-//        spacecraft.consumeFuel(returnTrajectory.fuelRequired);
-//        spacecraft.setState(Spacecraft.SpacecraftState.RETURNING);
-//        status = OperationStatus.RETURNING;
-//        startTime = System.currentTimeMillis() / 1000.0; // Use real time for simplicity
-//    }
-    
-//    /**
-//     * Calculate total operation time (travel + mining + return)
-//     */
-//    public double getTotalOperationTime() {
-//        if (outboundTrajectory == null || returnTrajectory == null) {
-//            return 0.0;
-//        }
-//        return outboundTrajectory.travelTime + estimateMiningTime() + returnTrajectory.travelTime;
-//    }
-    
-//    /**
-//     * Get operation efficiency (mined mass per fuel mass)
-//     */
-//    public double getEfficiency() {
-//        double fuelCost = getTotalFuelCost();
-//        if (fuelCost <= 0) return 0.0;
-//        return targetAmount / fuelCost;
-//    }
 }

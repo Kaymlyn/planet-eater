@@ -1,14 +1,13 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
 import com.kaymlyn.planeteater.simulation.physics.ScheduledBurn;
-import com.kaymlyn.planeteater.simulation.physics.TransferPlannerSimple;
+import com.kaymlyn.planeteater.simulation.physics.TransferPlanner;
 import com.kaymlyn.planeteater.simulation.celestial.Dockable;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.physics.Itinerary;
-import com.kaymlyn.planeteater.simulation.physics.TransferPlannerSimple;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
@@ -63,7 +62,6 @@ public class Spacecraft extends Vehicle {
         this.orbiting = shipyard;
         this.system = shipyard.getParentBody().getSystem();
         this.position = shipyard.getPosition();
-        // REMOVED: this.currentTravelCycle = 0;
         this.cargo = new Composition();
         this.crew = new ArrayList<>();
     }
@@ -84,10 +82,10 @@ public class Spacecraft extends Vehicle {
             @NonNull Orbiter destination,
             boolean land,
             double departureTime,
-            TransferPlannerSimple.OptimizationGoal priority) {
+            TransferPlanner.OptimizationGoal priority) {
 
-        List<TransferPlannerSimple.TransferOption> options =
-                TransferPlannerSimple.generateTransferOptions(
+        List<TransferPlanner.TransferOption> options =
+                TransferPlanner.generateTransferOptions(
                         this,
                         this.orbiting,
                         destination,
@@ -95,11 +93,11 @@ public class Spacecraft extends Vehicle {
                         departureTime
                 );
 
-        TransferPlannerSimple.TransferOption bestOption =
-                TransferPlannerSimple.selectBestTransfer(
+        TransferPlanner.TransferOption bestOption =
+                TransferPlanner.selectBestTransfer(
                         options,
                         Objects.requireNonNullElse(priority,
-                                TransferPlannerSimple.OptimizationGoal.MINIMUM_DELTAV)
+                                TransferPlanner.OptimizationGoal.MINIMUM_DELTAV)
                 );
 
         return bestOption != null ? bestOption.getItinerary() : null;

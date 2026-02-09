@@ -9,7 +9,7 @@ import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.entities.Specialization;
 import com.kaymlyn.planeteater.simulation.physics.Itinerary;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
-import com.kaymlyn.planeteater.simulation.physics.TransferPlannerSimple;
+import com.kaymlyn.planeteater.simulation.physics.TransferPlanner;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
@@ -82,7 +82,7 @@ public class OperationalThread implements Runnable {
 
         spark.stepVerlet();
 
-        Itinerary route = vehicle.planRoute(planet_1, true, spark.getCurrentTime(), TransferPlannerSimple.OptimizationGoal.MINIMUM_DELTAV );
+        Itinerary route = vehicle.planRoute(planet_1, true, spark.getCurrentTime(), TransferPlanner.OptimizationGoal.MINIMUM_DELTAV );
         if(route == null) {
             System.out.println("Unable to find valid route");
             return;

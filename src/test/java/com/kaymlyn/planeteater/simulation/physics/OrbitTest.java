@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.*;
 public class OrbitTest {
 
     private static Star sun;
-    private static CelestialBodyFactory factory;
 
     // Test tolerances
     private static final double POSITION_TOLERANCE = 1000.0;    // 1 km
@@ -35,7 +34,7 @@ public class OrbitTest {
 
     @BeforeAll
     static void setup() {
-        factory = new CelestialBodyFactory(
+        CelestialBodyFactory factory = new CelestialBodyFactory(
                 CelestialBodyFactory.createMainSequenceStar("TestStar", 1.0),
                 3600.0
         );
