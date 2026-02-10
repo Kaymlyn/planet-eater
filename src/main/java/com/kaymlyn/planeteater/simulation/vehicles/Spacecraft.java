@@ -65,6 +65,35 @@ public class Spacecraft extends Vehicle {
         this.cargo = new Composition();
         this.crew = new ArrayList<>();
     }
+    /**
+     * Get the current position of the spacecraft.
+     * When DOCKED, returns the position of the body being orbited.
+     * When TRAVELING, ORBITING, or STRANDED, returns the spacecraft's own position.
+     *
+     * @return current position vector
+     */
+    @Override
+    public Vector3D getPosition() {
+        if (state == SpacecraftState.DOCKED && orbiting != null) {
+            return orbiting.getPosition();
+        }
+        return position;
+    }
+
+    /**
+     * Get the current velocity of the spacecraft.
+     * When DOCKED, returns the velocity of the body being orbited.
+     * When TRAVELING, ORBITING, or STRANDED, returns the spacecraft's own velocity.
+     *
+     * @return current velocity vector
+     */
+    @Override
+    public Vector3D getVelocity() {
+        if (state == SpacecraftState.DOCKED && orbiting != null) {
+            return orbiting.getVelocity();
+        }
+        return velocity;
+    }
 
     public Gravitational getLocation() {
         if (orbiting == null || !(orbiting instanceof Gravitational)) {
@@ -281,7 +310,7 @@ public class Spacecraft extends Vehicle {
         Composition materials = new Composition();
 
         for (Map.Entry<Material, Double> entry : construction.getMaterials().entrySet()) {
-            materials.addMaterialAsVolume(entry.getKey(), entry.getValue());
+            materials.addMaterialAsRawMass(entry.getKey(), entry.getValue());
         }
 
         system.unregister(this);
