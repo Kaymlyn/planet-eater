@@ -43,7 +43,6 @@ Thumbs.db
 *.ear
 /gradlew
 /gradlew.bat
-/project-setup-guide.md
 /gradle/
 /orbits/
 *.mp4
