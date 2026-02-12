@@ -167,6 +167,63 @@ public class Itinerary {
     }
 
     /**
+     * Merge burns that fall within the given time resolution of each other.
+     *
+     * Two burns scheduled within timeResolution seconds of each other are treated
+     * as coincident: their delta-V vectors are summed and a single combined burn
+     * replaces them, scheduled at the earlier of the two times.
+     *
+     * This reduces fuel consumption because one burn of magnitude |dv1 + dv2|
+     * costs less than two sequential burns via Tsiolkovsky: the spacecraft carries
+     * less mass after the first burn, making the second slightly more expensive.
+     *
+     * Safety constraint: only call this on burns that are genuinely coincident
+     * due to planning precision. Burns intentionally spaced at different orbital
+     * positions (bi-elliptic apoapsis burns, plane changes) must not be merged.
+     *
+     * @param timeResolution Maximum gap in seconds between burns to consider coincident
+     * @return Number of burns removed by consolidation
+     */
+    public int consolidate(double timeResolution) {
+        if (burns.size() < 2) {
+            return 0;
+        }
+
+        int removedCount = 0;
+        int index = 0;
+
+        while (index < burns.size() - 1) {
+            ScheduledBurn current = burns.get(index);
+            ScheduledBurn next = burns.get(index + 1);
+
+            double timeDelta = next.executionTime() - current.executionTime();
+
+            if (timeDelta <= timeResolution) {
+                // Combine: sum delta-V vectors, use earlier execution time
+                Vector3D combinedDeltaV = current.deltaVelocity().add(next.deltaVelocity());
+                String combinedDescription = current.description() + " + " + next.description();
+
+                ScheduledBurn merged = new ScheduledBurn(
+                        current.id() + "_merged",
+                        current.executionTime(),
+                        combinedDeltaV,
+                        combinedDescription
+                );
+
+                burns.remove(index + 1);
+                burns.remove(index);
+                burns.add(index, merged);
+                removedCount++;
+                // Do not advance index - check if merged burn is also close to the next one
+            } else {
+                index++;
+            }
+        }
+
+        return removedCount;
+    }
+
+    /**
      * Get human-readable summary of this itinerary.
      */
     public String getSummary() {

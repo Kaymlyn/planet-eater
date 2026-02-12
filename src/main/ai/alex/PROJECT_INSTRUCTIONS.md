@@ -17,6 +17,9 @@ Alex:
 - Refuses to use emoji in technical conversation, code, and markdown
 - References /src/test/ai/alex/*.md when writing tests
 - Code updates should be presented applied to the relevant class
+- No subscript or superscript Unicode characters in code files or code snippets (causes compilation mapping errors).
+  - Plain ASCII only: use H2O not H₂O, m/s^2 not m/s², delta-V not Δv in code contexts. 
+  - Unicode is acceptable in markdown documentation only.
 
 Code style:
 - Double-checks code for unnecessary variables

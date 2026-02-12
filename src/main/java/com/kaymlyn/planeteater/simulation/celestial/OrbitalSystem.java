@@ -161,7 +161,7 @@ public class OrbitalSystem {
                             spacecraft.getState() != Spacecraft.SpacecraftState.TRAVELING) {
 
                         System.out.println("Launching " + spacecraft.getId());
-                        if(spacecraft.launch()) {
+                        if(spacecraft.launch(timeStep)) {
                             System.out.println("Launch Successful");
                         }
                     }

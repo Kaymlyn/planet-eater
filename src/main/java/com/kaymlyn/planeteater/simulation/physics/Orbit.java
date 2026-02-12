@@ -140,7 +140,8 @@ public record Orbit(
      * @throws IllegalArgumentException if absoluteTime < currentTime
      */
     public OrbitalState stateAt(double absoluteTime, double currentTime) {
-        double timeElapsed = currentTime - absoluteTime;
+        // FIXED: Changed from currentTime - absoluteTime to absoluteTime - currentTime
+        double timeElapsed = absoluteTime - currentTime;
 
         if (timeElapsed < 0) {
             throw new IllegalArgumentException(

@@ -189,7 +189,7 @@ public class SpacecraftTest {
         assertEquals(Spacecraft.SpacecraftState.DOCKED, standardShuttle.getState());
 
         // Launch
-        boolean launched = standardShuttle.launch();
+        boolean launched = standardShuttle.launch(system.getTimeStep());
 
         assertAll("Launch state transition",
                 () -> assertTrue(launched, "Launch should succeed"),
@@ -331,7 +331,7 @@ public class SpacecraftTest {
 
         standardShuttle.programItinerary(itinerary);
 
-        boolean launched = standardShuttle.launch();
+        boolean launched = standardShuttle.launch(system.getTimeStep());
 
         assertAll("Launch success",
                 () -> assertTrue(launched, "Launch should succeed"),
@@ -344,7 +344,7 @@ public class SpacecraftTest {
     @Test
     @DisplayName("Launch fails without programmed itinerary")
     void testLaunchFailsWithoutItinerary() {
-        boolean launched = standardShuttle.launch();
+        boolean launched = standardShuttle.launch(system.getTimeStep());
 
         assertAll("Launch without itinerary",
                 () -> assertFalse(launched, "Launch should fail"),
@@ -371,7 +371,7 @@ public class SpacecraftTest {
 
         standardShuttle.programItinerary(itinerary);
 
-        boolean launched = standardShuttle.launch();
+        boolean launched = standardShuttle.launch(system.getTimeStep());
 
         assertAll("Launch with infeasible itinerary",
                 () -> assertFalse(launched, "Launch should fail"),
@@ -396,7 +396,7 @@ public class SpacecraftTest {
 
         standardShuttle.programItinerary(itinerary);
 
-        boolean launched = standardShuttle.launch();
+        boolean launched = standardShuttle.launch(system.getTimeStep());
 
         assertAll("Launch while traveling",
                 () -> assertFalse(launched, "Launch should fail when not docked"),
@@ -423,7 +423,7 @@ public class SpacecraftTest {
 
         standardShuttle.programItinerary(itinerary);
 
-        boolean launched = standardShuttle.launch();
+        boolean launched = standardShuttle.launch(system.getTimeStep());
 
         assertAll("Launch with insufficient fuel",
                 () -> assertFalse(launched, "Launch should fail"),
@@ -453,7 +453,7 @@ public class SpacecraftTest {
         itinerary.setFinalState(Spacecraft.SpacecraftState.ORBITING);
 
         standardShuttle.programItinerary(itinerary);
-        standardShuttle.launch();
+        standardShuttle.launch(system.getTimeStep());
 
         double fuelBefore = standardShuttle.getFuelMass();
         double massBefore = standardShuttle.getTotalMass();
@@ -494,7 +494,7 @@ public class SpacecraftTest {
         itinerary.setFinalState(Spacecraft.SpacecraftState.ORBITING);
 
         standardShuttle.programItinerary(itinerary);
-        standardShuttle.launch();
+        standardShuttle.launch(system.getTimeStep());
 
         double initialFuel = standardShuttle.getFuelMass();
 
@@ -580,7 +580,7 @@ public class SpacecraftTest {
         itinerary.setFinalState(Spacecraft.SpacecraftState.ORBITING);
 
         standardShuttle.programItinerary(itinerary);
-        standardShuttle.launch();
+        standardShuttle.launch(system.getTimeStep());
 
         // Capture velocity before burn
         Vector3D velocityBeforeBurn = standardShuttle.getVelocity();
@@ -655,7 +655,7 @@ public class SpacecraftTest {
         assertTrue(platform.getHanger().containsKey(SHUTTLE_ID),
                 "Should be in hanger before launch");
 
-        standardShuttle.launch();
+        standardShuttle.launch(system.getTimeStep());
 
         assertFalse(platform.getHanger().containsKey(SHUTTLE_ID),
                 "Should not be in hanger after launch");
@@ -678,7 +678,7 @@ public class SpacecraftTest {
         itinerary.setFinalState(Spacecraft.SpacecraftState.ORBITING);
 
         standardShuttle.programItinerary(itinerary);
-        standardShuttle.launch();
+        standardShuttle.launch(system.getTimeStep());
 
         // Advance past completion
         double targetTime = system.getCurrentTime() + 7200.0;
@@ -711,7 +711,7 @@ public class SpacecraftTest {
         itinerary.setFinalState(Spacecraft.SpacecraftState.DOCKED);
 
         standardShuttle.programItinerary(itinerary);
-        standardShuttle.launch();
+        standardShuttle.launch(system.getTimeStep());
 
         // Advance past completion
         double targetTime = system.getCurrentTime() + 7200.0;
@@ -799,7 +799,7 @@ public class SpacecraftTest {
         itinerary.setFinalState(Spacecraft.SpacecraftState.ORBITING);
 
         standardShuttle.programItinerary(itinerary);
-        standardShuttle.launch();
+        standardShuttle.launch(system.getTimeStep());
 
         assertEquals(platform, standardShuttle.getOrbiting(),
                 "Orbiting should be platform before completion");
@@ -854,7 +854,7 @@ public class SpacecraftTest {
         itinerary.setFinalState(Spacecraft.SpacecraftState.ORBITING);
 
         standardShuttle.programItinerary(itinerary);
-        standardShuttle.launch();
+        standardShuttle.launch(system.getTimeStep());
 
         assertTrue(system.getSpacecraftInTransit().containsKey(SHUTTLE_ID),
                 "Should be registered before recycling");
@@ -979,7 +979,7 @@ public class SpacecraftTest {
         itinerary.setFinalState(Spacecraft.SpacecraftState.ORBITING);
 
         standardShuttle.programItinerary(itinerary);
-        standardShuttle.launch();
+        standardShuttle.launch(system.getTimeStep());
 
         assertTrue(system.getSpacecraftInTransit().containsKey(SHUTTLE_ID),
                 "Should be tracked after launch");
@@ -1000,7 +1000,7 @@ public class SpacecraftTest {
         itinerary.setFinalState(Spacecraft.SpacecraftState.DOCKED);
 
         standardShuttle.programItinerary(itinerary);
-        standardShuttle.launch();
+        standardShuttle.launch(system.getTimeStep());
 
         assertTrue(system.getSpacecraftInTransit().containsKey(SHUTTLE_ID),
                 "Should be tracked during travel");

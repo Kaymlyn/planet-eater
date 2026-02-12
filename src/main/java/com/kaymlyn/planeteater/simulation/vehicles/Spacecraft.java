@@ -139,20 +139,22 @@ public class Spacecraft extends Vehicle {
 
         double currentTime = system.getCurrentTime();
 
-        // Check for burns to execute
+        // Execute all burns that are due at this time step.
+        // Loop is necessary: multiple burns may have been passed in a single step.
         ScheduledBurn nextBurn = itinerary.getNextBurn(currentTime);
+        while (nextBurn != null && nextBurn.shouldExecute(currentTime)) {
 
-        if (nextBurn != null && nextBurn.shouldExecute(currentTime)) {
-            // Execute burn: modify velocity
-            Vector3D oldVelocity = velocity;
+            // Capture pre-burn velocity for logging
+            Vector3D preBurnVelocity = velocity;
+
+            // Apply delta-V
             velocity = velocity.add(nextBurn.deltaVelocity());
 
-            // Consume fuel
+            // Calculate fuel cost using pre-burn total mass (correct Tsiolkovsky application)
             double fuelNeeded = nextBurn.fuelRequired(getTotalMass(), exhaustVelocity);
             double fuelConsumed = consumeFuel(fuelNeeded);
 
             if (fuelConsumed < fuelNeeded * 0.99) {
-                // Insufficient fuel - mark as stranded
                 System.err.println("WARNING: Insufficient fuel for burn " +
                         nextBurn.id() + ". Stranded.");
                 state = SpacecraftState.STRANDED;
@@ -160,32 +162,31 @@ public class Spacecraft extends Vehicle {
                 return;
             }
 
-            // Remove executed burn
             itinerary.removeBurn(nextBurn);
 
             System.out.printf(
-                    "[T=%.1f] Executed %s: Δv=%.1f m/s, fuel=%.1f kg, v: %s -> %s%n",
+                    "[T=%.1f] Executed %s: dv=%.1f m/s, fuel=%.1f kg, v: %s -> %s%n",
                     currentTime,
                     nextBurn.description(),
                     nextBurn.deltaVelocity().magnitude(),
                     fuelConsumed,
-                    oldVelocity,
+                    preBurnVelocity,
                     velocity
             );
 
-            // Update state
             if (state == SpacecraftState.DOCKED) {
                 state = SpacecraftState.TRAVELING;
             }
+
+            // Check next burn - may also be due this step
+            nextBurn = itinerary.getNextBurn(currentTime);
         }
 
-        // Check if itinerary complete
         if (itinerary.isComplete(currentTime)) {
             completeTravel();
         }
-
-        // Position updated by OrbitalSystem.stepVerlet() - we don't calculate it!
     }
+
 
     /**
      * Complete travel process.
@@ -233,7 +234,7 @@ public class Spacecraft extends Vehicle {
         itinerary = null;
     }
 
-    public boolean launch() {
+    public boolean launch(double timeStep) {
         if (itinerary == null) {
             System.err.println("Cannot launch: no itinerary programmed");
             return false;
@@ -248,7 +249,10 @@ public class Spacecraft extends Vehicle {
             System.err.println("Cannot launch: not docked");
             return false;
         }
-
+        double totalDeltaV = itinerary.getTotalDeltaV();
+        double burnsRemoved = itinerary.consolidate(timeStep);
+        double deltaDeltaV = totalDeltaV - itinerary.getTotalDeltaV();
+        System.out.println(burnsRemoved + " burns Removed for " + deltaDeltaV + " less deltaV.");
         // Validate we have enough fuel for entire mission
         double requiredFuel = 0.0;
         double currentMass = getTotalMass();
@@ -274,13 +278,13 @@ public class Spacecraft extends Vehicle {
         setState(SpacecraftState.TRAVELING);
         system.register(this);
 
-        System.out.println(String.format(
-                "[T=%.1f] %s launched from %s with %d scheduled burns",
+        System.out.printf(
+                "[T=%.1f] %s launched from %s with %d scheduled burns%n",
                 system.getCurrentTime(),
                 id,
                 orbiting.getId(),
                 itinerary.getBurns().size()
-        ));
+        );
 
         return true;
     }

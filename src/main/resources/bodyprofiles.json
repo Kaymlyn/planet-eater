@@ -98,7 +98,7 @@
     ]
   },
   {
-    "bodyType": "NICKEL_IRON",
+    "bodyType": "IRON_NICKEL",
     "zone": "CORE",
     "materials": [
       {
@@ -133,7 +133,7 @@
       },
       {
         "type": "IRON_OXIDE",
-        "ratio": 25
+        "ratio": 10
       }
     ]
   },
@@ -172,20 +172,52 @@
     "zone": "ATMOSPHERE",
     "materials": [
       {
-        "type": "WATER_ICE",
-        "ratio": 1.4e21
-      },
-      {
         "type": "NITROGEN_GAS",
-        "ratio": 4.0e18
+        "ratio": 78
       },
       {
         "type": "OXYGEN_GAS",
-        "ratio": 1.2e18
+        "ratio": 21
       },
       {
+        "type": "WATER_ICE",
+        "ratio": 1
+      }
+    ]
+  },
+  {
+    "bodyType": "GREENHOUSE",
+    "zone": "ATMOSPHERE",
+    "materials": [
+      {
         "type": "CO2_ICE",
-        "ratio": 3.0e15
+        "ratio": 95
+      },
+      {
+        "type": "NITROGEN_GAS",
+        "ratio": 4
+      },
+      {
+        "type": "WATER_ICE",
+        "ratio": 1
+      }
+    ]
+  },
+  {
+    "bodyType": "LOW_CO2",
+    "zone": "ATMOSPHERE",
+    "materials": [
+      {
+        "type": "CO2_ICE",
+        "ratio": 95
+      },
+      {
+        "type": "NITROGEN_GAS",
+        "ratio": 3
+      },
+      {
+        "type": "WATER_ICE",
+        "ratio": 2
       }
     ]
   },
@@ -212,28 +244,6 @@
     ]
   },
   {
-    "bodyType": "LOW_HYDROGEN_HELIUM",
-    "zone": "ATMOSPHERE",
-    "materials": [
-      {
-        "type": "HYDROGEN",
-        "ratio": 71
-      },
-      {
-        "type": "HELIUM",
-        "ratio": 24
-      },
-      {
-        "type": "METHANE_ICE",
-        "ratio": 3
-      },
-      {
-        "type": "AMMONIA_ICE",
-        "ratio": 2
-      }
-    ]
-  },
-  {
     "bodyType": "DRY_SILICA_IRON",
     "zone": "CORE",
     "materials": [
@@ -252,20 +262,34 @@
     ]
   },
   {
-    "bodyType": "WET_AMMONIA_METHANE",
+    "bodyType": "LIQUID_METALLIC_HYDROGEN",
     "zone": "MANTLE",
     "materials": [
       {
-        "type": "WATER_ICE",
-        "ratio": 55
+        "type": "HYDROGEN",
+        "ratio": 90
       },
       {
-        "type": "AMMONIA_ICE",
-        "ratio": 25
+        "type": "HELIUM",
+        "ratio": 10
+      }
+    ]
+  },
+  {
+    "bodyType": "MOLECULAR_HYDROGEN",
+    "zone": "CRUST",
+    "materials": [
+      {
+        "type": "HYDROGEN",
+        "ratio": 85
+      },
+      {
+        "type": "HELIUM",
+        "ratio": 13
       },
       {
         "type": "METHANE_ICE",
-        "ratio": 20
+        "ratio": 2
       }
     ]
   },
@@ -288,26 +312,234 @@
     ]
   },
   {
-    "bodyType": "GREENHOUSE",
+    "bodyType": "LOW_HYDROGEN_HELIUM",
     "zone": "ATMOSPHERE",
     "materials": [
       {
-        "type": "CO2_ICE",
+        "type": "HYDROGEN",
+        "ratio": 71
+      },
+      {
+        "type": "HELIUM",
+        "ratio": 24
+      },
+      {
+        "type": "METHANE_ICE",
+        "ratio": 3
+      },
+      {
+        "type": "AMMONIA_ICE",
+        "ratio": 2
+      }
+    ]
+  },
+  {
+    "bodyType": "WET_AMMONIA_METHANE",
+    "zone": "MANTLE",
+    "materials": [
+      {
+        "type": "WATER_ICE",
+        "ratio": 55
+      },
+      {
+        "type": "AMMONIA_ICE",
+        "ratio": 25
+      },
+      {
+        "type": "METHANE_ICE",
+        "ratio": 20
+      }
+    ]
+  },
+  {
+    "bodyType": "WATER_ICE",
+    "zone": "CRUST",
+    "materials": [
+      {
+        "type": "WATER_ICE",
         "ratio": 95
       },
       {
-        "type": "NITROGEN_GAS",
-        "ratio": 4
+        "type": "AMMONIA_ICE",
+        "ratio": 3
+      },
+      {
+        "type": "SILICA",
+        "ratio": 2
+      }
+    ]
+  },
+  {
+    "bodyType": "NITROGEN_ICE",
+    "zone": "CRUST",
+    "materials": [
+      {
+        "type": "NITROGEN_ICE",
+        "ratio": 80
+      },
+      {
+        "type": "METHANE_ICE",
+        "ratio": 15
       },
       {
         "type": "WATER_ICE",
+        "ratio": 5
+      }
+    ]
+  },
+  {
+    "bodyType": "METHANE_ICE",
+    "zone": "CRUST",
+    "materials": [
+      {
+        "type": "METHANE_ICE",
+        "ratio": 85
+      },
+      {
+        "type": "NITROGEN_ICE",
+        "ratio": 10
+      },
+      {
+        "type": "WATER_ICE",
+        "ratio": 5
+      }
+    ]
+  },
+  {
+    "bodyType": "SULFUR",
+    "zone": "ATMOSPHERE",
+    "materials": [
+      {
+        "type": "SULFUR",
+        "ratio": 90
+      },
+      {
+        "type": "IRON_SULFIDE",
+        "ratio": 8
+      },
+      {
+        "type": "SILICA",
+        "ratio": 2
+      }
+    ]
+  },
+  {
+    "bodyType": "NITROGEN_METHANE",
+    "zone": "ATMOSPHERE",
+    "materials": [
+      {
+        "type": "NITROGEN_GAS",
+        "ratio": 95
+      },
+      {
+        "type": "METHANE_ICE",
+        "ratio": 4
+      },
+      {
+        "type": "HYDROGEN",
         "ratio": 1
       }
     ]
   },
   {
-    "bodyType": "OCEAN",
+    "bodyType": "NITROGEN",
     "zone": "ATMOSPHERE",
+    "materials": [
+      {
+        "type": "NITROGEN_GAS",
+        "ratio": 98
+      },
+      {
+        "type": "METHANE_ICE",
+        "ratio": 1
+      },
+      {
+        "type": "CARBON",
+        "ratio": 1
+      }
+    ]
+  },
+  {
+    "bodyType": "CARBONACEOUS",
+    "zone": "CORE",
+    "materials": [
+      {
+        "type": "CARBON",
+        "ratio": 30
+      },
+      {
+        "type": "ORGANIC_COMPOUNDS",
+        "ratio": 25
+      },
+      {
+        "type": "WATER_ICE",
+        "ratio": 20
+      },
+      {
+        "type": "SILICA",
+        "ratio": 15
+      },
+      {
+        "type": "IRON_SULFIDE",
+        "ratio": 10
+      }
+    ]
+  },
+  {
+    "bodyType": "CARBONACEOUS",
+    "zone": "CRUST",
+    "materials": [
+      {
+        "type": "CARBON",
+        "ratio": 35
+      },
+      {
+        "type": "ORGANIC_COMPOUNDS",
+        "ratio": 30
+      },
+      {
+        "type": "WATER_ICE",
+        "ratio": 20
+      },
+      {
+        "type": "SILICA",
+        "ratio": 10
+      },
+      {
+        "type": "IRON_OXIDE",
+        "ratio": 5
+      }
+    ]
+  },
+  {
+    "bodyType": "VOLATILE_COMA",
+    "zone": "ATMOSPHERE",
+    "materials": [
+      {
+        "type": "WATER_ICE",
+        "ratio": 50
+      },
+      {
+        "type": "CO2_ICE",
+        "ratio": 25
+      },
+      {
+        "type": "METHANE_ICE",
+        "ratio": 10
+      },
+      {
+        "type": "AMMONIA_ICE",
+        "ratio": 10
+      },
+      {
+        "type": "ORGANIC_COMPOUNDS",
+        "ratio": 5
+      }
+    ]
+  },
+  {
+    "bodyType": "OCEAN",
+    "zone": "CRUST",
     "materials": [
       {
         "type": "WATER_ICE",
@@ -322,5 +554,25 @@
         "ratio": 1
       }
     ]
+  },
+  {
+    "bodyType": "NONE",
+    "zone": "CORE",
+    "materials": []
+  },
+  {
+    "bodyType": "NONE",
+    "zone": "MANTLE",
+    "materials": []
+  },
+  {
+    "bodyType": "NONE",
+    "zone": "CRUST",
+    "materials": []
+  },
+  {
+    "bodyType": "NONE",
+    "zone": "ATMOSPHERE",
+    "materials": []
   }
 ]

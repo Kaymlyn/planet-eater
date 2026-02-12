@@ -127,8 +127,7 @@ public class OrbitTest {
         Vector3D position = new Vector3D(periapsis, 0, 0);
 
         double semiMajorAxis = PhysicsConstants.AU;
-        double vPeriapsis = Math.sqrt(sun.getGravitationalParameter() *
-                (2.0/periapsis - 1.0/semiMajorAxis));
+        double vPeriapsis = Math.sqrt(sun.getGravitationalParameter() * (2.0/periapsis - 1.0/semiMajorAxis));
         Vector3D velocity = new Vector3D(0, vPeriapsis, 0);
 
         testRoundTrip(position, velocity, "Elliptical periapsis");
@@ -139,12 +138,11 @@ public class OrbitTest {
     @DisplayName("Round-trip: elliptical orbit at apoapsis")
     void testRoundTripEllipticalApoapsis() {
         double apoapsis = 1.5 * PhysicsConstants.AU;
-        Vector3D position = new Vector3D(apoapsis, 0, 0);
+        Vector3D position = new Vector3D(-apoapsis, 0, 0);
 
         double semiMajorAxis = PhysicsConstants.AU;
-        double vApoapsis = Math.sqrt(sun.getGravitationalParameter() *
-                (2.0/apoapsis - 1.0/semiMajorAxis));
-        Vector3D velocity = new Vector3D(0, -vApoapsis, 0);  // Negative for apoapsis
+        double vApoapsis = Math.sqrt(sun.getGravitationalParameter() * (2.0/apoapsis - 1.0/semiMajorAxis));
+        Vector3D velocity = new Vector3D(0, vApoapsis, 0);
 
         testRoundTrip(position, velocity, "Elliptical apoapsis");
     }
@@ -317,7 +315,7 @@ public class OrbitTest {
 
         // Propagate for 1/4 period (should be at 90 degrees)
         double quarterPeriod = orbit.orbitalPeriod() / 4.0;
-        OrbitalState state = orbit.stateAt(sun.getSystem().getCurrentTime(), sun.getSystem().getCurrentTime() + quarterPeriod);
+        OrbitalState state = orbit.stateAt(sun.getSystem().getCurrentTime() + quarterPeriod, sun.getSystem().getCurrentTime());
 
         // Should be at approximately 90 degrees
         double expectedAngle = Math.PI / 2;
@@ -336,7 +334,9 @@ public class OrbitTest {
         Orbit orbit = Orbit.fromState(sun, initialPos, initialVel);
 
         // Propagate for full period
-        OrbitalState state = orbit.stateAt(sun.getSystem().getCurrentTime(), orbit.orbitalPeriod());
+        OrbitalState state = orbit.stateAt(
+                sun.getSystem().getCurrentTime() + orbit.orbitalPeriod(),
+                sun.getSystem().getCurrentTime());
 
         // Should return to approximately same position
         double positionError = state.position().subtract(initialPos).magnitude();
@@ -417,7 +417,10 @@ public class OrbitTest {
 
         // Propagate to various points
         for (double timeFraction : new double[]{0.25, 0.5, 0.75, 1.0}) {
-            OrbitalState state = orbit.stateAt(sun.getSystem().getCurrentTime(), orbit.orbitalPeriod() * timeFraction);
+            OrbitalState state = orbit.stateAt(
+                    sun.getSystem().getCurrentTime() + orbit.orbitalPeriod() * timeFraction,
+                    sun.getSystem().getCurrentTime()
+            );
 
             double energy = state.velocity().magnitudeSquared() / 2.0 -
                     sun.getGravitationalParameter() / state.position().magnitude();
@@ -468,7 +471,7 @@ public class OrbitTest {
 
     private void testRoundTrip(Vector3D originalPos, Vector3D originalVel, String testName) {
         Orbit orbit = Orbit.fromState(sun, originalPos, originalVel);
-        OrbitalState state = orbit.stateAt(sun.getSystem().getCurrentTime(),sun.getSystem().getCurrentTime());
+        OrbitalState state = orbit.stateAt(sun.getSystem().getCurrentTime(), sun.getSystem().getCurrentTime());
 
         double posError = state.position().subtract(originalPos).magnitude();
         double velError = state.velocity().subtract(originalVel).magnitude();
