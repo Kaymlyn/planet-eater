@@ -4,8 +4,12 @@ import com.kaymlyn.planeteater.simulation.celestial.Dockable;
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
+import com.kaymlyn.planeteater.simulation.celestial.PhysicsBody;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
+import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.resources.Composition;
+import com.kaymlyn.planeteater.simulation.resources.Material;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -27,17 +31,26 @@ public class CentralMind extends Vehicle implements Orbiter, Satellite, Dockable
     private Gravitational parentBody;
     private OrbitalSystem system;
     private Map<String, Spacecraft> hanger;
+    // Position and velocity owned by Spacecraft (not inherited from Vehicle)
+    private Vector3D position;
+    private Vector3D velocity;
 
     public CentralMind(String id, OrbitalSystem system) {
-        super(id, 1e6, 1e4, 1e3, 2, true, 12, 0);
+        super(id, new Composition(), 1e4, 1e3, 2, true, 12, 0);
         this.system = system;
         this.crew = new ArrayList<>();
         this.hanger = new HashMap<>();
+        Composition construction = new Composition();
+        construction.addMaterialAsVolume(Material.IRON,10);
+        construction.addMaterialAsVolume(Material.ALUMINUM, 20);
+        construction.addMaterialAsVolume(Material.TITANIUM, 40);
+        this.getConstruction().addBulkMaterial(construction);
+        system.placeInCircularOrbit(this, PhysicsConstants.AU,Math.PI);
     }
 
     @Override
     public double getMass() {
-        return dryMass + getFuelMass() +
+        return getConstruction().getTotalMass() + getFuelMass() +
                 crew.stream().mapToDouble(Automaton::getMass).reduce(0.0, Double::sum);
     }
 
@@ -48,8 +61,8 @@ public class CentralMind extends Vehicle implements Orbiter, Satellite, Dockable
     }
 
     public void update(Vector3D acceleration, double dt) {
-        velocity = velocity.add(acceleration.multiply(dt));
-        position = position.add(velocity.multiply(dt));
+        this.setVelocity(getVelocity().add(acceleration.multiply(dt)));
+        this.setPosition(getPosition().add(getVelocity().multiply(dt)));
     }
 
     @Override
@@ -78,11 +91,6 @@ public class CentralMind extends Vehicle implements Orbiter, Satellite, Dockable
         result = result * 59 + (this.getParentBody() == null ? 43 : this.getParentBody().hashCode());
         result = result * 59 + (this.getId() == null ? 43 : this.getId().hashCode());
         return result;
-    }
-
-    @Override
-    public Gravitational getLocation() {
-        return parentBody;
     }
 
     @Override

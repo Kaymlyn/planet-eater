@@ -379,8 +379,7 @@ public class OrbitalSystemRendererOptimized {
      */
     private Vector3D getCurrentSpacecraftPosition(Spacecraft spacecraft) {
         // Use new time-based API - simpler and more robust
-        double currentTime = system.getCurrentTime();
-        return spacecraft.getPositionAtTime(currentTime);
+        return spacecraft.getPosition();
     }
 
     /**

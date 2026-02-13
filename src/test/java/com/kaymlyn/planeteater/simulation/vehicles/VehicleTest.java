@@ -1,12 +1,8 @@
 package com.kaymlyn.planeteater.simulation.vehicles;
 
-import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.entities.Automaton;
-import com.kaymlyn.planeteater.simulation.entities.EntityType;
-import com.kaymlyn.planeteater.simulation.entities.Environment;
 import com.kaymlyn.planeteater.simulation.entities.Specialization;
-import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
-import com.kaymlyn.planeteater.simulation.physics.Vector3D;
+import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,7 +27,7 @@ public class VehicleTest {
 
     // Standard vehicle parameters
     private static final String TEST_VEHICLE_ID = "test-vehicle-1";
-    private static final double STANDARD_DRY_MASS = 5000.0; // kg
+    private static final Composition STANDARD_DRY_MASS = new Composition().addMaterialAsRawMass(Material.IRON,5000); // kg
     private static final double STANDARD_FUEL_CAPACITY = 10000.0; // kg
     private static final double STANDARD_CARGO_CAPACITY = 20.0; // m³ (CHANGED FROM KG!)
     private static final double STANDARD_EXHAUST_VELOCITY = 3000.0; // m/s
@@ -67,7 +63,7 @@ public class VehicleTest {
     void testVehicleConstruction() {
         TestVehicle vehicle = new TestVehicle(
                 "vehicle-1",
-                1000.0,  // dry mass
+                new Composition().addMaterialAsRawMass(Material.IRON,1000.0),  // dry mass
                 5000.0,  // max fuel
                 15.0,    // cargo capacity (m³)
                 2500.0,  // exhaust velocity
@@ -85,9 +81,7 @@ public class VehicleTest {
                 () -> assertEquals(2500.0, vehicle.getExhaustVelocity(), TOLERANCE),
                 () -> assertFalse(vehicle.isHasLifeSupport()),
                 () -> assertEquals(2, vehicle.getMaxCrewCapacity()),
-                () -> assertEquals(0, vehicle.getMinCrewRequirement()),
-                () -> assertEquals(Vector3D.ZERO, vehicle.getPosition()),
-                () -> assertEquals(Vector3D.ZERO, vehicle.getVelocity())
+                () -> assertEquals(0, vehicle.getMinCrewRequirement())
         );
     }
 
@@ -112,7 +106,7 @@ public class VehicleTest {
     @DisplayName("Total mass with no fuel, cargo, or crew")
     void testTotalMassEmpty() {
         TestVehicle emptyVehicle = new TestVehicle(
-                "empty", 1000.0, 5000.0, 10.0, 2500.0, false, 0, 0);
+                "empty", new Composition().addMaterialAsRawMass(Material.IRON,1000.0), 5000.0, 10.0, 2500.0, false, 0, 0);
         emptyVehicle.setFuelMass(0.0);
 
         assertEquals(1000.0, emptyVehicle.getTotalMass(), TOLERANCE);
@@ -125,7 +119,7 @@ public class VehicleTest {
         standardVehicle.loadCargo(Material.IRON, 5.0);
 
         double expectedCargoMass = 5.0 * Material.IRON.getDensity();
-        double expectedTotalMass = STANDARD_DRY_MASS + STANDARD_FUEL_CAPACITY + expectedCargoMass;
+        double expectedTotalMass = STANDARD_DRY_MASS.getTotalMass() + STANDARD_FUEL_CAPACITY + expectedCargoMass;
 
         assertEquals(expectedTotalMass, standardVehicle.getTotalMass(), TOLERANCE);
     }
@@ -139,7 +133,7 @@ public class VehicleTest {
 
         double cargoMass = 5.0 * Material.IRON.getDensity();
         double crewMass = humanCrew.getMass() + robotCrew.getMass();
-        double expected = STANDARD_DRY_MASS + STANDARD_FUEL_CAPACITY + cargoMass + crewMass;
+        double expected = STANDARD_DRY_MASS.getTotalMass() + STANDARD_FUEL_CAPACITY + cargoMass + crewMass;
 
         assertEquals(expected, standardVehicle.getTotalMass(), TOLERANCE);
     }
@@ -222,7 +216,7 @@ public class VehicleTest {
 
         // Now test with aluminum (less dense)
         TestVehicle aluminumVehicle = new TestVehicle(
-                "aluminum", 5000.0, 10000.0, 20.0, 3000.0, true, 4, 1);
+                "aluminum", new Composition().addMaterialAsRawMass(Material.IRON,5000.0), 10000.0, 20.0, 3000.0, true, 4, 1);
         aluminumVehicle.loadCargo(Material.ALUMINUM, 10.0); // Same volume
 
         double aluminumMass = aluminumVehicle.getCargo().getTotalMass();
@@ -242,9 +236,9 @@ public class VehicleTest {
     @DisplayName("Light materials: less mass in same volume")
     void testLightMaterialsLessMass() {
         TestVehicle vehicle1 = new TestVehicle(
-                "v1", 5000.0, 10000.0, 20.0, 3000.0, true, 4, 1);
+                "v1", new Composition().addMaterialAsRawMass(Material.IRON,5000.0), 10000.0, 20.0, 3000.0, true, 4, 1);
         TestVehicle vehicle2 = new TestVehicle(
-                "v2", 5000.0, 10000.0, 20.0, 3000.0, true, 4, 1);
+                "v2", new Composition().addMaterialAsRawMass(Material.IRON,5000.0), 10000.0, 20.0, 3000.0, true, 4, 1);
 
         vehicle1.loadCargo(Material.IRON, 5.0);
         vehicle2.loadCargo(Material.WATER_ICE, 5.0);
@@ -340,7 +334,7 @@ public class VehicleTest {
     @DisplayName("Board robot without life support")
     void testBoardRobotWithoutLifeSupport() {
         TestVehicle noLifeSupport = new TestVehicle(
-                "no-life", 5000.0, 10000.0, 20.0, 3000.0, false, 4, 0);
+                "no-life", new Composition().addMaterialAsRawMass(Material.IRON,5000.0), 10000.0, 20.0, 3000.0, false, 4, 0);
 
         boolean boarded = noLifeSupport.boardAutomaton(robotCrew);
 
@@ -354,7 +348,7 @@ public class VehicleTest {
     @DisplayName("Cannot board human without life support")
     void testCannotBoardHumanWithoutLifeSupport() {
         TestVehicle noLifeSupport = new TestVehicle(
-                "no-life", 5000.0, 10000.0, 20.0, 3000.0, false, 4, 0);
+                "no-life", new Composition().addMaterialAsRawMass(Material.IRON,5000.0), 10000.0, 20.0, 3000.0, false, 4, 0);
 
         boolean boarded = noLifeSupport.boardAutomaton(humanCrew);
 
@@ -368,7 +362,7 @@ public class VehicleTest {
     @DisplayName("Boarding respects crew capacity")
     void testBoardingRespectsCap() {
         TestVehicle smallCrew = new TestVehicle(
-                "small", 5000.0, 10000.0, 20.0, 3000.0, true, 2, 0);
+                "small", new Composition().addMaterialAsRawMass(Material.IRON,5000.0), 10000.0, 20.0, 3000.0, true, 2, 0);
 
         Automaton crew1 = Automaton.createRobot("Bot-1", Specialization.OPERATION);
         Automaton crew2 = Automaton.createRobot("Bot-2", Specialization.EXTRACTION);
@@ -479,17 +473,12 @@ public class VehicleTest {
 
     private static class TestVehicle extends Vehicle {
 
-        public TestVehicle(String id, double dryMass, double maxFuelCapacity,
+        public TestVehicle(String id, Composition dryMass, double maxFuelCapacity,
                            double cargoCapacity, double exhaustVelocity,
                            boolean hasLifeSupport, int maxCrewCapacity,
                            int minCrewRequirement) {
             super(id, dryMass, maxFuelCapacity, cargoCapacity, exhaustVelocity,
                     hasLifeSupport, maxCrewCapacity, minCrewRequirement);
-        }
-
-        @Override
-        public Gravitational getLocation() {
-            return null;
         }
     }
 }

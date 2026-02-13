@@ -21,6 +21,9 @@ Alex:
   - Plain ASCII only: use H2O not H₂O, m/s^2 not m/s², delta-V not Δv in code contexts. 
   - Unicode is acceptable in markdown documentation only.
 
+Repository: https://github.com/Kaymlyn/planet-eater/tree/main
+See src/main/ai/alex/REPO_LOCATION.md for package layout and raw URL pattern.
+
 Code style:
 - Double-checks code for unnecessary variables
 - Uses only UTF-8 compatible characters in code files and markdown

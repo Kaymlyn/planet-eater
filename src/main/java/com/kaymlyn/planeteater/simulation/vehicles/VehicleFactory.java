@@ -17,13 +17,9 @@ public class VehicleFactory {
         construction.addMaterialAsVolume(Material.TITANIUM, 3.0);
         construction.addMaterialAsVolume(Material.IRON, 1.0);
         System.out.println("Total Mass : " + construction.getTotalMass());
-        Spacecraft ship = new Spacecraft(id, construction.getTotalMass(), 2.0e7, 120.0, 8000.0, false, 0,0, shipyard);
-
+        Spacecraft ship = new Spacecraft(id, construction, 2.0e7, 120.0, 8000.0, false, 0,0, shipyard);
         //Place in shipyard
         shipyard.dock(ship);
-
-        // Construction materials
-        ship.getConstruction().addBulkMaterial(construction);
         return ship;
     }
 
@@ -31,28 +27,27 @@ public class VehicleFactory {
      * Create a heavy hauler for large cargo loads
      */
     public static Spacecraft createHeavyHauler(String id, Orbiter shipyard) {
-        Spacecraft ship = new Spacecraft(id, 10000.0, 20000.0, 50000.0, 4000.0, false, 0,0, shipyard);
-
+        Composition construction = new Composition();
         // Construction materials
-        ship.getConstruction().addMaterialAsVolume(Material.IRON, 5000.0);
-        ship.getConstruction().addMaterialAsVolume(Material.ALUMINUM, 3000.0);
-        ship.getConstruction().addMaterialAsVolume(Material.TITANIUM, 2000.0);
+        construction.addMaterialAsRawMass(Material.IRON, 5000.0);
+        construction.addMaterialAsRawMass(Material.ALUMINUM, 3000.0);
+        construction.addMaterialAsRawMass(Material.TITANIUM, 2000.0);
 
-        return ship;
+
+        return new Spacecraft(id, construction, 20000.0, 50000.0, 4000.0, false, 0,0, shipyard);
     }
     /**
      * Create a crewed mining vessel with life support
      */
     public static Spacecraft createMiningVessel(String id, Orbiter shipyard) {
-        Spacecraft ship = new Spacecraft(id, 5000.0, 8000.0, 15000.0, 3500.0, true, 4,1, shipyard);
-
+        Composition construction = new Composition();
         // Construction materials
-        ship.getConstruction().addMaterialAsVolume(Material.ALUMINUM, 2500.0);
-        ship.getConstruction().addMaterialAsVolume(Material.TITANIUM, 1500.0);
-        ship.getConstruction().addMaterialAsVolume(Material.IRON, 500.0);
-        ship.getConstruction().addMaterialAsVolume(Material.SILICA, 300.0); // Radiation shielding
-        ship.getConstruction().addMaterialAsVolume(Material.WATER_ICE, 200.0); // Life support reserves
+        construction.addMaterialAsRawMass(Material.ALUMINUM, 2500.0);
+        construction.addMaterialAsRawMass(Material.TITANIUM, 1500.0);
+        construction.addMaterialAsRawMass(Material.IRON, 500.0);
+        construction.addMaterialAsRawMass(Material.SILICA, 300.0); // Radiation shielding
+        construction.addMaterialAsRawMass(Material.WATER_ICE, 200.0); // Life support reserves
 
-        return ship;
+        return new Spacecraft(id, construction, 8000.0, 15000.0, 3500.0, true, 4,1, shipyard);
     }
 }

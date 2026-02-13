@@ -1,5 +1,6 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
+import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import lombok.Getter;
@@ -14,9 +15,9 @@ import lombok.Setter;
 @Setter
 public abstract class OrbitingBody implements Orbiter {
 
-    protected String id;
-    protected Vector3D position;
-    protected Vector3D velocity;
+    private String id;
+    private Vector3D position;
+    private Vector3D velocity;
 
     public OrbitingBody(String id, Vector3D position, Vector3D velocity, Gravitational parentBody) {
         this.id = id;
@@ -40,6 +41,11 @@ public abstract class OrbitingBody implements Orbiter {
     }
 
     public abstract double getVolume();
+
+    @Override
+    public Orbit snapshotOrbit() {
+        return Orbiter.super.snapshotOrbit();
+    }
 
     @Override
     public String toString() {

@@ -82,6 +82,11 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
     }
 
     @Override
+    public Vector3D getPosition(double tPlus) {
+        return super.getPosition(tPlus);
+    }
+
+    @Override
     public boolean canMineCrust() {
         return crustComposition.getTotalMass() > 0.0;
     }
@@ -157,8 +162,8 @@ public class Planet extends OrbitingBody implements CelestialBody, Differentiate
     @Override
     public void updateDocked() {
         hanger.forEach((id,ship) -> {
-            ship.setPosition(this.position);
-            ship.setVelocity(this.velocity);
+            ship.setPosition(this.getPosition());
+            ship.setVelocity(this.getVelocity());
         });
     }
 }

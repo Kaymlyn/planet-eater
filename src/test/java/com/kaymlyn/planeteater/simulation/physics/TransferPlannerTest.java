@@ -4,6 +4,8 @@ import com.kaymlyn.planeteater.simulation.celestial.CelestialBodyFactory;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.PlanetPattern;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
+import com.kaymlyn.planeteater.simulation.resources.Composition;
+import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import com.kaymlyn.planeteater.simulation.vehicles.VehicleFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -506,7 +508,7 @@ public class TransferPlannerTest {
         // Create spacecraft with very limited fuel
         Spacecraft tinyShuttle = new Spacecraft(
                 "tiny",
-                1000.0,   // Only 1000 kg dry mass
+                new Composition().addMaterialAsRawMass(Material.IRON,1000.0),   // Only 1000 kg dry mass
                 100.0,    // Only 100 kg fuel (unrealistic)
                 20.0,
                 3000.0,
@@ -665,7 +667,7 @@ public class TransferPlannerTest {
         // Create spacecraft with limited fuel
         Spacecraft limitedShuttle = new Spacecraft(
                 "limited",
-                5000.0,
+                new Composition().addMaterialAsRawMass(Material.IRON,5000.0),
                 500.0,  // Very limited fuel
                 20.0,
                 3000.0,

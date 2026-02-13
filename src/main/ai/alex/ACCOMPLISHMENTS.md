@@ -3,6 +3,85 @@
 This log tracks completed work sessions with details on what was accomplished, challenges encountered, and lessons learned.
 
 ---
+## 2026-02-12: PhysicsBody Architecture Refactor
+
+**Task:** Clarify type hierarchy - Spacecraft is not an Orbiter; introduce PhysicsBody
+as the unified contract for all objects subject to gravitational integration.
+
+**Design decisions recorded:**
+
+Spacecraft do not implement Orbiter. Orbiter implies a gravitational parent body and the
+ability to produce orbital elements. Spacecraft have thrusters and an itinerary; their
+relationship to a gravitational body is a state machine concern, not a type identity.
+
+PhysicsBody is introduced as the foundation interface for any object in the physics
+simulation: position, velocity, mass, update(). Orbiter extends PhysicsBody, adding
+parentBody and snapshotOrbit(). Spacecraft extends Vehicle and implements PhysicsBody
+directly. This cleanly handles future exotic constructs (ring worlds, large stations,
+captured asteroids, Klemperer rosettes) which may not fit Orbiter semantics but do
+participate in gravity.
+
+STRANDED state removed from SpacecraftState. An out-of-fuel spacecraft is ORBITING.
+The observable distinction is getFuelMass() > 0. Physics integration continues
+regardless. Users can strand spacecraft intentionally; the simulation faithfully tracks it.
+
+**Files changed:**
+
+PhysicsBody.java (NEW) - package simulation.celestial
+- Contract: getId, getPosition, getVelocity, setPosition, setVelocity, getMass, update
+
+Orbiter.java (MODIFIED)
+- Extends PhysicsBody instead of Body (Body interface is now redundant)
+
+Vehicle.java (MODIFIED)
+- Removed: position, velocity (PhysicsBody concern)
+- Removed: abstract getLocation() (Spacecraft-specific)
+- Kept: id, fuel, cargo, crew, exhaustVelocity, lifeSupport, Tsiolkovsky helpers
+
+Spacecraft.java (MODIFIED)
+- Implements PhysicsBody directly (not Orbiter)
+- Owns position, velocity fields
+- SpacecraftState collapsed to DOCKED, TRAVELING, ORBITING
+- Removed redundant cargo/crew declarations (already in Vehicle)
+- Removed unused transitTime field
+- launch() calls system.registerSpacecraft()
+- completeTravel() DOCKED uses unregisterAndRemoveFromPhysics()
+- completeTravel() ORBITING and fuel-out paths use unregister() only
+
+OrbitalSystem.java (MODIFIED)
+- physicsObjects: HashMap<String, PhysicsBody> - Verlet integration source of truth
+- orbiters: HashMap<String, Orbiter> - kept as subset index for Orbiter callers
+- Verlet iterates physicsObjects; calculateAcceleration() takes PhysicsBody
+- calculateAcceleration() sums forces from bodyMap (CelestialBodies) only - spacecraft
+  are test masses; correct for all current objects
+- registerSpacecraft(): physicsObjects + spacecraftInTransit
+- unregister(): spacecraftInTransit only
+- unregisterAndRemoveFromPhysics(): both maps
+- Deprecated register() delegates to registerSpacecraft()
+
+**Not changed:** CentralMind, Satellite, VehicleFactory, TransferPlanner, Gate
+
+**Test impact:**
+SpacecraftTest.java has one reference to SpacecraftState.STRANDED - update to ORBITING.
+No other test files reference STRANDED.
+
+---
+
+## 2026-02-12: End-to-End Mission Test Registration Bug
+
+**Task:** Diagnose 5 failing integration tests in EndToEndMissionTest.java
+
+**Root cause:** Spacecraft.launch() called system.register() which only added to
+spacecraftInTransit. Spacecraft was never added to orbiters (now physicsObjects),
+so Verlet never updated its position and simulateTravel() received correct calls
+but position was frozen at the docked platform's moving position.
+
+**Secondary cause (testRoundTripMission):** planRoute() returns null when all transfer
+strategies fail. Root of that failure still requires a runtime trace - likely
+Orbit.fromState throwing or returning invalid elements for CentralMind as origin.
+
+**Fixes in this session:** Absorbed into PhysicsBody refactor above.
+registerSpacecraft() correctly adds to both physicsObjects and spacecraftInTransit.
 
 ## 2026-02-12: Session Summary
 

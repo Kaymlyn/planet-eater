@@ -1,6 +1,5 @@
 package com.kaymlyn.planeteater.simulation.celestial;
 
-import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
 import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
@@ -44,46 +43,6 @@ public class Star implements CelestialBody {
             initializeAtmosphere();
             initialized = true;
         }
-    }
-
-    @Override
-    public Orbit snapshotOrbit() {
-        return new Orbit(0.00001, 0.0, 0.0, 0.0, 0.0, 0.0, new Gravitational() {
-            @Override
-            public double getMass() {
-                return 0;
-            }
-
-            @Override
-            public double getRadius() {
-                return 0;
-            }
-
-            @Override
-            public OrbitalSystem getSystem() {
-                return system;
-            }
-
-            @Override
-            public Orbit snapshotOrbit() {
-                return null;
-            }
-
-            @Override
-            public String getId() {
-                return "NullPoint";
-            }
-
-            @Override
-            public Vector3D getVelocity() {
-                return Vector3D.ZERO;
-            }
-
-            @Override
-            public Vector3D getPosition() {
-                return Vector3D.ZERO;
-            }
-        });
     }
 
     @Override

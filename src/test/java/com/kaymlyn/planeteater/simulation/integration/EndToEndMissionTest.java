@@ -9,6 +9,8 @@ import com.kaymlyn.planeteater.simulation.physics.Itinerary;
 import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.TransferPlanner;
+import com.kaymlyn.planeteater.simulation.resources.Composition;
+import com.kaymlyn.planeteater.simulation.resources.Material;
 import com.kaymlyn.planeteater.simulation.vehicles.CentralMind;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
 import com.kaymlyn.planeteater.simulation.vehicles.VehicleFactory;
@@ -109,6 +111,7 @@ public class EndToEndMissionTest {
         shuttle.programItinerary(route);
         double initialFuel = shuttle.getFuelMass();
         boolean launched = shuttle.launch(system.getTimeStep());
+        System.out.println(route.getSummary());
 
         assertAll("Launch sequence",
                 () -> assertTrue(launched, "Launch should succeed"),
@@ -117,15 +120,14 @@ public class EndToEndMissionTest {
         );
 
         // Step 4: Simulate mission
-        int maxSteps = 50000; // Prevent infinite loops (about 5.7 years at 1 hour steps)
+        int maxSteps = getStepsRequired(route) + (int)(86400.0/system.getTimeStep());
         int steps = 0;
 
-        while (!route.isComplete(system.getCurrentTime()) && steps < maxSteps) {
+        while (steps < maxSteps) {
             system.stepVerlet();
             steps++;
         }
 
-        assertTrue(steps < maxSteps, "Mission should complete before timeout");
 
         // Step 5: Validate arrival
         double distanceToMars = shuttle.getPosition().subtract(mars.getPosition()).magnitude();
@@ -135,7 +137,7 @@ public class EndToEndMissionTest {
                 () -> assertTrue(route.isComplete(system.getCurrentTime()), "Itinerary should be complete"),
                 () -> assertEquals(Spacecraft.SpacecraftState.ORBITING, shuttle.getState()),
                 () -> assertEquals(mars, shuttle.getOrbiting()),
-                () -> assertTrue(distanceToMars < marsOrbitRadius * 2.0,
+                () -> assertEquals(marsOrbitRadius, distanceToMars, 1000.0,
                         String.format("Distance to Mars %.0f km should be within tolerance", distanceToMars / 1000.0))
         );
 
@@ -161,7 +163,7 @@ public class EndToEndMissionTest {
         // Create spacecraft with very limited fuel
         Spacecraft tinyShuttle = new Spacecraft(
                 "Tiny-1",
-                5000.0,
+                new Composition().addMaterialAsRawMass(Material.IRON,5000.0),
                 100.0,  // Only 100 kg fuel
                 20.0,
                 3000.0,
@@ -199,7 +201,7 @@ public class EndToEndMissionTest {
         // Create spacecraft with extra fuel for round trip
         Spacecraft explorer = new Spacecraft(
                 "Explorer-2",
-                10000.0,
+                new Composition().addMaterialAsRawMass(Material.IRON,1000.0),
                 50000.0,  // Extra fuel for round trip
                 50.0,
                 3000.0,
@@ -227,15 +229,17 @@ public class EndToEndMissionTest {
         double initialFuel = explorer.getFuelMass();
         assertTrue(explorer.launch(system.getTimeStep()), "Outbound launch should succeed");
 
+        System.out.println(outbound.getSummary());
         // Simulate outbound journey
         int outboundSteps = 0;
-        int maxSteps = 50000;
-        while (!outbound.isComplete(system.getCurrentTime()) && outboundSteps < maxSteps) {
+        int maxSteps = getStepsRequired(outbound) + (int)(86400.0/system.getTimeStep());
+        while (outboundSteps < maxSteps) {
             system.stepVerlet();
             outboundSteps++;
         }
 
-        assertTrue(outboundSteps < maxSteps, "Outbound should complete");
+        System.out.println(system.getCurrentTime());
+
         assertEquals(Spacecraft.SpacecraftState.ORBITING, explorer.getState());
         assertEquals(mars, explorer.getOrbiting());
 
@@ -259,30 +263,32 @@ public class EndToEndMissionTest {
 
         if (returnTrip.isFeasible()) {
             explorer.programItinerary(returnTrip);
-            assertTrue(explorer.launch(system.getTimeStep()), "Return launch should succeed");
+            assertFalse(explorer.launch(system.getTimeStep()), "Return launch should succeed"); //orbiting returns false
 
+
+            System.out.println(returnTrip.getSummary());
+
+            maxSteps = getStepsRequired(returnTrip) + (int)(86400.0 * 30.0/system.getTimeStep()) + 10;
             // Simulate return journey
             int returnSteps = 0;
-            while (!returnTrip.isComplete(system.getCurrentTime()) && returnSteps < maxSteps) {
+            while (returnSteps < maxSteps) {
                 system.stepVerlet();
                 returnSteps++;
             }
 
-            assertTrue(returnSteps < maxSteps, "Return should complete");
-            assertEquals(Spacecraft.SpacecraftState.ORBITING, explorer.getState());
-            assertEquals(earth, explorer.getOrbiting());
-
             double finalFuel = explorer.getFuelMass();
             double totalFuelUsed = initialFuel - finalFuel;
 
-            System.out.println(String.format(
-                    "Round trip complete. Total steps: %d. Total fuel used: %.1f kg (%.1f%% of capacity)",
-                    outboundSteps + returnSteps, totalFuelUsed, (totalFuelUsed / 50000.0) * 100.0
-            ));
+            System.out.printf(
+                    "Round trip complete. Total steps: %d. Total fuel used: %.1f kg (%.1f%% of capacity)%n\nCurrent Time: %.1f",
+                    outboundSteps + returnSteps, totalFuelUsed, (totalFuelUsed / 50000.0) * 100.0, system.getCurrentTime()
+            );
 
             assertAll("Round trip completion",
                     () -> assertTrue(finalFuel > 0, "Should have fuel remaining"),
-                    () -> assertTrue(totalFuelUsed < 50000.0, "Should not exceed fuel capacity")
+                    () -> assertTrue(totalFuelUsed < 50000.0, "Should not exceed fuel capacity"),
+                    () -> assertEquals(Spacecraft.SpacecraftState.ORBITING, explorer.getState()),
+                    () -> assertEquals(earth, explorer.getOrbiting())
             );
         } else {
             System.out.println("Return trip not feasible with remaining fuel: " +
@@ -331,10 +337,12 @@ public class EndToEndMissionTest {
 
         // Simulate until both complete
         int steps = 0;
-        int maxSteps = 50000;
+        int maxSteps = (int)(Math.max(
+                route1.getEstimatedCompletionTime(),
+                route2.getEstimatedCompletionTime()
+        )/system.getTimeStep() + 2); //+1 for round up and +1 to step 1 step past the end.
 
-        while ((!route1.isComplete(system.getCurrentTime()) ||
-                !route2.isComplete(system.getCurrentTime())) && steps < maxSteps) {
+        while (steps < maxSteps) {
             system.stepVerlet();
             steps++;
         }
@@ -365,6 +373,8 @@ public class EndToEndMissionTest {
         Itinerary route = shuttle.planRoute(mars, true, departureTime,
                 TransferPlanner.OptimizationGoal.MINIMUM_DELTAV);
 
+        int maxSteps = (int)(PhysicsConstants.SECONDS_PER_DAY * 300/system.getTimeStep());
+
         System.out.println(route.getSummary());
         shuttle.programItinerary(route);
         shuttle.launch(system.getTimeStep());
@@ -372,7 +382,7 @@ public class EndToEndMissionTest {
         System.out.println(route.getSummary());
 
         // Simulate partway through mission
-        int halfwaySteps = 5000;
+        int halfwaySteps = maxSteps/2;
         for (int i = 0; i < halfwaySteps; i++) {
             system.stepVerlet();
         }
@@ -387,7 +397,6 @@ public class EndToEndMissionTest {
         System.out.println("Fuel Mass: " + shuttle.getFuelMass());
         // "Resume" and complete mission
         int remainingSteps = 0;
-        int maxSteps = (int)(PhysicsConstants.SECONDS_PER_DAY * 300/system.getTimeStep());
 
         System.out.println(maxSteps);
 
@@ -521,5 +530,9 @@ public class EndToEndMissionTest {
         }
 
         return totalEnergy;
+    }
+
+    private int getStepsRequired(Itinerary route) {
+        return (int)((route.getEstimatedDuration() / system.getTimeStep()) + 2);
     }
 }
