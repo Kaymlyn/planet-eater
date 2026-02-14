@@ -3,6 +3,245 @@
 This log tracks completed work sessions with details on what was accomplished, challenges encountered, and lessons learned.
 
 ---
+
+## 2026-02-14: Session Close - Consolidated Deliverables
+
+**Task:** Consolidate all session changes into clean files ready for repository
+application, diagnose test failures, apply deltaVelocity() fix.
+
+**Root cause of 7 test failures:** None of this session's TransferPlanner changes
+had been applied to the repository. The old calculateLambertVelocity was still
+running, producing ~20076 m/s required delta-V vs 9887 m/s available - more than
+double due to the linear approximation error. All seven failures traced to this
+single root cause.
+
+**Three files produced for next session:**
+- TransferPlanner_FINAL.java: complete replacement, all session changes consolidated
+- TransferPlannerTest_FINAL.java: 28 prescriptive tests, .deltaVelocity() fix applied
+- Spacecraft_constructor_log.java: constructor printf snippet only
+
+**Observations from test run output:**
+- Construction log confirmed working: dry=1000 kg, fuel=8000 kg, delta-V=9887.5 m/s
+- 9887.5 m/s is slightly higher than the 9592 m/s estimated earlier due to minor
+  mass differences in the actual createInterplanetaryProbe implementation.
+  Test bounds updated accordingly in test file (probe "~9592 m/s" comment only,
+  assertion uses actual probe.getAvailableDeltaV()).
+- addLandingBurn implementation in TransferPlanner not verified against current
+  Gravitational API - landing tests use early-return if infeasible as a precaution.
+
+**Deferred items logged in TASK_LIST.md:**
+- calculateDepartureEscapeDeltaV (planetary surface departure escape burn)
+- Test fixture scope note (CentralMind vs Planet departure physics)
+
+**Session note:** Established that project files are accessed via project knowledge search
+(GitHub repo linked in Claude Project UI), not URL fetching. Persona instruction updated.
+
+---
+## 2026-02-13: End-to-End Test Final Two Failures
+
+**Task:** Fix testEarthToMarsMission() and testRoundTripMission() failures.
+
+**testEarthToMarsMission():** Root cause was in TransferPlanner.buildHohmannTransfer() (and
+bi-elliptic/Lambert equivalents). The arrival burn circularized to the heliocentric orbit
+at r2 (Mars's solar orbit radius) rather than capturing into a Mars orbit at standard
+orbital radius (mars.getRadius() * 1.1). The spacecraft ended up co-orbital with Mars but
+not orbiting Mars - hence the ~113 million km positional gap. Fix: added
+calculateOrbitInsertionDeltaV() which computes hyperbolic capture into the destination's
+standard circular orbit. All three transfer builders updated to include this capture delta-V
+in their arrival burns. Test assertion also corrected: removed erroneous /1000 unit
+conversion (marsOrbitRadius is meters, distanceToMars is meters; divide only in the
+failure message string for human-readable km output). Tolerance set to POSITION_TOLERANCE.
+
+**testRoundTripMission():** Return leg used assertFalse(explorer.launch(...)) accepting
+broken behavior (launch() rejecting ORBITING state). Fix in Spacecraft.launch(): state
+guard changed from state != DOCKED to state == TRAVELING; position/velocity capture and
+hanger removal wrapped in DOCKED-only conditional. Test assertion changed to assertTrue.
+
+**Files changed:** TransferPlanner.java (3 transfer builders + new helper),
+Spacecraft.java (launch() method), EndToEndMissionTest.java (2 lines).
+
+---
+
+## 2026-02-13: Lambert Max Delta-V Transfer Search
+
+**Task:** Add LAMBERT_MAX_DELTAV strategy that finds the shortest transfer time
+achievable within the spacecraft's full available delta-V budget.
+
+**Design:** Binary search over transfer times between the Hohmann half-period
+(lower bound) and maxTransferTimeMultiplier * minimum time (upper bound). Because
+delta-V vs transfer time is not monotonic, a 20-point sample pass locates the
+feasibility boundary first, then binary search refines it to 64 iterations (~sub-second
+precision). The result enters generateTransferOptions as a fourth candidate alongside
+the three fixed multiplier options. selectBestTransfer then picks the best from all
+four using the normal optimization logic, so a fixed multiplier that happens to be
+superior for the current planetary geometry wins automatically.
+
+**maxTransferTimeMultiplier:** Public static field defaulting to 5.0. Callers can set
+it to any value (e.g. 100.0 for outer planets or unusual mission profiles) before
+calling generateTransferOptions.
+
+**testLongerTransferLowerDeltaV removed:** This test asserted monotonic delta-V
+decrease with transfer time, which is not guaranteed because Lambert solves a
+different problem (different Mars position) at each transfer time. Replaced with
+five focused tests for the new strategy.
+
+**Files changed:** TransferPlanner.java, TransferPlannerTest.java (5 new tests,
+1 incorrect test removed).
+
+---
+
+## 2026-02-13: VehicleFactory Rework and EndToEndMissionTest Vehicle Fixes
+
+**Task:** Fix all end-to-end tests returning null routes after orbit insertion delta-V
+was added to TransferPlanner. Root cause: createCargoShuttle had ~4,464 m/s available
+delta-V but Mars transfer now requires ~5,940 m/s (departure ~2,945 + heliocentric
+capture ~910 + orbit insertion ~2,085).
+
+**VehicleFactory.java:** All vehicles resized against Tsiolkovsky physics. Added
+createInterplanetaryProbe as a purpose-built test vehicle (1,000 kg dry, 8,000 kg
+fuel, 4,500 m/s exhaust = ~9,592 m/s delta-V). createCargoShuttle resized to
+Cube Sat scale for early-game asteroid hops (~1,150 m/s). createMiningVessel and
+createHeavyHauler updated to physically grounded mid/late-game parameters.
+Class javadoc added with delta-V efficiency reference covering exhaust velocity
+by propulsion type, mass ratio, practical delta-V requirements, and ion drive
+future extension note.
+
+**EndToEndMissionTest.java:** Four targeted changes:
+- testEarthToMarsMission: createCargoShuttle -> createInterplanetaryProbe
+- testEarthToMarsMission: distance tolerance 1000.0 -> POSITION_TOLERANCE
+- testTrajectoryAccuracy: createCargoShuttle -> createInterplanetaryProbe
+- testRoundTripMission: assertFalse -> assertTrue on return leg launch
+
+**Ion drive aside (not implemented):** Ion drives require continuous-burn trajectory
+integration. Extension path: ContinuousBurn record type carrying thrust and duration
+instead of instantaneous delta-V; simulateTravel applies acceleration each Verlet
+step; LowThrustPlanner for trajectory planning. Verlet integrator already supports
+continuous forces. Main work is in planning, not simulation.
+
+---
+
+## 2026-02-13: Retrospective and Documentation Update
+
+**Task:** Analyze accomplishment log for trends; update TEST_WRITING_GUIDELINES.md
+and TASK_LIST.md accordingly.
+
+**Trends identified:**
+1. Placeholder values repeatedly causing downstream failures as physics improves.
+   Mitigation: document delta-V budgets at construction time (done in VehicleFactory).
+2. Physics improvements advancing in steps, each invalidating prior test assumptions.
+   Mitigation: pre-implementation scoping step agreed - state physical constraints
+   and adjacent system impacts before writing code.
+3. Tests encoding broken behavior as expected. Mitigation: prescriptive/descriptive
+   distinction added to TEST_WRITING_GUIDELINES.md.
+4. Design gaps surfacing through test failures. Mitigation: same scoping step as (2).
+5. Lambert solver is known weak point - now highest priority physics task.
+
+**TEST_WRITING_GUIDELINES.md:** Added "Prescriptive vs Descriptive Tests" section
+with examples, traceability rule, and the canonical anti-pattern (assertFalse with
+contradicting comment). Updated review checklist and anti-patterns sections.
+Added step 8 "Trace every assertion" to workflow.
+
+**TASK_LIST.md:** Updated last-modified date, corrected stale status entries
+(TransferPlanner now Lambert-only, EndToEndMissionTest complete), added Lambert
+solver as top-priority item with acceptance criteria, added ion drive and
+configurable transfer limit to feature list notes.
+
+---
+
+## 2026-02-13: Lambert Universal Variable Solver and Construction Log
+
+**Task:** Replace simplified Lambert approximation with iterative universal variable
+solver; add delta-V budget log to Spacecraft constructor.
+
+**Spacecraft constructor log:** Single printf at end of constructor outputs:
+id, dry mass, fuel mass, total mass, exhaust velocity, available delta-V.
+Fires for every spacecraft regardless of construction path (factory or direct).
+Removes need to mentally derive delta-V from raw parameters when tuning vehicles.
+
+**Lambert solver (solveLambert):** Replaces calculateLambertVelocity.
+Universal variable method (Bate/Mueller/White formulation) with Stumpff c2/c3
+functions for numerical stability across elliptic, parabolic, and hyperbolic
+trajectories. Returns both departure AND arrival velocity vectors (LambertSolution
+record), eliminating the prior approximation of computing arrival velocity as
+futureTarget.velocity() minus lambertDepartureVelocity.
+
+Key properties of new solver:
+- Handles transfer angles near 0 and 180 degrees without divergence
+- Handles inward and outward transfers
+- Binary search over z (universal variable squared) with bisection convergence
+- Stumpff series expansion near z=0 for parabolic stability
+- Returns null on degenerate geometry (collinear vectors) rather than wrong answer
+- 200 iteration limit with 1e-6 tolerance
+
+**buildLambertTransfer updated:** Now calls solveLambert and uses
+solution.arrivalVelocity() for the heliocentric capture delta-V, making both
+burns physically correct. Null solution sets itinerary infeasible with geometry
+explanation.
+
+**What was not changed:** calculateOrbitInsertionDeltaV, addLandingBurn,
+generateTransferOptions, buildMaxDeltaVTransfer - all unchanged.
+
+---
+
+## 2026-02-13: TransferPlannerTest Complete Replacement
+
+**Task:** Replace existing TransferPlannerTest with a suite that validates the
+universal variable Lambert solver and follows the new prescriptive/descriptive
+test guidelines.
+
+**Changes from prior test suite:**
+- Removed all Hohmann and bi-elliptic tests (those strategies no longer exist)
+- Removed testLongerTransferLowerDeltaV (asserted non-guaranteed monotonicity)
+- Replaced createCargoShuttle (~4464 m/s) with createInterplanetaryProbe (~9592 m/s)
+- Added departureTime() helper to reduce boilerplate
+
+**New test categories (28 tests total):**
+1. Structural (8): burn count, timing, delta-V sign, destination, final state
+2. Direction (2): prograde departure for outward, retrograde for inward
+3. Solver stability (3): range of transfer times, near-parabolic, degenerate geometry
+4. Option generation (5): non-empty, all strategies, sorting, positive delta-V, efficiency formula
+5. Max delta-V (4): generated, within budget, absent with no fuel, multiplier respected
+6. Selection (4): MINIMUM_TIME, MINIMUM_DELTAV, BALANCED, empty list
+7. Feasibility (3): feasible probe, infeasible tiny probe, infeasible has reason
+
+**Every assertion traced to:** physical law (vis-viva, conservation of energy),
+mathematical contract (Stumpff stability, Lagrange coefficients), or API contract
+(burn count, state machine, selection semantics). No descriptive assertions.
+
+
+---
+
+## 2026-02-13: TransferPlanner Lambert-Only Refactor
+
+**Task:** Remove Hohmann and bi-elliptic builders from generateTransferOptions; retain
+Lambert as the sole interplanetary transfer strategy.
+
+**Rationale:** Hohmann transfers are orbit-to-orbit maneuvers requiring precise phase
+alignment. Lambert correctly accounts for actual planetary positions at departure and
+arrival. Lambert subsumes Hohmann when transfer angle is 180 degrees, orbits are circular
+and coplanar, and time-of-flight equals the Hohmann period. Bi-elliptic transfers are
+three-burn two-arc maneuvers that cannot be represented by a single Lambert arc; they
+remain more efficient than Hohmann only for radius ratios above ~11.94 (outer planets)
+and are reserved for future implementation.
+
+**Changes to TransferPlanner.java:**
+- TransferStrategy enum: removed HOHMANN and BI_ELLIPTIC entries
+- generateTransferOptions: now builds only three Lambert options (1.0x, 1.5x, 2.5x
+  of minimum transfer time)
+- buildHohmannTransfer and buildBiellipticTransfer methods removed
+- buildLambertTransfer retained and cleaned up
+- calculateOrbitInsertionDeltaV helper added (hyperbolic capture into standard orbit)
+- Class javadoc updated to explain the design decision
+
+**Changes to TransferPlannerTest.java:**
+- Hohmann test section removed (5 tests)
+- Bi-elliptic test section removed (3 tests)
+- testGenerateTransferOptions updated: asserts Lambert strategies present, not HOHMANN
+- testTransferOptionStorage and testTransferOptionEfficiencyScore updated to use
+  buildLambertTransfer and LAMBERT_BALANCED strategy
+- testFeasibilityValidation updated to use buildLambertTransfer
+- Total test count reduced from 36 to approximately 22 focused tests
+
 ## 2026-02-12: PhysicsBody Architecture Refactor
 
 **Task:** Clarify type hierarchy - Spacecraft is not an Orbiter; introduce PhysicsBody

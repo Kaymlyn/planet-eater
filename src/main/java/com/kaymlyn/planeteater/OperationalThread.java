@@ -77,7 +77,7 @@ public class OperationalThread implements Runnable {
                         Math.PI/3, 2, .2, spark.getCentralStar()));
         mind.setSystem(spark);
 
-        Spacecraft vehicle = VehicleFactory.createCargoShuttle("Shuttle-1",mind);
+        Spacecraft vehicle = VehicleFactory.createCubeSat("Shuttle-1",mind);
         mind.dock(vehicle);
 
         spark.stepVerlet();

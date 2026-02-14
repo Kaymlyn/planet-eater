@@ -262,6 +262,7 @@ public class SpacecraftTest {
         );
         orbiter.setState(Spacecraft.SpacecraftState.ORBITING);
         orbiter.setOrbiting(earth);
+        orbiter.setSystem(system);
 
         double departureTime = system.getCurrentTime() + 7200.0;
 

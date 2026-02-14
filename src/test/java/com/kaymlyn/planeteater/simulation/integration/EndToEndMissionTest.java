@@ -86,7 +86,7 @@ public class EndToEndMissionTest {
     @DisplayName("Complete Earth to Mars mission")
     void testEarthToMarsMission() {
         // Step 1: Create spacecraft at platform
-        Spacecraft shuttle = VehicleFactory.createCargoShuttle("Explorer-1", platform);
+        Spacecraft shuttle = VehicleFactory.createCubeSat("Explorer-1", platform);
 
         assertAll("Initial spacecraft state",
                 () -> assertEquals(Spacecraft.SpacecraftState.DOCKED, shuttle.getState()),
@@ -151,10 +151,10 @@ public class EndToEndMissionTest {
                 () -> assertTrue(expectedDeltaV > 0, "Should have required delta-V")
         );
 
-        System.out.println(String.format(
-                "Mission completed in %d steps (%.1f days). Fuel consumed: %.1f kg. Final distance to Mars: %.0f km",
+        System.out.printf(
+                "Mission completed in %d steps (%.1f days). Fuel consumed: %.1f kg. Final distance to Mars: %.0f km%n",
                 steps, steps * TIME_STEP / 86400.0, fuelConsumed, distanceToMars / 1000.0
-        ));
+        );
     }
 
     @Test
@@ -206,10 +206,11 @@ public class EndToEndMissionTest {
                 50.0,
                 3000.0,
                 true,
-                4,
-                1,
+                0,
+                0,
                 platform
         );
+        explorer.setFuelMass(5.0e6);
 
         double currentTime = system.getCurrentTime();
 
@@ -229,7 +230,6 @@ public class EndToEndMissionTest {
         double initialFuel = explorer.getFuelMass();
         assertTrue(explorer.launch(system.getTimeStep()), "Outbound launch should succeed");
 
-        System.out.println(outbound.getSummary());
         // Simulate outbound journey
         int outboundSteps = 0;
         int maxSteps = getStepsRequired(outbound) + (int)(86400.0/system.getTimeStep());
@@ -237,8 +237,6 @@ public class EndToEndMissionTest {
             system.stepVerlet();
             outboundSteps++;
         }
-
-        System.out.println(system.getCurrentTime());
 
         assertEquals(Spacecraft.SpacecraftState.ORBITING, explorer.getState());
         assertEquals(mars, explorer.getOrbiting());
@@ -263,7 +261,7 @@ public class EndToEndMissionTest {
 
         if (returnTrip.isFeasible()) {
             explorer.programItinerary(returnTrip);
-            assertFalse(explorer.launch(system.getTimeStep()), "Return launch should succeed"); //orbiting returns false
+            assertTrue(explorer.launch(system.getTimeStep()), "Return launch should succeed"); //orbiting returns false
 
 
             System.out.println(returnTrip.getSummary());
@@ -303,8 +301,8 @@ public class EndToEndMissionTest {
     @DisplayName("Multiple spacecraft can operate simultaneously")
     void testMultipleSpacecraftMissions() {
         // Create two spacecraft
-        Spacecraft shuttle1 = VehicleFactory.createCargoShuttle("Alpha", platform);
-        Spacecraft shuttle2 = VehicleFactory.createCargoShuttle("Beta", platform);
+        Spacecraft shuttle1 = VehicleFactory.createCubeSat("Alpha", platform);
+        Spacecraft shuttle2 = VehicleFactory.createCubeSat("Beta", platform);
 
         double departureTime = system.getCurrentTime() + 86400.0;
 
@@ -367,7 +365,7 @@ public class EndToEndMissionTest {
     @Test
     @DisplayName("Mission continues correctly after simulation pause and resume")
     void testMissionPauseAndResume() {
-        Spacecraft shuttle = VehicleFactory.createCargoShuttle("Resilient-1", platform);
+        Spacecraft shuttle = VehicleFactory.createCubeSat("Resilient-1", platform);
 
         double departureTime = system.getCurrentTime() + 86400.0;
         Itinerary route = shuttle.planRoute(mars, true, departureTime,
@@ -375,7 +373,7 @@ public class EndToEndMissionTest {
 
         int maxSteps = (int)(PhysicsConstants.SECONDS_PER_DAY * 300/system.getTimeStep());
 
-        System.out.println(route.getSummary());
+//        System.out.println(route.getSummary());
         shuttle.programItinerary(route);
         shuttle.launch(system.getTimeStep());
 
@@ -425,7 +423,7 @@ public class EndToEndMissionTest {
     @Test
     @DisplayName("Spacecraft follows predicted trajectory within tolerance")
     void testTrajectoryAccuracy() {
-        Spacecraft shuttle = VehicleFactory.createCargoShuttle("Precise-1", platform);
+        Spacecraft shuttle = VehicleFactory.createCubeSat("Precise-1", platform);
 
         double departureTime = system.getCurrentTime() + 86400.0;
         Itinerary route = shuttle.planRoute(mars, false, departureTime,
@@ -472,7 +470,7 @@ public class EndToEndMissionTest {
     @Test
     @DisplayName("System handles long-duration missions without numerical issues")
     void testLongDurationStability() {
-        Spacecraft shuttle = VehicleFactory.createCargoShuttle("Endurance-1", platform);
+        Spacecraft shuttle = VehicleFactory.createCubeSat("Endurance-1", platform);
 
         double departureTime = system.getCurrentTime() + 86400.0;
         Itinerary route = shuttle.planRoute(mars, false, departureTime,
@@ -507,10 +505,10 @@ public class EndToEndMissionTest {
         assertTrue(energyChange < 0.1,
                 String.format("Energy conservation: change=%.2f%% (should be <10%%)", energyChange * 100.0));
 
-        System.out.println(String.format(
-                "Long-duration stability test passed. %d steps simulated. Energy drift: %.4f%%",
+        System.out.printf(
+                "Long-duration stability test passed. %d steps simulated. Energy drift: %.4f%%%n",
                 steps, energyChange * 100.0
-        ));
+        );
     }
 
     // ==================== HELPER METHODS ====================

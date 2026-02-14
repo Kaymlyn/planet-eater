@@ -11,13 +11,11 @@ import com.kaymlyn.planeteater.simulation.physics.ScheduledBurn;
 import com.kaymlyn.planeteater.simulation.physics.TransferPlanner;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
-import com.kaymlyn.planeteater.simulation.resources.Material;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -80,6 +78,17 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
         this.system = shipyard.getParentBody().getSystem();
         this.position = shipyard.getPosition();
         this.velocity = shipyard.getVelocity();
+
+        System.out.printf(
+                "[SPACECRAFT] %s constructed: dry=%.1f kg  fuel=%.1f kg  " +
+                        "total=%.1f kg  v_exhaust=%.0f m/s  delta-V=%.1f m/s%n",
+                id,
+                getDryMass(),
+                fuelMass,
+                getTotalMass(),
+                exhaustVelocity,
+                getAvailableDeltaV()
+        );
     }
 
     // ==================== PHYSICSBODY ====================
@@ -306,9 +315,14 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
     /**
      * Launch this spacecraft.
      *
-     * Validates the itinerary and fuel, captures position and velocity from the
-     * docking platform, undocks, then registers with OrbitalSystem for Verlet
-     * integration and burn execution.
+     * Validates the itinerary and fuel, then registers with OrbitalSystem for
+     * Verlet integration and burn execution.
+     *
+     * When DOCKED: captures position and velocity from the docking platform
+     * and removes from the platform hanger before registering.
+     *
+     * When ORBITING: position and velocity are already owned by the spacecraft
+     * via Verlet integration. No platform interaction needed.
      *
      * @param timeStep simulation time step, used to consolidate near-coincident burns
      * @return true if launch succeeded
@@ -322,8 +336,8 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
             System.err.println("Cannot launch: " + itinerary.getInfeasibilityReason());
             return false;
         }
-        if (state != SpacecraftState.DOCKED) {
-            System.err.println("Cannot launch: not docked");
+        if (state == SpacecraftState.TRAVELING) {
+            System.err.println("Cannot launch: already traveling");
             return false;
         }
 
@@ -348,12 +362,15 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
             return false;
         }
 
-        this.position = orbiting.getPosition();
-        this.velocity = orbiting.getVelocity();
-
-        if (orbiting instanceof Dockable dockable) {
-            dockable.getHanger().remove(this.id);
+        if (state == SpacecraftState.DOCKED) {
+            this.position = orbiting.getPosition();
+            this.velocity = orbiting.getVelocity();
+            if (orbiting instanceof Dockable dockable) {
+                dockable.getHanger().remove(this.id);
+            }
         }
+        // When ORBITING: position and velocity are already correct from Verlet integration.
+        // No platform to undock from.
 
         setState(SpacecraftState.TRAVELING);
         system.registerSpacecraft(this);

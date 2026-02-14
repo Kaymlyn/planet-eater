@@ -64,7 +64,7 @@ public class ItineraryTest {
                 1
         );
 
-        shuttle = VehicleFactory.createCargoShuttle("Test-1", earth);
+        shuttle = VehicleFactory.createCubeSat("Test-1", earth);
     }
 
     // ==================== CONSTRUCTION TESTS ====================

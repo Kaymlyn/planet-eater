@@ -13,29 +13,85 @@
 ```java
 @DisplayName("Human-readable description of what's being tested")
 public class ClassNameTest {
-    
-    // Test constants at class level
-    private static final double TOLERANCE = 1e-6;
-    
-    // Common test data
-    private TypeName standardInstance;
-    private double standardValue;
-    
-    @BeforeEach
-    void setUp() {
-        // ALL common test setup goes here
-        // Initialize test fixtures used by multiple tests
-    }
-    
-    @Test
-    @DisplayName("Specific behavior being tested")
-    void testMethodName() {
-        // Arrange
-        // Act  
-        // Assert (use assertAll for multiple assertions)
-    }
+
+  // Test constants at class level
+  private static final double TOLERANCE = 1e-6;
+
+  // Common test data
+  private TypeName standardInstance;
+  private double standardValue;
+
+  @BeforeEach
+  void setUp() {
+    // ALL common test setup goes here
+    // Initialize test fixtures used by multiple tests
+  }
+
+  @Test
+  @DisplayName("Specific behavior being tested")
+  void testMethodName() {
+    // Arrange
+    // Act  
+    // Assert (use assertAll for multiple assertions)
+  }
 }
 ```
+
+---
+
+## Prescriptive vs Descriptive Tests
+
+This is the most important distinction in the test suite. Every assertion must be
+traceable to one of two sources:
+
+### Prescriptive Tests (preferred)
+The assertion expresses what the code MUST do, derived from a specification or
+physical law. These tests are allowed to fail when the code is wrong - that is
+their purpose.
+
+Traceable to:
+- A physical law: `delta_v = v_exhaust * ln(mass_initial / mass_final)`
+- A state machine contract: `launch() from ORBITING must transition to TRAVELING`
+- An explicit design decision: `arrival position within POSITION_TOLERANCE of destination`
+
+```java
+// Prescriptive: derived from Tsiolkovsky equation
+double expectedFuelConsumed = totalMass * (1.0 - Math.exp(-deltaV / exhaustVelocity));
+assertEquals(expectedFuelConsumed, actualFuelConsumed, TOLERANCE,
+        "Fuel consumed must satisfy Tsiolkovsky equation");
+```
+
+### Descriptive Tests (use with caution)
+The assertion expresses what the code CURRENTLY does, without verifying correctness.
+These protect against unintended regressions but can silently encode bugs as
+expected behavior.
+
+When a descriptive test is unavoidable, label it explicitly:
+
+```java
+// DESCRIPTIVE: records current behavior, not a specification.
+// If this fails after a physics change, verify whether the new behavior is correct
+// before updating the expected value.
+assertEquals(113_166_081.0, distanceToMars, 1000.0, "Current arrival distance");
+```
+
+### The test to avoid
+An assertion written to match observed output without checking whether that output
+is physically or logically correct. The canonical example from this project:
+
+```java
+// WRONG: accepted broken behavior as expected
+assertFalse(explorer.launch(system.getTimeStep()), "Return launch should succeed");
+// The comment contradicts the assertion. This encoded a bug.
+```
+
+If a comment on an assertion contradicts what the assertion checks, the assertion
+is wrong.
+
+### Traceability rule
+Before writing any assertion, state in a comment what specification or law it
+is derived from. If you cannot state one, the assertion is descriptive - label it
+as such or reconsider whether it belongs.
 
 ---
 
@@ -88,12 +144,24 @@ private static final double TOLERANCE = 1e-6;
 assertEquals(expected, actual, TOLERANCE, "Message");
 ```
 
+### Physics Assertions
+Derive expected values from the same physical laws the code implements.
+Do not copy expected values from a previous run output.
+
+```java
+// Derive from Tsiolkovsky, not from observed output
+double mu = centralStar.getGravitationalParameter();
+double expectedTransferTime = Math.PI * Math.sqrt(Math.pow(semiMajorAxis, 3) / mu);
+assertEquals(expectedTransferTime, itinerary.getEstimatedDuration(), TIME_TOLERANCE,
+        "Transfer time must match Kepler's third law");
+```
+
 ---
 
 ## Code Style for Tests
 
 ### Prefer Clarity Over DRY
-- **Repetition is acceptable** in tests for readability
+- Repetition is acceptable in tests for readability
 - Don't extract helper methods unless used 3+ times
 - Each test should be self-contained and readable
 
@@ -178,7 +246,7 @@ Add comments for:
 
 Example:
 ```java
-// Tsiolkovsky equation: m_fuel = m_initial * (1 - e^(-Δv/v_e))
+// Tsiolkovsky equation: m_fuel = m_initial * (1 - e^(-delta_v/v_exhaust))
 // For extreme delta-V, fuel approaches total mass but never exceeds it
 ```
 
@@ -194,9 +262,9 @@ Example:
 ### Minimal Mocking
 - Prefer real objects over mocks
 - Use mocks only for:
-    - External systems
-    - Slow operations
-    - Non-deterministic behavior
+  - External systems
+  - Slow operations
+  - Non-deterministic behavior
 - Document why mocking was chosen
 
 ---
@@ -295,12 +363,14 @@ public class ClassNameTest {
 - [ ] Organized by category with comment headers
 - [ ] Physics/math formulas explained in comments
 - [ ] Representative variable names (not single letters)
+- [ ] Every assertion is traceable to a specification or physical law,
+  OR labeled as DESCRIPTIVE with a comment explaining why
 
 ---
 
 ## Anti-Patterns to Avoid
 
-❌ **Don't:**
+Do NOT:
 - Use JUnit 4 annotations (@org.junit.Test)
 - Omit assertAll when testing multiple things
 - Extract helper methods prematurely
@@ -309,8 +379,10 @@ public class ClassNameTest {
 - Rely on test execution order
 - Leave assertions without failure messages
 - Mix different test categories without clear separation
+- Write an assertion to match observed output without deriving it from a law or spec
+- Write a comment that contradicts the assertion it annotates
 
-✅ **Do:**
+Do:
 - Make tests readable by newcomers
 - Repeat code if it makes tests clearer
 - Test one concept per test method
@@ -318,6 +390,7 @@ public class ClassNameTest {
 - Document non-obvious test logic
 - Validate both positive and negative cases
 - Consider boundary conditions carefully
+- State the physical law or contract each assertion checks
 
 ---
 
@@ -337,12 +410,13 @@ Ask the user if:
 1. **Analyze the class** - Read source, identify methods, dependencies
 2. **Plan categories** - Group tests logically (construction, calculations, edges)
 3. **Start with @BeforeEach** - Set up common fixtures
-4. **Write tests top-down** - Construction → core methods → edge cases
+4. **Write tests top-down** - Construction -> core methods -> edge cases
 5. **Use assertAll liberally** - Group related assertions
 6. **Add edge cases** - Zero, negative, null, extreme values
 7. **Document complex logic** - Comments for formulas, non-obvious behavior
-8. **Review against checklist** - Ensure all standards met
-9. **Create review document** - Summarize coverage and design decisions
+8. **Trace every assertion** - State the law or contract, or label as DESCRIPTIVE
+9. **Review against checklist** - Ensure all standards met
+10. **Create review document** - Summarize coverage and design decisions
 
 ---
 

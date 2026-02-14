@@ -3,7 +3,6 @@ package com.kaymlyn.planeteater.simulation.celestial;
 import com.kaymlyn.planeteater.simulation.physics.Orbit;
 import com.kaymlyn.planeteater.simulation.celestial.planetconfig.PlanetPattern;
 import com.kaymlyn.planeteater.simulation.celestial.planetoid.Planet;
-import com.kaymlyn.planeteater.simulation.physics.OrbitalState;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
