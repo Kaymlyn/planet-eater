@@ -1,6 +1,12 @@
 package com.kaymlyn.planeteater;
 
+import com.kaymlyn.planeteater.rendering.AngledViewPreset;
+import com.kaymlyn.planeteater.rendering.GridConfig;
+import com.kaymlyn.planeteater.rendering.LabelConfig;
+import com.kaymlyn.planeteater.rendering.ObjectSizeStrategy;
 import com.kaymlyn.planeteater.rendering.OrbitalSystemRendererOptimized;
+import com.kaymlyn.planeteater.rendering.ViewConfig;
+import com.kaymlyn.planeteater.rendering.ViewConfigPreset;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 
@@ -36,12 +42,18 @@ public class RenderingThread implements Runnable {
         System.out.printf("Simulating %d cycles with %d stepOver between frames rendered.%n",cycles,skip);
         OrbitalSystemRendererOptimized renderer = new OrbitalSystemRendererOptimized(spark,visibleAU,true
         );
-        renderer.initializeVideoEncoder("orbits/output.mp4");
 
+        renderer.initializeVideoEncoder("orbits/output.mp4");
+        ViewConfig[] configs = new ViewConfig[4];
+        configs[0] = ViewConfigPreset.TOP_DOWN;
+        configs[1] = ViewConfigPreset.SIDE_ON;
+        configs[2] = ViewConfigPreset.SIDE_ON_90;
+        configs[3] = ViewConfigPreset.ANGLED;
         for(int i = 0; i < cycles; i++) {
             spark.stepVerlet();
             if(i % skip == 0) {
-                renderer.render(visibleAU, rotate, i);
+                renderer.render4View(visibleAU,configs,i);
+//                renderer.render(visibleAU, rotate, i);
             }
         }
         renderer.finalizeVideo();

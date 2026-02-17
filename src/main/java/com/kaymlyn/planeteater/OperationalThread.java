@@ -100,7 +100,7 @@ public class OperationalThread implements Runnable {
 
     @Override
     public void run() {
-        new RenderingThread(spark, (int)(1000 *PhysicsConstants.SECONDS_PER_DAY/3600),24, 4, new Vector3D(0.0,0.0,0.0).multiply(Math.PI/16)).run();
+        new RenderingThread(spark, (int)(1000 *PhysicsConstants.SECONDS_PER_DAY/3600),8, 5, new Vector3D(0.0,0.0,0.0).multiply(Math.PI/16)).run();
 
     }
 }
