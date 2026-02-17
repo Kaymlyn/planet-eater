@@ -1,4 +1,4 @@
-package com.kaymlyn.planeteater.rendering;
+package com.kaymlyn.planeteater.rendering.config;
 
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 

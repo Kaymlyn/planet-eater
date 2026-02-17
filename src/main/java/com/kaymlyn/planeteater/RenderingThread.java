@@ -1,12 +1,8 @@
 package com.kaymlyn.planeteater;
 
-import com.kaymlyn.planeteater.rendering.AngledViewPreset;
-import com.kaymlyn.planeteater.rendering.GridConfig;
-import com.kaymlyn.planeteater.rendering.LabelConfig;
-import com.kaymlyn.planeteater.rendering.ObjectSizeStrategy;
 import com.kaymlyn.planeteater.rendering.OrbitalSystemRendererOptimized;
-import com.kaymlyn.planeteater.rendering.ViewConfig;
-import com.kaymlyn.planeteater.rendering.ViewConfigPreset;
+import com.kaymlyn.planeteater.rendering.config.ViewConfig;
+import com.kaymlyn.planeteater.rendering.config.ViewConfigPreset;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 

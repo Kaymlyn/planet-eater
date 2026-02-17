@@ -1,4 +1,4 @@
-package com.kaymlyn.planeteater.rendering;
+package com.kaymlyn.planeteater.rendering.config;
 
 /**
  * Controls how celestial object and spacecraft pixel sizes are computed

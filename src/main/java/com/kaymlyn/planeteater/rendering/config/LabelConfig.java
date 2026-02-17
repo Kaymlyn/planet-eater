@@ -1,4 +1,4 @@
-package com.kaymlyn.planeteater.rendering;
+package com.kaymlyn.planeteater.rendering.config;
 
 /**
  * Controls which categories of labeled objects are shown in a given view.

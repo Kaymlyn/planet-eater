@@ -1,4 +1,4 @@
-package com.kaymlyn.planeteater.rendering;
+package com.kaymlyn.planeteater.rendering.config;
 
 /**
  * Line rendering style for grid axes and ecliptic grid lines.

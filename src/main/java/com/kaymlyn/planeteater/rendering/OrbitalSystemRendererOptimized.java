@@ -1,5 +1,11 @@
 package com.kaymlyn.planeteater.rendering;
 
+import com.kaymlyn.planeteater.rendering.config.AxisConfig;
+import com.kaymlyn.planeteater.rendering.config.GridConfig;
+import com.kaymlyn.planeteater.rendering.config.LabelConfig;
+import com.kaymlyn.planeteater.rendering.config.LineType;
+import com.kaymlyn.planeteater.rendering.config.ObjectSizeStrategy;
+import com.kaymlyn.planeteater.rendering.config.ViewConfig;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
