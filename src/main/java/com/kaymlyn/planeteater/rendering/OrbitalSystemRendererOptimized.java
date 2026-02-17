@@ -3,6 +3,7 @@ package com.kaymlyn.planeteater.rendering;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitingBody;
 import com.kaymlyn.planeteater.simulation.celestial.OrbitalSystem;
+import com.kaymlyn.planeteater.simulation.celestial.PhysicsBody;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
@@ -118,7 +119,7 @@ public class OrbitalSystemRendererOptimized {
      */
     private void preCacheObjectProperties() {
         // Cache orbiter properties
-        for(Orbiter orbiter : system.getOrbiters().values()) {
+        for(PhysicsBody orbiter : system.getPhysicsObjects().values()) {
             String id = orbiter.getId();
 
             // Cache color
@@ -186,7 +187,7 @@ public class OrbitalSystemRendererOptimized {
         renderAllOrbiters(pixels, rotationMatrix, canvasScale);
 
         // Render spacecraft
-        renderAllSpacecraft(pixels, rotationMatrix, canvasScale);
+//        renderAllSpacecraft(pixels, rotationMatrix, canvasScale);
 
         // Add text overlays (still needs Graphics2D, but batched)
         Graphics2D g2d = image.createGraphics();
@@ -198,11 +199,13 @@ public class OrbitalSystemRendererOptimized {
                 (int)((system.getCurrentTime() % PhysicsConstants.SECONDS_PER_DAY) / 3600));
         g2d.drawString(timeInfo, 5, 16);
 
-        // Render labels for orbiters
-        renderOrbiterLabels(g2d, rotationMatrix, canvasScale);
-
-        // Render labels for spacecraft
-        renderSpacecraftLabels(g2d, rotationMatrix, canvasScale);
+        for(PhysicsBody body : system.getPhysicsObjects().values()) {
+            if(body instanceof Orbiter orbiter) {
+                renderOrbiterLabel(orbiter, g2d, rotationMatrix, canvasScale);
+            } else if (body instanceof Spacecraft spacecraft) {
+                renderSpacecraftLabel(spacecraft, g2d, rotationMatrix, canvasScale);
+            }
+        }
 
         g2d.dispose();
 
@@ -247,7 +250,7 @@ public class OrbitalSystemRendererOptimized {
         renderAllOrbiters(pixels, rotationMatrix, canvasScale);
 
         // Render spacecraft
-        renderAllSpacecraft(pixels, rotationMatrix, canvasScale);
+//        renderAllSpacecraft(pixels, rotationMatrix, canvasScale);
 
         // Add text overlays (still needs Graphics2D, but batched)
         Graphics2D g2d = image.createGraphics();
@@ -259,11 +262,18 @@ public class OrbitalSystemRendererOptimized {
                 (int)((system.getCurrentTime() % PhysicsConstants.SECONDS_PER_DAY) / 3600));
         g2d.drawString(timeInfo, 5, 16);
 
-        // Render labels for orbiters
-        renderOrbiterLabels(g2d, rotationMatrix, canvasScale);
-
-        // Render labels for spacecraft
-        renderSpacecraftLabels(g2d, rotationMatrix, canvasScale);
+        for(PhysicsBody body : system.getPhysicsObjects().values()) {
+            if(body instanceof Orbiter orbiter) {
+                renderOrbiterLabel(orbiter, g2d, rotationMatrix, canvasScale);
+            } else if (body instanceof Spacecraft spacecraft) {
+                renderSpacecraftLabel(spacecraft, g2d, rotationMatrix, canvasScale);
+            }
+        }
+//        // Render labels for orbiters
+//        renderOrbiterLabels(g2d, rotationMatrix, canvasScale);
+//
+//        // Render labels for spacecraft
+//        renderSpacecraftLabels(g2d, rotationMatrix, canvasScale);
 
         g2d.dispose();
 
@@ -286,35 +296,30 @@ public class OrbitalSystemRendererOptimized {
         }
     }
 
-    /**
-     * Render labels for non-asteroid orbiters
-     */
-    private void renderOrbiterLabels(Graphics2D g2d, RotationMatrix rotation, double canvasScale) {
-        for(Orbiter orbiter : system.getOrbiters().values()) {
-            String id = orbiter.getId();
+    private void renderOrbiterLabel(Orbiter orbiter, Graphics2D g2d, RotationMatrix rotation, double canvasScale) {
+        String id = orbiter.getId();
 
-            // Skip if this object shouldn't have a label (asteroids)
-            if(!shouldLabelCache.get(id)) {
-                continue;
-            }
-
-            // Transform position (same calculation as rendering)
-            Vector3D position = orbiter.getPosition();
-            Vector3D rotated = rotation.transform(position);
-
-            int screenX = (int)(rotated.getX() / canvasScale * adjustedAU + centerX);
-            int screenY = (int)(rotated.getY() / canvasScale * adjustedAU + centerY);
-
-            // Draw label offset from object
-            g2d.drawString(id, screenX + 3, screenY);
+        // Skip if this object shouldn't have a label (asteroids)
+        if(!shouldLabelCache.get(id)) {
+            return;
         }
+
+        // Transform position (same calculation as rendering)
+        Vector3D position = orbiter.getPosition();
+        Vector3D rotated = rotation.transform(position);
+
+        int screenX = (int)(rotated.getX() / canvasScale * adjustedAU + centerX);
+        int screenY = (int)(rotated.getY() / canvasScale * adjustedAU + centerY);
+
+        // Draw label offset from object
+        g2d.drawString(id, screenX + 3, screenY);
     }
 
     /**
      * Render all orbiters - batch processing
      */
     private void renderAllOrbiters(int[] pixels, RotationMatrix rotation, double canvasScale) {
-        for(Orbiter orbiter : system.getOrbiters().values()) {
+        for(PhysicsBody orbiter : system.getPhysicsObjects().values()) {
             String id = orbiter.getId();
 
             // Transform position (single matrix multiply)
@@ -326,29 +331,34 @@ public class OrbitalSystemRendererOptimized {
 
             // Use cached properties
             Color color = colorCache.get(id);
-            int size = sizeCache.get(id);
+            int size;
+            try {
+                size = sizeCache.get(id);
+            } catch (NullPointerException npe) {
+                size = 1;
+                color = COLOR_SPACECRAFT;
+            }
 
             drawFilledSquare(pixels, screenX, screenY, size, color.getRGB());
         }
     }
 
-    /**
-     * Render all spacecraft (in transit only; docked are omitted to avoid label clutter).
-     */
-    private void renderAllSpacecraft(int[] pixels, RotationMatrix rotation, double canvasScale) {
-        for (Spacecraft spacecraft : system.getSpacecraftInTransit().values()) {
-            if (spacecraft.getState() == Spacecraft.SpacecraftState.DOCKED) {
-                continue;
-            }
 
-            Vector3D position = getCurrentSpacecraftPosition(spacecraft);
-            Vector3D rotated = rotation.transform(position);
 
-            int screenX = (int)(rotated.getX() / canvasScale * adjustedAU + centerX);
-            int screenY = (int)(rotated.getY() / canvasScale * adjustedAU + centerY);
-
-            drawFilledSquare(pixels, screenX, screenY, SPACECRAFT_SIZE, COLOR_SPACECRAFT.getRGB());
+    private void renderSpacecraftLabel(Spacecraft spacecraft, Graphics2D g2d, RotationMatrix rotationMatrix, double canvasScale) {
+        if (spacecraft.getState() == Spacecraft.SpacecraftState.DOCKED) {
+            return;
         }
+
+        Vector3D position = getCurrentSpacecraftPosition(spacecraft);
+        Vector3D rotated = rotationMatrix.transform(position);
+
+        int screenX = (int)(rotated.getX() / canvasScale * adjustedAU + centerX);
+        int screenY = (int)(rotated.getY() / canvasScale * adjustedAU + centerY);
+
+        // Draw label with state, offset below the spacecraft
+        String label = spacecraft.getId() + " " + spacecraft.getState();
+        g2d.drawString(label, screenX, screenY + 10);
     }
 
     /**
@@ -410,6 +420,8 @@ public class OrbitalSystemRendererOptimized {
                 int py = y + dy;
                 if(px >= 0 && px < width && py >= 0 && py < height) {
                     pixels[py * width + px] = rgb;
+                    if(rgb == COLOR_SPACECRAFT.getRGB()) {
+                    }
                 }
             }
         }

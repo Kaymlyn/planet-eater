@@ -206,9 +206,9 @@ public class OrbitalSystem {
         }
 
         // Phase 5: auto-launch any docked spacecraft whose itinerary is ready
-        for (PhysicsBody body : physicsObjects.values()) {
+        for (PhysicsBody body : new ArrayList<>(physicsObjects.values())) {
             if (body instanceof Dockable dockable) {
-                Collection<Spacecraft> hanger = dockable.getHanger().values();
+                Collection<Spacecraft> hanger = new ArrayList<>(dockable.getHanger().values());
                 for (Spacecraft spacecraft : hanger) {
                     if (spacecraft.getItinerary() != null &&
                             spacecraft.getState() != Spacecraft.SpacecraftState.TRAVELING) {

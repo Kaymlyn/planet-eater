@@ -9,6 +9,8 @@ import com.kaymlyn.planeteater.simulation.entities.Automaton;
 import com.kaymlyn.planeteater.simulation.entities.Specialization;
 import com.kaymlyn.planeteater.simulation.physics.Itinerary;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
+import com.kaymlyn.planeteater.simulation.physics.ScheduledBurn;
+import com.kaymlyn.planeteater.simulation.physics.SimpleLauncher;
 import com.kaymlyn.planeteater.simulation.physics.TransferPlanner;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 import com.kaymlyn.planeteater.simulation.resources.Composition;
@@ -77,23 +79,18 @@ public class OperationalThread implements Runnable {
                         Math.PI/3, 2, .2, spark.getCentralStar()));
         mind.setSystem(spark);
 
-        Spacecraft vehicle = VehicleFactory.createCubeSat("Shuttle-1",mind);
+        Spacecraft vehicle = VehicleFactory.createInterplanetaryProbe("Shuttle-1",mind);
         mind.dock(vehicle);
 
         spark.stepVerlet();
-
-        Itinerary route = vehicle.planRoute(planet_1, true, spark.getCurrentTime(), TransferPlanner.OptimizationGoal.MINIMUM_DELTAV );
-        if(route == null) {
-            System.out.println("Unable to find valid route");
-            return;
-        }
+        Itinerary route = new SimpleLauncher().launch(spark.getCurrentTime(), vehicle);
+        route.addBurn(new ScheduledBurn("Custom Burn",spark.getCurrentTime() + spark.getTimeStep()* 3, new Vector3D(2000,2000,0), "test burn"));
+        route.addBurn(new ScheduledBurn("Custom Burn",spark.getCurrentTime() + spark.getTimeStep()* 2000, new Vector3D(2000,2000,0), "test burn"));
         System.out.println(route.getSummary());
-
 
         System.out.println(vehicle.fuelRequired(route.getTotalDeltaV()));
         System.out.println(vehicle.getFuelMass());
         System.out.println(vehicle.fuelRequired(route.getTotalDeltaV()) < vehicle.getFuelMass());
-        vehicle.setItinerary(route);
         vehicle.programItinerary(route);
         System.out.println("Positions");
         System.out.println(mind.getPosition());
@@ -103,7 +100,7 @@ public class OperationalThread implements Runnable {
 
     @Override
     public void run() {
-        new RenderingThread(spark, (int)(650 *PhysicsConstants.SECONDS_PER_DAY/3600),24, 4, new Vector3D(0.0,0.0,0.0).multiply(Math.PI/16)).run();
+        new RenderingThread(spark, (int)(1000 *PhysicsConstants.SECONDS_PER_DAY/3600),24, 4, new Vector3D(0.0,0.0,0.0).multiply(Math.PI/16)).run();
 
     }
 }

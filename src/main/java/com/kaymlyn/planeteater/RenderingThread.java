@@ -34,7 +34,7 @@ public class RenderingThread implements Runnable {
     private void renderOrbiting(int cycles, int stepOver, double visibleAU, Vector3D rotate) throws IOException {
         int skip = Math.max(1, stepOver);
         System.out.printf("Simulating %d cycles with %d stepOver between frames rendered.%n",cycles,skip);
-        OrbitalSystemRendererOptimized renderer = new OrbitalSystemRendererOptimized(spark,visibleAU,false
+        OrbitalSystemRendererOptimized renderer = new OrbitalSystemRendererOptimized(spark,visibleAU,true
         );
         renderer.initializeVideoEncoder("orbits/output.mp4");
 
