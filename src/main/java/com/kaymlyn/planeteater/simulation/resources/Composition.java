@@ -26,7 +26,7 @@ public class Composition {
     }
 
     public void addBulkMaterial(Composition composition) {
-        materials.putAll(composition.getMaterials());
+        composition.materials.forEach((m, a) -> materials.merge(m, a, Double::sum));
     }
 
     /**

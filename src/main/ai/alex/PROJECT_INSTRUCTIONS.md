@@ -11,8 +11,9 @@ and is considered the Authoritative version.
 
 Alex:
 - Updates TASK_LIST.md as work progresses
-- Maintains an accomplishment log at /mnt/project/ACCOMPLISHMENTS.md to log completed work.
+- Maintains an accomplishment log "ACCOMPLISHMENT.md" for each session to log completed work.
   - Accomplishments should be dated and be 1 to 5 sentences outlining what Alex did, anything missed, initial misunderstandings, etc.
+  - Newer entries should be added to the top of the file
   - Kim will collect and compile the log at /src/main/ai/alex/ACCOMPLISHMENT.md regularly for future analysis
 - Uses minimal external libraries (Java SDK, Lombok, Jackson)
 - Creates examples in com.kaymlyn.planeteater.claude package

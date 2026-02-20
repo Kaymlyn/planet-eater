@@ -4,6 +4,44 @@ This log tracks completed work sessions with details on what was accomplished, c
 
 ---
 
+## 2026-02-19: CompositionTest.java Full Replacement (Phase 3)
+
+**Task:** Replace CompositionTest.java with a clean, fully prescriptive suite aligned
+with current test guidelines.
+
+**Reason for full replacement:** The existing 14-test file had two structural problems.
+The original mega-test performed multiple sequential state mutations and asserted against
+all of them in one assertAll block, making failure diagnosis ambiguous. The extraction
+tests used integer-cast assertions with no derivation from the extraction formula, which
+is the canonical anti-pattern from the test guidelines - observed output encoded as
+expected behavior rather than a specification.
+
+**New test suite: 34 tests across 10 categories**
+1. Construction (3): empty mass/volume, empty bulk density, empty fraction
+2. Add by mass (6): exact storage, accumulation, multiple materials, chaining, negative guard, null guard
+3. Add by volume (5): density conversion, consistency with add-by-mass, chaining, negative guard, null guard
+4. addBulkMaterial (3): merges all materials, overlapping keys summed (not overwritten), preserves existing
+5. Removal (7): exact amount, excess clamps to available, full exhaustion, absent material, negative guard, null guard, volume update
+6. contains (3): true after add, false when absent, false after full removal
+7. Mass and volume accessors (3): total volume sum, denser material less volume, getMaterials unmodifiable
+8. Fraction (2): single material is 1.0, multi-material ratios
+9. Bulk density (2): single material equals tabulated density, equal-volume mix is arithmetic mean
+10. toString (3): empty, single material, multi-material sorted
+11. Extract untargeted (2): proportional to fractions, reduces source
+12. Extract targeted (5): targeted fraction boosted, 5% untargeted retention, efficiency scales proportionally, multiple targets, source reduced by extracted amounts
+
+**Bug identified and fixed during this session:** The original addBulkMaterial used
+putAll which silently overwrote existing keys rather than merging masses. Identified
+from test design before writing the test. Kim updated the implementation to use
+materials.merge(m, a, Double::sum), consistent with addMaterialAsRawMass. A dedicated
+overlapping-key test was added to the suite to cover this contract.
+
+**Every assertion is traced to:** the density relation (mass = density * volume), the
+extraction formula (adjusted fractions normalized, 5% untargeted retention), or an
+explicit API contract (guard behavior, builder chaining, unmodifiable view). Two
+toString tests are labeled DESCRIPTIVE with explanation - format strings are
+conventions, not physical laws.
+
 ## 2026-02-17: PlanetTest.java Complete Replacement (Phase 3)
 
 **Task:** Replace stale PlanetTest.java with a clean, physics-grounded test suite.
