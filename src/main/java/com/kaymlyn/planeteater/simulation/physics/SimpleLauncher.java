@@ -8,12 +8,16 @@ public class SimpleLauncher {
     public Itinerary launch(double departureTime, Spacecraft spacecraft){
 
         double currentTime = spacecraft.getSystem().getCurrentTime();
-
         Itinerary itinerary = new Itinerary(currentTime);
-        Vector3D velocityAtLaunch = spacecraft.getOrbiting().snapshotOrbit().stateAt(departureTime,currentTime).velocity();
+
+        if(spacecraft.getState() != Spacecraft.SpacecraftState.DOCKED) {
+            return itinerary;
+        }
+
+        Vector3D velocityAtLaunch = spacecraft.getDockingLocation().snapshotOrbit().stateAt(departureTime,currentTime).velocity();
 
         Vector3D launchDeltaV;
-        if(spacecraft.getOrbiting() instanceof Planet planet) {
+        if(spacecraft.getDockingLocation() instanceof Planet planet) {
             launchDeltaV = planet.getStandardCircularOrbitVector().subtract(velocityAtLaunch);
         } else {
             launchDeltaV = Vector3D.ZERO;

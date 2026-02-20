@@ -4,6 +4,46 @@ This log tracks completed work sessions with details on what was accomplished, c
 
 ---
 
+## 2026-02-17: PlanetTest.java Complete Replacement (Phase 3)
+
+**Task:** Replace stale PlanetTest.java with a clean, physics-grounded test suite.
+
+**Reason for full replacement:** Existing 5-test file used static expected values derived
+from a previous orbital round-trip conversion that no longer exists. All assertions had
+drifted from current simulation output and would fail without modification. The test file
+was discarded entirely rather than patched.
+
+**New test suite: 15 test methods across 6 categories**
+1. Construction - full-layer (2 tests): layer mass presence, getMass() == layer sum
+2. Construction - full-layer physics (2 tests): radius from sphere volume formula, surface gravity g=G*M/r^2
+3. Construction - core-only (2 tests): empty mantle/crust/atmosphere, expected materials
+4. Differentiated flags (4 tests): full-layer flags, core-only flags, crust->mantle depletion gate,
+   mantle->core depletion gate
+5. Resource extraction (4 tests): mineCrustMaterial removes correct amount, mass/gravity
+   decrease after mining, over-mining clamps to available + exhaustion, extraction guards
+   when layer absent, harvestAtmosphere selectivity
+6. Hill sphere (4 tests): formula r_Hill = d*(m/3M)^(1/3), canHaveSubSatellites threshold,
+   isTidallyLocked false at 1 AU, isTidallyLocked contract validation for close orbit
+7. Docking (2 tests): dock() sets state and populates hanger, updateDocked() propagates
+   planet position and velocity to docked spacecraft
+8. System delegation (1 test): getSystem() non-null for both fixtures
+
+**What was deferred:** getDensity() - Planet returns mass/radius (kg/m) not mass/volume
+(kg/m^3). Star uses mass/volume. Flagged as likely bug for separate review session.
+
+**Design decisions:**
+- No static expected values anywhere. Every assertion derives expected value from the
+  same formula the production code uses, or is a structural assertion (> 0, contains, etc.)
+- buildMinimalSpacecraft() helper creates spacecraft via CentralMind shipyard to satisfy
+  the Spacecraft constructor Orbiter requirement, then tests Planet.dock() directly
+- testUpdateDockedPropagatesPosition() avoids the known Spacecraft.getPosition() delegation
+  bug by reading the field after an explicit setPosition() call via updateDocked()
+- testCanHaveSubSatellites and testTidallyLockedCloseOrbit use conditional assertions
+  rather than hardcoded fixture assumptions, so they remain valid if composition changes
+- Profile key corrected from NICKEL_IRON_CORE (old test) to IRON_NICKEL_CORE (actual JSON key)
+
+---
+
 ## 2026-02-16 - Multi-View Rendering System
 
 Implemented a configurable 4-panel 1920x1080 rendering system for the OrbitalSystemRendererOptimized.

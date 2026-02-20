@@ -107,7 +107,7 @@ public class VehicleFactory {
      * Exhaust velocity: 4,000 m/s (bipropellant chemical)
      * Available delta-V: ~4,394 m/s
      */
-    public static Spacecraft createMiningVessel(String id, Orbiter shipyard) {
+    public static Spacecraft createMiningVessel(String id, Dockable shipyard) {
         Composition construction = new Composition();
         construction.addMaterialAsRawMass(Material.ALUMINUM, 2500.0);
         construction.addMaterialAsRawMass(Material.TITANIUM, 1500.0);
@@ -137,7 +137,7 @@ public class VehicleFactory {
      * Exhaust velocity: 4,500 m/s (high-performance bipropellant)
      * Available delta-V: ~2,877 m/s
      */
-    public static Spacecraft createHeavyHauler(String id, Orbiter shipyard) {
+    public static Spacecraft createHeavyHauler(String id, Dockable shipyard) {
         Composition construction = new Composition();
         construction.addMaterialAsRawMass(Material.IRON, 5000.0);
         construction.addMaterialAsRawMass(Material.ALUMINUM, 3000.0);

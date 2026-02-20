@@ -51,7 +51,8 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
     }
 
     private SpacecraftState state;
-    private Orbiter orbiting;
+    private Gravitational orbiting;
+    private Dockable dockingLocation;
     private Itinerary itinerary;
 
     // Position and velocity owned by Spacecraft (not inherited from Vehicle)
@@ -68,13 +69,14 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
                       boolean hasLifeSupport,
                       int maxCrewCapacity,
                       int minCrewRequirement,
-                      Orbiter shipyard) {
+                      Dockable shipyard) {
         super(id, construction, maxFuelCapacity, cargoCapacity, exhaustVelocity,
                 hasLifeSupport, maxCrewCapacity, minCrewRequirement);
 
         this.state = SpacecraftState.DOCKED;
         this.itinerary = null;
-        this.orbiting = shipyard;
+        this.dockingLocation = shipyard;
+        this.orbiting = null;
         this.system = shipyard.getParentBody().getSystem();
         this.position = shipyard.getPosition();
         this.velocity = shipyard.getVelocity();
@@ -100,8 +102,8 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
      */
     @Override
     public Vector3D getPosition() {
-        if (state == SpacecraftState.DOCKED && orbiting != null) {
-            return orbiting.getPosition();
+        if (state == SpacecraftState.DOCKED && getDockingLocation() != null) {
+            return getDockingLocation().getPosition();
         }
         return position;
     }
@@ -131,8 +133,8 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
      */
     @Override
     public Vector3D getVelocity() {
-        if (state == SpacecraftState.DOCKED && orbiting != null) {
-            return orbiting.getVelocity();
+        if (state == SpacecraftState.DOCKED && getDockingLocation() != null) {
+            return getDockingLocation().getVelocity();
         }
         return velocity;
     }
@@ -156,7 +158,7 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
      *
      * @return associated gravitational body, never null
      */
-    public Gravitational getLocation() {
+    public Gravitational getOrbiting() {
         if (orbiting instanceof Gravitational gravitational) {
             return gravitational;
         }
@@ -194,7 +196,7 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
         List<TransferPlanner.TransferOption> options =
                 TransferPlanner.generateTransferOptions(
                         this,
-                        this.orbiting,
+                        this.dockingLocation,
                         destination,
                         land,
                         departureTime
@@ -299,13 +301,18 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
         if (targetState == SpacecraftState.DOCKED && destination instanceof Dockable dockable) {
             dockable.dock(this);
             setState(SpacecraftState.DOCKED);
-            orbiting = destination;
+            dockingLocation = dockable;
+            orbiting = null;
             system.unregisterAndRemoveFromPhysics(this);
             return;
         }
 
         // ORBITING - or DOCKED fallback when destination is not Dockable
-        orbiting = destination;
+        if(destination instanceof Gravitational gravitational) {
+            orbiting = gravitational;
+        } else {
+            orbiting = dockingLocation.getParentBody();
+        }
         setState(SpacecraftState.ORBITING);
         system.unregister(this);
     }
@@ -363,11 +370,7 @@ public class Spacecraft extends Vehicle implements PhysicsBody {
         }
 
         if (state == SpacecraftState.DOCKED) {
-            this.position = orbiting.getPosition();
-            this.velocity = orbiting.getVelocity();
-            if (orbiting instanceof Dockable dockable) {
-                dockable.getHanger().remove(this.id);
-            }
+            dockingLocation.undock(this);
         }
         // When ORBITING: position and velocity are already correct from Verlet integration.
         // No platform to undock from.

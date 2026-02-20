@@ -97,17 +97,4 @@ public class CentralMind extends Vehicle implements Orbiter, Satellite, Dockable
     public Map<String, Spacecraft> getHanger() {
         return hanger;
     }
-
-    @Override
-    public void dock(Spacecraft spacecraft) {
-        hanger.put(spacecraft.getId(), spacecraft);
-        spacecraft.setPosition(this.position);
-        spacecraft.setVelocity(this.velocity);
-        spacecraft.setOrbiting(this);
-    }
-
-    @Override
-    public void updateDocked() {
-        hanger.forEach((id,ship) -> {ship.setPosition(this.position); ship.setVelocity(this.velocity);});
-    }
 }

@@ -1,5 +1,6 @@
 package com.kaymlyn.planeteater.simulation.physics;
 
+import com.kaymlyn.planeteater.simulation.celestial.Dockable;
 import com.kaymlyn.planeteater.simulation.celestial.Gravitational;
 import com.kaymlyn.planeteater.simulation.celestial.Orbiter;
 import com.kaymlyn.planeteater.simulation.vehicles.Spacecraft;
@@ -124,7 +125,7 @@ public class TransferPlanner {
      */
     public static List<TransferOption> generateTransferOptions(
             Spacecraft spacecraft,
-            Orbiter origin,
+            Dockable origin,
             Orbiter destination,
             boolean land,
             double departureTime) {

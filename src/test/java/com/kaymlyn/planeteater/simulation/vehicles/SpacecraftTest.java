@@ -128,7 +128,9 @@ public class SpacecraftTest {
                 () -> assertEquals(2, craft.getMaxCrewCapacity()),
                 () -> assertEquals(0, craft.getMinCrewRequirement()),
                 () -> assertEquals(Spacecraft.SpacecraftState.DOCKED, craft.getState()),
-                () -> assertEquals(platform, craft.getOrbiting()),
+                () -> assertNotNull(craft.getOrbiting()),
+                () -> assertNotEquals(platform, craft.getOrbiting()),
+                () -> assertEquals(platform.getParentBody(), craft.getOrbiting()),
                 () -> assertNull(craft.getItinerary()),
                 () -> assertNotNull(craft.getConstruction()),
                 () -> assertNotNull(craft.getCargo()),
@@ -621,13 +623,13 @@ public class SpacecraftTest {
 
         // Manually dock it back to platform
         platform.dock(standardShuttle);
-        standardShuttle.setState(Spacecraft.SpacecraftState.DOCKED);
-        standardShuttle.setOrbiting(platform);
+//        standardShuttle.setState(Spacecraft.SpacecraftState.DOCKED);
+//        standardShuttle.setDockingLocation(platform);
 
         assertAll("Manual docking",
                 () -> assertEquals(Spacecraft.SpacecraftState.DOCKED, standardShuttle.getState()),
                 () -> assertTrue(platform.getHanger().containsKey(SHUTTLE_ID)),
-                () -> assertEquals(platform, standardShuttle.getOrbiting())
+                () -> assertEquals(platform, standardShuttle.getDockingLocation())
         );
     }
 
@@ -645,7 +647,7 @@ public class SpacecraftTest {
         Itinerary itinerary = new Itinerary(system.getCurrentTime());
         itinerary.addBurn(new ScheduledBurn(
                 "burn",
-                system.getCurrentTime() + 3600.0,
+                system.getCurrentTime(),
                 new Vector3D(10.0, 0.0, 0.0),
                 "Test"
         ));
@@ -658,6 +660,7 @@ public class SpacecraftTest {
                 "Should be in hanger before launch");
 
         standardShuttle.launch(system.getTimeStep());
+        system.stepVerlet();
 
         assertFalse(platform.getHanger().containsKey(SHUTTLE_ID),
                 "Should not be in hanger after launch");
@@ -778,11 +781,12 @@ public class SpacecraftTest {
     // ==================== LOCATION TRACKING TESTS ====================
 
     @Test
-    @DisplayName("Get orbiting body returns current location")
-    void testGetLocation() {
-        // NOTE: getLocation() may have Lombok @Getter conflict similar to getPosition()
+    @DisplayName("Get docking location returns current dockingLocation")
+    void testGetDockingLocation() {
+
+        // NOTE: getDockingLocation() may have Lombok @Getter conflict similar to getPosition()
         // Using getOrbiting() instead which should return the current orbiting body
-        assertEquals(platform, standardShuttle.getOrbiting(),
+        assertEquals(platform, standardShuttle.getDockingLocation(),
                 "Orbiting should return current docked/orbiting body");
     }
 
@@ -803,7 +807,7 @@ public class SpacecraftTest {
         standardShuttle.programItinerary(itinerary);
         standardShuttle.launch(system.getTimeStep());
 
-        assertEquals(platform, standardShuttle.getOrbiting(),
+        assertEquals(platform.getParentBody(), standardShuttle.getOrbiting(),
                 "Orbiting should be platform before completion");
 
         // Complete travel
@@ -922,7 +926,7 @@ public class SpacecraftTest {
     // ==================== EDGE CASE TESTS ====================
 
     @Test
-    @DisplayName("Spacecraft with no orbiting body returns central star as location")
+    @DisplayName("Spacecraft with no orbiting body returns central star as dockingLocation")
     void testLocationFallbackToCentralStar() {
         // Create spacecraft with null orbiting reference
         Spacecraft orphan = new Spacecraft(
@@ -939,7 +943,7 @@ public class SpacecraftTest {
 
         orphan.setOrbiting(null);
 
-        assertEquals(system.getCentralStar(), orphan.getLocation(),
+        assertEquals(system.getCentralStar(), orphan.getOrbiting(),
                 "Should fall back to central star when orbiting is null");
     }
 

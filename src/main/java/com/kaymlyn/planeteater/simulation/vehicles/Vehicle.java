@@ -25,9 +25,9 @@ import java.util.Map;
  * simulation (Orbiter for stations and celestial bodies, Spacecraft for
  * thruster-equipped vehicles).
  *
- * Vehicle does NOT have an abstract getLocation() method. Location is a
+ * Vehicle does NOT have an abstract getDockingLocation() method. Location is a
  * Spacecraft-level concept tied to the simulation state machine. Planetside
- * vehicles, stations, and future constructs have their own location semantics.
+ * vehicles, stations, and future constructs have their own dockingLocation semantics.
  *
  * Cargo capacity is VOLUME-based (m^3), not mass-based (kg). Physical space
  * is the limiting resource; dense materials pack more mass into the same volume.
