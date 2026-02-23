@@ -196,11 +196,10 @@ public class OrbitalSystem {
 
         // Phase 4: update velocities with averaged accelerations
         for (PhysicsBody body : physicsObjects.values()) {
-            Vector3D accel = newAccelerations.get(body);
-            if(accel != null) {
-                Vector3D avgAccel = accel
-                        .add(accel)
-                        .multiply(0.5);
+            Vector3D oldAccel = accelerations.get(body);
+            Vector3D newAccel = newAccelerations.get(body);
+            if (oldAccel != null && newAccel != null) {
+                Vector3D avgAccel = oldAccel.add(newAccel).multiply(0.5);
                 body.setVelocity(body.getVelocity().add(avgAccel.multiply(timeStep)));
             }
         }

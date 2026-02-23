@@ -3,7 +3,7 @@ package com.kaymlyn.planeteater.simulation.celestial;
 import com.kaymlyn.planeteater.simulation.physics.PhysicsConstants;
 import com.kaymlyn.planeteater.simulation.physics.Vector3D;
 
-public interface Gravitational extends Body {
+public interface Gravitational extends PhysicsBody {
     double STANDARD_ORBIT_MULTIPLIER = 1.1;
 
     double getMass();
