@@ -132,13 +132,6 @@ public class Star implements CelestialBody {
     }
 
     /**
-     * Stars do not move. No-op to satisfy PhysicsBody contract.
-     */
-    public void update(double timeStep) {
-        // Stars are stationary. No per-step update required.
-    }
-
-    /**
      * Calculate stellar radius using the main sequence mass-radius relationship.
      *
      * M < 1 M_sun: R = R_sun * (M/M_sun)^0.8
